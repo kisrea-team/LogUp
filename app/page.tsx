@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LazyAd from '@/components/LazyAd';
+import { adConfigs } from '@/lib/adConfigs';
 
 export default function Page() {
     const [projects, setProjects] = useState([]);
@@ -381,13 +383,22 @@ export default function Page() {
                 )}
             </main{/* Mobile Floating Ad */}
             <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50">
-                <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-3 text-center shadow-lg">
-                    <div className="flex justify-between items-center">
+                <div className="bg-white rounded-lg shadow-lg">
+                    <div className="flex justify-between items-center p-2">
                         <div className="flex-1">
-                            <div className="text-gray-400 text-xs mb-1">移动端广告位 - 320x50</div>
-                            <div className="text-gray-500 text-xs">底部浮动广告</div>
+                            <LazyAd 
+                                config={adConfigs.mobileFloating}
+                                adType="mobile"
+                                className="min-h-[50px]"
+                            />
                         </div>
-                        <button className="text-gray-400 hover:text-gray-600 ml-2">
+                        <button 
+                            className="text-gray-400 hover:text-gray-600 ml-2 p-1"
+                            onClick={() => {
+                                const floatingAd = document.querySelector('.fixed.bottom-4') as HTMLElement;
+                                if (floatingAd) floatingAd.style.display = 'none';
+                            }}
+                        >
                             ✕
                         </button>
                     </div>
