@@ -4,17 +4,54 @@ import { useState, useEffect } from 'react';
 import LazyAd from '@/components/LazyAd';
 import { adConfigs } from '@/lib/adConfigs';
 
-export default function Page() {
-    const [projects, setProjects] = useState([]);
-    const [selectedProject, setSelectedProject] = useState(null);
-    const [selectedVersion, setSelectedVersion] = useState(null);
-    const [loading, setLoading] = useState(true);
+const API_BASE_URL = 'http://localhost:8000';
 
-    // Mock data - replace with actual API calls
+interface Version {
+    id?: number;
+    project_id?: number;
+    version: string;
+    update_time: string;
+    content: string;
+    download_url: string;
+}
+
+interface Project {
+    id: number;
+    icon: string;
+    name: string;
+    latest_version: string;
+    latest_update_time: string;
+    versions: Version[];
+}
+
+export default function Page() {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // 从API获取项目数据
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            const mockProjects = [
+        fetchProjects();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            setLoading(true);
+            setErrorMessage(null);
+            const response = await fetch(`${API_BASE_URL}/projects`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setProjects(data);
+        } catch (err) {
+            console.error('获取项目数据失败:', err);
+            setErrorMessage('无法连接到服务器，请确保后端服务正在运行 (http://localhost:8000)');
+            
+            // 如果API失败，使用模拟数据作为后备
+            const mockProjects: Project[] = [
                 {
                     id: 1,
                     icon: '🚀',
@@ -114,44 +151,8 @@ export default function Page() {
         );
     }
 
-    if (error) {
-        return (
-            <div
-                className="min-h-screen bg-gray-50 flex items-center justify-center"
-                data-oid="iyevkd:"
-            >
-                <div className="text-center max-w-md mx-auto p-6" data-oid="xhkrwh:">
-                    <div className="text-red-600 text-6xl mb-4" data-oid="vbpxpkx">
-                        ⚠️
-                    </div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4" data-oid="64y7fuz">
-                        连接失败
-                    </h2>
-                    <p className="text-gray-600 mb-6" data-oid="5cc8aju">
-                        {error}
-                    </p>
-                    <div className="space-y-3" data-oid="1r4u-tv">
-                        <button
-                            onClick={fetchProjects}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                            data-oid="7m92dg1"
-                        >
-                            重试连接
-                        </button>
-                        <div className="text-sm text-gray-500" data-oid="-ht4-ln">
-                            <p data-oid="kljyore">请确保后端服务已启动：</p>
-                            <code
-                                className="bg-gray-100 px-2 py-1 rounded text-xs"
-                                data-oid="8de9bh8"
-                            >
-                                cd backend && python start.py
-                            </code>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // 如果有错误消息但仍有数据，显示警告横幅
+    const showErrorBanner = errorMessage && projects.length > 0;
 
     if (selectedProject) {
         return (
@@ -312,20 +313,41 @@ export default function Page() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50" data-oid="1pdyybj">
-                {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200" data-oid="m18.ylh">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="nb4jkv0">
-                        <div className="py-6" data-oid=":ujeh3y">
-                            <h1 className="text-3xl font-bold text-gray-900" data-oid="7eq83ef">
+            <div className="min-h-screen bg-gray-50" data-oid="1pdyybj"{/* Header */}
+                <header className="bg-white shadow-sm border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="py-6">
+                            <h1 className="text-3xl font-bold text-gray-900">
                                 项目更新日志聚合
                             </h1>
-                            <p className="mt-2 text-gray-600" data-oid="0abqacc">
+                            <p className="mt-2 text-gray-600">
                                 查看所有项目的最新更新和版本历史
                             </p>
                         </div>
                     </div>
                 </header>
+
+                {/* Error Banner */}
+                {showErrorBanner && (
+                    <div className="bg-yellow-50 border-b border-yellow-200">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                            <div className="flex items-center">
+                                <div className="text-yellow-600 mr-3">⚠️</div>
+                                <div className="flex-1">
+                                    <p className="text-sm text-yellow-800">
+                                        无法连接到后端服务，正在显示示例数据
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={fetchProjects}
+                                    className="text-sm text-yellow-800 hover:text-yellow-900 underline"
+                                >
+                                    重试连接
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Top Banner Ad */}
                 <div className="bg-gray-100 border-b border-gray-200" data-oid="jj15ra3">
