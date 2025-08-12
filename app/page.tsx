@@ -13,6 +13,7 @@ interface Version {
     update_time: string;
     content: string;
     download_url: string;
+    downloadUrl?: string;
 }
 
 interface Project {
@@ -49,33 +50,22 @@ export default function Page() {
         } catch (err) {
             console.error('获取项目数据失败:', err);
             setErrorMessage('无法连接到服务器，请确保后端服务正在运行 (http://localhost:8000)');
-            
+
             // 如果API失败，使用模拟数据作为后备
             const mockProjects: Project[] = [
                 {
                     id: 1,
                     icon: '🚀',
                     name: 'Project Alpha',
-                    latestVersion: 'v2.1.0',
-                    latestUpdateTime: '2024-01-15',
+                    latest_version: 'v2.1.0',
+                    latest_update_time: '2024-01-15',
                     versions: [
                         {
-                            version: 'v2.1.0',
-                            updateTime: '2024-01-15',
-                            content: '新增用户权限管理功能\n修复已知安全漏洞\n优化性能表现',
-                            downloadUrl: 'https://example.com/download/v2.1.0',
-                        },
-                        {
-                            version: 'v2.0.5',
-                            updateTime: '2024-01-10',
-                            content: '修复登录问题\n更新依赖包\n改进UI界面',
-                            downloadUrl: 'https://example.com/download/v2.0.5',
-                        },
-                        {
-                            version: 'v2.0.0',
-                            updateTime: '2024-01-01',
-                            content: '重大版本更新\n全新架构设计\n支持多语言',
-                            downloadUrl: 'https://example.com/download/v2.0.0',
+                            version: 'v3.0.1',
+                            update_time: '2024-01-14',
+                            content: '修复关键错误\n改进用户体验\n新增配置选项',
+                            downloadUrl: 'https://example.com/download/gamma-v3.0.1',
+                            download_url: '',
                         },
                     ],
                 },
@@ -83,20 +73,15 @@ export default function Page() {
                     id: 2,
                     icon: '⚡',
                     name: 'Project Beta',
-                    latestVersion: 'v1.5.2',
-                    latestUpdateTime: '2024-01-12',
+                    latest_version: 'v1.5.2',
+                    latest_update_time: '2024-01-12',
                     versions: [
                         {
-                            version: 'v1.5.2',
-                            updateTime: '2024-01-12',
-                            content: '性能优化\n修复内存泄漏\n新增API接口',
-                            downloadUrl: 'https://example.com/download/beta-v1.5.2',
-                        },
-                        {
-                            version: 'v1.5.1',
-                            updateTime: '2024-01-08',
-                            content: '紧急修复\n安全补丁\n稳定性改进',
-                            downloadUrl: 'https://example.com/download/beta-v1.5.1',
+                            version: 'v3.0.1',
+                            update_time: '2024-01-14',
+                            content: '修复关键错误\n改进用户体验\n新增配置选项',
+                            downloadUrl: 'https://example.com/download/gamma-v3.0.1',
+                            download_url: '',
                         },
                     ],
                 },
@@ -104,14 +89,15 @@ export default function Page() {
                     id: 3,
                     icon: '🔧',
                     name: 'Project Gamma',
-                    latestVersion: 'v3.0.1',
-                    latestUpdateTime: '2024-01-14',
+                    latest_version: 'v3.0.1',
+                    latest_update_time: '2024-01-14',
                     versions: [
                         {
                             version: 'v3.0.1',
-                            updateTime: '2024-01-14',
+                            update_time: '2024-01-14',
                             content: '修复关键错误\n改进用户体验\n新增配置选项',
                             downloadUrl: 'https://example.com/download/gamma-v3.0.1',
+                            download_url: '',
                         },
                     ],
                 },
@@ -119,8 +105,8 @@ export default function Page() {
 
             setProjects(mockProjects);
             setLoading(false);
-        }, 1000);
-    }, []);
+        }
+    };
 
     const handleProjectClick = (project: Project) => {
         setSelectedProject(project);
@@ -289,7 +275,10 @@ export default function Page() {
                                         下载
                                     </h3>
                                     <a
-                                        href={selectedVersion.download_url}
+                                        href={
+                                            selectedVersion.download_url ||
+                                            selectedVersion.downloadUrl
+                                        }
                                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -313,15 +302,15 @@ export default function Page() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50" data-oid="u:.cvmm">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="py-6">
-                            <h1 className="text-3xl font-bold text-gray-900">
+                <header className="bg-white shadow-sm border-b border-gray-200" data-oid="2-ibi4y">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="66_eg9.">
+                        <div className="py-6" data-oid="ya863op">
+                            <h1 className="text-3xl font-bold text-gray-900" data-oid="4g-nge4">
                                 项目更新日志聚合
                             </h1>
-                            <p className="mt-2 text-gray-600">
+                            <p className="mt-2 text-gray-600" data-oid="cbkwp9a">
                                 查看所有项目的最新更新和版本历史
                             </p>
                         </div>
@@ -330,18 +319,24 @@ export default function Page() {
 
                 {/* Error Banner */}
                 {showErrorBanner && (
-                    <div className="bg-yellow-50 border-b border-yellow-200">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                            <div className="flex items-center">
-                                <div className="text-yellow-600 mr-3">⚠️</div>
-                                <div className="flex-1">
-                                    <p className="text-sm text-yellow-800">
+                    <div className="bg-yellow-50 border-b border-yellow-200" data-oid="wetbwyl">
+                        <div
+                            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3"
+                            data-oid="9:3n1va"
+                        >
+                            <div className="flex items-center" data-oid="_56tle9">
+                                <div className="text-yellow-600 mr-3" data-oid="rk1140d">
+                                    ⚠️
+                                </div>
+                                <div className="flex-1" data-oid="0m0i8hq">
+                                    <p className="text-sm text-yellow-800" data-oid="4lgdbkz">
                                         无法连接到后端服务，正在显示示例数据
                                     </p>
                                 </div>
                                 <button
                                     onClick={fetchProjects}
                                     className="text-sm text-yellow-800 hover:text-yellow-900 underline"
+                                    data-oid="ehy.q.."
                                 >
                                     重试连接
                                 </button>
