@@ -28,40 +28,8 @@ export default function AdAdminPage() {
             const data = await response.json();
 
             // 模拟广告性能数据
-            const mockPerformance: AdPerformance[] = [
-                {
-                    adId: 'top-banner-ad',
-                    adType: 'banner',
-                    impressions: 1250,
-                    clicks: 45,
-                    ctr: 3.6,
-                    revenue: 12.5,
-                },
-                {
-                    adId: 'sidebar-square-ad',
-                    adType: 'sidebar',
-                    impressions: 890,
-                    clicks: 23,
-                    ctr: 2.6,
-                    revenue: 8.9,
-                },
-                {
-                    adId: 'content-ad',
-                    adType: 'content',
-                    impressions: 2100,
-                    clicks: 78,
-                    ctr: 3.7,
-                    revenue: 21.0,
-                },
-                {
-                    adId: 'mobile-floating-ad',
-                    adType: 'mobile',
-                    impressions: 560,
-                    clicks: 12,
-                    ctr: 2.1,
-                    revenue: 5.6,
-                },
-            ];
+                // Remove mock data
+                const mockPerformance: AdPerformance[] = []; // Placeholder to avoid errors
 
             setAdPerformance(mockPerformance);
         } catch (error) {

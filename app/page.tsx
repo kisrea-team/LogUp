@@ -50,60 +50,8 @@ export default function Page() {
         } catch (err) {
             console.error('获取项目数据失败:', err);
             setErrorMessage('无法连接到服务器，请确保后端服务正在运行 (http://localhost:8000)');
-
-            // 如果API失败，使用模拟数据作为后备
-            const mockProjects: Project[] = [
-                {
-                    id: 1,
-                    icon: '🚀',
-                    name: 'Project Alpha',
-                    latest_version: 'v2.1.0',
-                    latest_update_time: '2024-01-15',
-                    versions: [
-                        {
-                            version: 'v3.0.1',
-                            update_time: '2024-01-14',
-                            content: '修复关键错误\n改进用户体验\n新增配置选项',
-                            downloadUrl: 'https://example.com/download/gamma-v3.0.1',
-                            download_url: '',
-                        },
-                    ],
-                },
-                {
-                    id: 2,
-                    icon: '⚡',
-                    name: 'Project Beta',
-                    latest_version: 'v1.5.2',
-                    latest_update_time: '2024-01-12',
-                    versions: [
-                        {
-                            version: 'v3.0.1',
-                            update_time: '2024-01-14',
-                            content: '修复关键错误\n改进用户体验\n新增配置选项',
-                            downloadUrl: 'https://example.com/download/gamma-v3.0.1',
-                            download_url: '',
-                        },
-                    ],
-                },
-                {
-                    id: 3,
-                    icon: '🔧',
-                    name: 'Project Gamma',
-                    latest_version: 'v3.0.1',
-                    latest_update_time: '2024-01-14',
-                    versions: [
-                        {
-                            version: 'v3.0.1',
-                            update_time: '2024-01-14',
-                            content: '修复关键错误\n改进用户体验\n新增配置选项',
-                            downloadUrl: 'https://example.com/download/gamma-v3.0.1',
-                            download_url: '',
-                        },
-                    ],
-                },
-            ];
-
-            setProjects(mockProjects);
+            setProjects([]);
+        } finally {
             setLoading(false);
         }
     };
@@ -118,24 +66,24 @@ export default function Page() {
         setSelectedVersion(null);
     };
 
-    if (loading) {
-        return (
-            <div
-                className="min-h-screen bg-gray-50 flex items-center justify-center"
-                data-oid="p6psdev"
-            >
-                <div className="text-center" data-oid=":0mx4-a">
-                    <div
-                        className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
-                        data-oid="m05l1o2"
-                    ></div>
-                    <p className="text-gray-600" data-oid="hsh68yo">
-                        加载中...
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <div
+    //             className="min-h-screen bg-gray-50 flex items-center justify-center"
+    //             data-oid="p6psdev"
+    //         >
+    //             <div className="text-center" data-oid=":0mx4-a">
+    //                 <div
+    //                     className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+    //                     data-oid="m05l1o2"
+    //                 ></div>
+    //                 <p className="text-gray-600" data-oid="hsh68yo">
+    //                     加载中...
+    //                 </p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
     // 如果有错误消息但仍有数据，显示警告横幅
     const showErrorBanner = errorMessage && projects.length > 0;
