@@ -97,10 +97,18 @@ export default function Page() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">加载中...</p>
+            <div
+                className="min-h-screen bg-gray-50 flex items-center justify-center"
+                data-oid="tl28h9q"
+            >
+                <div className="text-center" data-oid="bsgios_">
+                    <div
+                        className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+                        data-oid="z.rdl0:"
+                    ></div>
+                    <p className="text-gray-600" data-oid="76_aq_e">
+                        加载中...
+                    </p>
                 </div>
             </div>
         );
@@ -108,23 +116,32 @@ export default function Page() {
 
     if (selectedProject) {
         return (
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen bg-white" data-oid="8a:t_4i">
                 {/* Header */}
-                <header className="border-b border-gray-200 bg-white sticky top-0 z-10">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center space-x-4">
+                <header
+                    className="border-b border-gray-200 bg-white sticky top-0 z-10"
+                    data-oid="navu5dg"
+                >
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="gssjdui">
+                        <div className="flex items-center justify-between h-16" data-oid="oo069ho">
+                            <div className="flex items-center space-x-4" data-oid="4km6hw7">
                                 <button
                                     onClick={handleBackToList}
                                     className="text-blue-600 hover:text-blue-800 flex items-center space-x-2"
+                                    data-oid="k6no1f:"
                                 >
-                                    <span>←</span>
-                                    <span>返回项目列表</span>
+                                    <span data-oid="zibkngf">←</span>
+                                    <span data-oid="8dpgfpf">返回项目列表</span>
                                 </button>
-                                <div className="h-6 w-px bg-gray-300"></div>
-                                <div className="flex items-center space-x-3">
-                                    <span className="text-2xl">{selectedProject.icon}</span>
-                                    <h1 className="text-xl font-semibold text-gray-900">
+                                <div className="h-6 w-px bg-gray-300" data-oid="vgi6onx"></div>
+                                <div className="flex items-center space-x-3" data-oid="1rc6l5k">
+                                    <span className="text-2xl" data-oid="nismieg">
+                                        {selectedProject.icon}
+                                    </span>
+                                    <h1
+                                        className="text-xl font-semibold text-gray-900"
+                                        data-oid="f7xpfnv"
+                                    >
                                         {selectedProject.name}
                                     </h1>
                                 </div>
@@ -133,12 +150,20 @@ export default function Page() {
                     </div>
                 </header>
 
-                <div className="max-w-7xl mx-auto flex">
+                <div className="max-w-7xl mx-auto flex" data-oid="7uzne1a">
                     {/* Sidebar */}
-                    <aside className="w-64 bg-gray-50 min-h-screen border-r border-gray-200">
-                        <div className="p-4">
-                            <h2 className="text-sm font-medium text-gray-900 mb-4">版本历史</h2>
-                            <nav className="space-y-1">
+                    <aside
+                        className="w-64 bg-gray-50 min-h-screen border-r border-gray-200"
+                        data-oid="a0:k_x:"
+                    >
+                        <div className="p-4" data-oid="50i23uh">
+                            <h2
+                                className="text-sm font-medium text-gray-900 mb-4"
+                                data-oid="q7xdbe6"
+                            >
+                                版本历史
+                            </h2>
+                            <nav className="space-y-1" data-oid="qcn3mpc">
                                 {selectedProject.versions.map((version) => (
                                     <button
                                         key={version.version}
@@ -148,9 +173,13 @@ export default function Page() {
                                                 ? 'bg-blue-100 text-blue-700 font-medium'
                                                 : 'text-gray-700 hover:bg-gray-100'
                                         }`}
+                                        data-oid="i-4ewmw"
                                     >
                                         {version.version}
-                                        <div className="text-xs text-gray-500 mt-1">
+                                        <div
+                                            className="text-xs text-gray-500 mt-1"
+                                            data-oid=".8d4hot"
+                                        >
                                             {version.updateTime}
                                         </div>
                                     </button>
@@ -160,38 +189,63 @@ export default function Page() {
                     </aside>
 
                     {/* Main content */}
-                    <main className="flex-1 p-8">
+                    <main className="flex-1 p-8" data-oid="jp.b_zv">
                         {selectedVersion && (
-                            <div className="max-w-4xl">
-                                <div className="mb-8">
-                                    <div className="flex items-center space-x-4 mb-4">
-                                        <h2 className="text-2xl font-bold text-gray-900">
+                            <div className="max-w-4xl" data-oid="437vcov">
+                                <div className="mb-8" data-oid="t.ogrp8">
+                                    <div
+                                        className="flex items-center space-x-4 mb-4"
+                                        data-oid="gswu1mj"
+                                    >
+                                        <h2
+                                            className="text-2xl font-bold text-gray-900"
+                                            data-oid="ek.-0s_"
+                                        >
                                             {selectedVersion.version}
                                         </h2>
-                                        <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                                        <span
+                                            className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
+                                            data-oid="7:6o266"
+                                        >
                                             最新版本
                                         </span>
                                     </div>
-                                    <p className="text-gray-600">
+                                    <p className="text-gray-600" data-oid="nqagggq">
                                         发布时间: {selectedVersion.updateTime}
                                     </p>
                                 </div>
 
-                                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                <div
+                                    className="bg-white border border-gray-200 rounded-lg p-6 mb-6"
+                                    data-oid="0jbyev:"
+                                >
+                                    <h3
+                                        className="text-lg font-semibold text-gray-900 mb-4"
+                                        data-oid="oar2a6o"
+                                    >
                                         更新内容
                                     </h3>
-                                    <div className="prose prose-sm max-w-none">
+                                    <div className="prose prose-sm max-w-none" data-oid="17sqnc2">
                                         {selectedVersion.content.split('\n').map((line, index) => (
-                                            <p key={index} className="text-gray-700 mb-2">
+                                            <p
+                                                key={index}
+                                                className="text-gray-700 mb-2"
+                                                data-oid="vt49179"
+                                            >
                                                 {line}
                                             </p>
                                         ))}
                                     </div>
                                 </div>
 
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                                <div
+                                    className="bg-blue-50 border border-blue-200 rounded-lg p-6"
+                                    data-oid="2emz:h7"
+                                >
+                                    <h3
+                                        className="text-lg font-semibold text-blue-900 mb-4"
+                                        data-oid="j7fkh43"
+                                    >
                                         下载
                                     </h3>
                                     <a
@@ -199,9 +253,14 @@ export default function Page() {
                                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        data-oid="-qsqa90"
                                     >
-                                        <span>下载 {selectedVersion.version}</span>
-                                        <span className="ml-2">↗</span>
+                                        <span data-oid="_b6joma">
+                                            下载 {selectedVersion.version}
+                                        </span>
+                                        <span className="ml-2" data-oid="f6zgmbv">
+                                            ↗
+                                        </span>
                                     </a>
                                 </div>
                             </div>
@@ -214,67 +273,106 @@ export default function Page() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50" data-oid="1pdyybj">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="py-6">
-                            <h1 className="text-3xl font-bold text-gray-900">项目更新日志聚合</h1>
-                            <p className="mt-2 text-gray-600">查看所有项目的最新更新和版本历史</p>
+                <header className="bg-white shadow-sm border-b border-gray-200" data-oid="m18.ylh">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="nb4jkv0">
+                        <div className="py-6" data-oid=":ujeh3y">
+                            <h1 className="text-3xl font-bold text-gray-900" data-oid="7eq83ef">
+                                项目更新日志聚合
+                            </h1>
+                            <p className="mt-2 text-gray-600" data-oid="0abqacc">
+                                查看所有项目的最新更新和版本历史
+                            </p>
                         </div>
                     </div>
                 </header>
 
                 {/* Main content */}
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-oid="0j:qslt">
+                    <div
+                        className="bg-white shadow-sm rounded-lg overflow-hidden"
+                        data-oid="..o:on_"
+                    >
+                        <table className="min-w-full divide-y divide-gray-200" data-oid="g6eajj4">
+                            <thead className="bg-gray-50" data-oid="e9vlk8c">
+                                <tr data-oid="ga:_:wx">
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="l8hbw3r"
+                                    >
                                         项目
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="32hk_lj"
+                                    >
                                         最新版本
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="nb-_:g6"
+                                    >
                                         最新更新时间
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="t4zg1bk"
+                                    >
                                         操作
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-200" data-oid="j3zmcr1">
                                 {projects.map((project) => (
                                     <tr
                                         key={project.id}
                                         className="hover:bg-gray-50 transition-colors"
+                                        data-oid="tx58cs9"
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <span className="text-2xl mr-3">
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap"
+                                            data-oid="cy:d7eu"
+                                        >
+                                            <div className="flex items-center" data-oid="9corigy">
+                                                <span className="text-2xl mr-3" data-oid="n153ksl">
                                                     {project.icon}
                                                 </span>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                <div data-oid="84.kn-b">
+                                                    <div
+                                                        className="text-sm font-medium text-gray-900"
+                                                        data-oid="q77ldn."
+                                                    >
                                                         {project.name}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap"
+                                            data-oid="zz3ppr:"
+                                        >
+                                            <span
+                                                className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                                                data-oid="t6_4k01"
+                                            >
                                                 {project.latestVersion}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                            data-oid="2p4ymx7"
+                                        >
                                             {project.latestUpdateTime}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                                            data-oid="rbm:46z"
+                                        >
                                             <button
                                                 onClick={() => handleProjectClick(project)}
                                                 className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                data-oid="cd3d02c"
                                             >
                                                 查看详情
                                             </button>
@@ -286,21 +384,24 @@ export default function Page() {
                     </div>
 
                     {projects.length === 0 && (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500">暂无项目数据</p>
+                        <div className="text-center py-12" data-oid="k_l4zct">
+                            <p className="text-gray-500" data-oid="t.hgp5v">
+                                暂无项目数据
+                            </p>
                         </div>
                     )}
                 </main>
 
                 {/* Mobile Floating Ad */}
-                <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50">
-                    <div className="bg-white rounded-lg shadow-lg">
-                        <div className="flex justify-between items-center p-2">
-                            <div className="flex-1">
+                <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50" data-oid="tfo7-vs">
+                    <div className="bg-white rounded-lg shadow-lg" data-oid="oy3cdos">
+                        <div className="flex justify-between items-center p-2" data-oid="mc1_0p6">
+                            <div className="flex-1" data-oid="qd8rd5g">
                                 <LazyAd
                                     config={adConfigs.mobileFloating}
                                     adType="mobile"
                                     className="min-h-[50px]"
+                                    data-oid="kbex5kk"
                                 />
                             </div>
                             <button
@@ -311,6 +412,7 @@ export default function Page() {
                                     ) as HTMLElement;
                                     if (floatingAd) floatingAd.style.display = 'none';
                                 }}
+                                data-oid="mbfpn6h"
                             >
                                 ✕
                             </button>
