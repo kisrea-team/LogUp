@@ -107,14 +107,11 @@ export default function LazyAd({ config, adType, className = '', fallbackContent
         return (
             <div
                 className={`${className} bg-blue-50 border border-blue-200 rounded-lg p-4 text-center`}
-                data-oid="2i06pw9"
             >
                 {fallbackContent || (
-                    <div data-oid="t2fe2cj">
-                        <p className="text-blue-800 text-sm mb-2" data-oid="9tlwv9:">
-                            支持我们的网站
-                        </p>
-                        <p className="text-blue-600 text-xs" data-oid="9r0l.hv">
+                    <div>
+                        <p className="text-blue-800 text-sm mb-2">支持我们的网站</p>
+                        <p className="text-blue-600 text-xs">
                             请考虑关闭广告屏蔽器以支持我们提供更好的服务
                         </p>
                     </div>
@@ -124,7 +121,7 @@ export default function LazyAd({ config, adType, className = '', fallbackContent
     }
 
     return (
-        <div ref={adRef} className={className} data-oid="q0jw9x:">
+        <div ref={adRef} className={className}>
             {isVisible && (
                 <ins
                     className="adsbygoogle"
@@ -133,18 +130,12 @@ export default function LazyAd({ config, adType, className = '', fallbackContent
                     data-ad-slot={config.slot}
                     data-ad-format={config.format || 'auto'}
                     data-full-width-responsive={config.responsive ? 'true' : 'false'}
-                    data-oid="5x2y7sy"
                 />
             )}
 
             {!isVisible && (
-                <div
-                    className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center animate-pulse"
-                    data-oid="uy.7v35"
-                >
-                    <div className="text-gray-400 text-sm" data-oid="lsuxc_9">
-                        广告加载中...
-                    </div>
+                <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center animate-pulse">
+                    <div className="text-gray-400 text-sm">广告加载中...</div>
                 </div>
             )}
         </div>
