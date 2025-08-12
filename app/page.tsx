@@ -273,138 +273,153 @@ export default function Page() {
 
     return (
         <>
-        <div className="min-h-screen bg-gray-50" data-oid="tt2i4.m">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200" data-oid="3_h10hb">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="ni_63xp">
-                    <div className="py-6" data-oid="rr51vmj">
-                        <h1 className="text-3xl font-bold text-gray-900" data-oid="c0wxhcs">
-                            项目更新日志聚合
-                        </h1>
-                        <p className="mt-2 text-gray-600" data-oid="y0bnh4f">
-                            查看所有项目的最新更新和版本历史
-                        </p>
+            <div className="min-h-screen bg-gray-50" data-oid="tt2i4.m">
+                {/* Header */}
+                <header className="bg-white shadow-sm border-b border-gray-200" data-oid="3_h10hb">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-oid="ni_63xp">
+                        <div className="py-6" data-oid="rr51vmj">
+                            <h1 className="text-3xl font-bold text-gray-900" data-oid="c0wxhcs">
+                                项目更新日志聚合
+                            </h1>
+                            <p className="mt-2 text-gray-600" data-oid="y0bnh4f">
+                                查看所有项目的最新更新和版本历史
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            {/* Main content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-oid="jozlfks">
-                <div className="bg-white shadow-sm rounded-lg overflow-hidden" data-oid="9r4pv1x">
-                    <table className="min-w-full divide-y divide-gray-200" data-oid=":7zz8a-">
-                        <thead className="bg-gray-50" data-oid="rwnw.40">
-                            <tr data-oid="xp.wzph">
-                                <th
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    data-oid="ysbd53l"
-                                >
-                                    项目
-                                </th>
-                                <th
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    data-oid="4y:9__l"
-                                >
-                                    最新版本
-                                </th>
-                                <th
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    data-oid=".o9h0ch"
-                                >
-                                    最新更新时间
-                                </th>
-                                <th
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    data-oid=".icd_bb"
-                                >
-                                    操作
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200" data-oid="3hhash5">
-                            {projects.map((project) => (
-                                <tr
-                                    key={project.id}
-                                    className="hover:bg-gray-50 transition-colors"
-                                    data-oid="jt046p1"
-                                >
-                                    <td className="px-6 py-4 whitespace-nowrap" data-oid="97enoy1">
-                                        <div className="flex items-center" data-oid="5s-.9re">
-                                            <span className="text-2xl mr-3" data-oid="3u:xlt6">
-                                                {project.icon}
-                                            </span>
-                                            <div data-oid="-v:67ov">
-                                                <div
-                                                    className="text-sm font-medium text-gray-900"
-                                                    data-oid="4:2m7mr"
-                                                >
-                                                    {project.name}
+                {/* Main content */}
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-oid="jozlfks">
+                    <div
+                        className="bg-white shadow-sm rounded-lg overflow-hidden"
+                        data-oid="9r4pv1x"
+                    >
+                        <table className="min-w-full divide-y divide-gray-200" data-oid=":7zz8a-">
+                            <thead className="bg-gray-50" data-oid="rwnw.40">
+                                <tr data-oid="xp.wzph">
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="ysbd53l"
+                                    >
+                                        项目
+                                    </th>
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid="4y:9__l"
+                                    >
+                                        最新版本
+                                    </th>
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid=".o9h0ch"
+                                    >
+                                        最新更新时间
+                                    </th>
+                                    <th
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        data-oid=".icd_bb"
+                                    >
+                                        操作
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200" data-oid="3hhash5">
+                                {projects.map((project) => (
+                                    <tr
+                                        key={project.id}
+                                        className="hover:bg-gray-50 transition-colors"
+                                        data-oid="jt046p1"
+                                    >
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap"
+                                            data-oid="97enoy1"
+                                        >
+                                            <div className="flex items-center" data-oid="5s-.9re">
+                                                <span className="text-2xl mr-3" data-oid="3u:xlt6">
+                                                    {project.icon}
+                                                </span>
+                                                <div data-oid="-v:67ov">
+                                                    <div
+                                                        className="text-sm font-medium text-gray-900"
+                                                        data-oid="4:2m7mr"
+                                                    >
+                                                        {project.name}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap" data-oid="_xl4x:7">
-                                        <span
-                                            className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                                            data-oid="fzv:6qv"
+                                        </td>
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap"
+                                            data-oid="_xl4x:7"
                                         >
-                                            {project.latestVersion}
-                                        </span>
-                                    </td>
-                                    <td
-                                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                                        data-oid="ngy_0w."
-                                    >
-                                        {project.latestUpdateTime}
-                                    </td>
-                                    <td
-                                        className="px-6 py-4 whitespace-nowrap text-sm font-medium"
-                                        data-oid="fr71x-p"
-                                    >
-                                        <button
-                                            onClick={() => handleProjectClick(project)}
-                                            className="text-blue-600 hover:text-blue-900 transition-colors"
-                                            data-oid="0hufv:r"
+                                            <span
+                                                className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                                                data-oid="fzv:6qv"
+                                            >
+                                                {project.latestVersion}
+                                            </span>
+                                        </td>
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                            data-oid="ngy_0w."
                                         >
-                                            查看详情
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {projects.length === 0 && (
-                    <div className="text-center py-12" data-oid="xhd7wk.">
-                        <p className="text-gray-500" data-oid="iutubxp">
-                            暂无项目数据
-                        </p>
+                                            {project.latestUpdateTime}
+                                        </td>
+                                        <td
+                                            className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                                            data-oid="fr71x-p"
+                                        >
+                                            <button
+                                                onClick={() => handleProjectClick(project)}
+                                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                data-oid="0hufv:r"
+                                            >
+                                                查看详情
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-            </main{/* Mobile Floating Ad */}
-            <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50">
-                <div className="bg-white rounded-lg shadow-lg">
-                    <div className="flex justify-between items-center p-2">
-                        <div className="flex-1">
-                            <LazyAd 
-                                config={adConfigs.mobileFloating}
-                                adType="mobile"
-                                className="min-h-[50px]"
-                            />
+
+                    {projects.length === 0 && (
+                        <div className="text-center py-12" data-oid="xhd7wk.">
+                            <p className="text-gray-500" data-oid="iutubxp">
+                                暂无项目数据
+                            </p>
                         </div>
-                        <button 
-                            className="text-gray-400 hover:text-gray-600 ml-2 p-1"
-                            onClick={() => {
-                                const floatingAd = document.querySelector('.fixed.bottom-4') as HTMLElement;
-                                if (floatingAd) floatingAd.style.display = 'none';
-                            }}
-                        >
-                            ✕
-                        </button>
+                    )}
+                </main>
+
+                {/* Mobile Floating Ad */}
+                <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50" data-oid="5yk1x6u">
+                    <div className="bg-white rounded-lg shadow-lg" data-oid="j6ynq28">
+                        <div className="flex justify-between items-center p-2" data-oid="soprtio">
+                            <div className="flex-1" data-oid="myynu_.">
+                                <LazyAd
+                                    config={adConfigs.mobileFloating}
+                                    adType="mobile"
+                                    className="min-h-[50px]"
+                                    data-oid="qp993ud"
+                                />
+                            </div>
+                            <button
+                                className="text-gray-400 hover:text-gray-600 ml-2 p-1"
+                                onClick={() => {
+                                    const floatingAd = document.querySelector(
+                                        '.fixed.bottom-4',
+                                    ) as HTMLElement;
+                                    if (floatingAd) floatingAd.style.display = 'none';
+                                }}
+                                data-oid="2yu06.8"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </>
     );
 }
