@@ -30,7 +30,7 @@ export default function AdAnalytics() {
 
     if (loading) {
         return (
-            <div className="text-center p-4" data-oid="uey63a8">
+            <div className="text-center p-4" data-oid="fpfjt7s">
                 加载分析数据中...
             </div>
         );
@@ -38,39 +38,39 @@ export default function AdAnalytics() {
 
     if (!analytics) {
         return (
-            <div className="text-center p-4 text-red-500" data-oid="29zwayp">
+            <div className="text-center p-4 text-red-500" data-oid="8uc31s5">
                 无法加载分析数据
             </div>
         );
     }
 
     return (
-        <div className="bg-white rounded-lg shadow p-6" data-oid="2sif3h2">
-            <h3 className="text-lg font-semibold mb-4" data-oid="pvz33os">
+        <div className="bg-white rounded-lg shadow p-6" data-oid="hlwx3--">
+            <h3 className="text-lg font-semibold mb-4" data-oid="-rx48xc">
                 广告分析数据
             </h3>
-            <div className="grid grid-cols-3 gap-4" data-oid="c6htc55">
-                <div className="text-center" data-oid="4g61qci">
-                    <div className="text-2xl font-bold text-blue-600" data-oid="81830jd">
+            <div className="grid grid-cols-3 gap-4" data-oid="mt92h-5">
+                <div className="text-center" data-oid="kkbaljk">
+                    <div className="text-2xl font-bold text-blue-600" data-oid="4h813pl">
                         {analytics.impressions}
                     </div>
-                    <div className="text-sm text-gray-500" data-oid="eousd19">
+                    <div className="text-sm text-gray-500" data-oid="x1zajxl">
                         展示次数
                     </div>
                 </div>
-                <div className="text-center" data-oid="rxgpcoc">
-                    <div className="text-2xl font-bold text-green-600" data-oid="g3cw5hf">
+                <div className="text-center" data-oid="d-1ae9v">
+                    <div className="text-2xl font-bold text-green-600" data-oid="hyt.hrv">
                         {analytics.clicks}
                     </div>
-                    <div className="text-sm text-gray-500" data-oid="fgl2syv">
+                    <div className="text-sm text-gray-500" data-oid="toa5qmr">
                         点击次数
                     </div>
                 </div>
-                <div className="text-center" data-oid="rr84kcb">
-                    <div className="text-2xl font-bold text-purple-600" data-oid=":q6h3-p">
+                <div className="text-center" data-oid="qjwopoq">
+                    <div className="text-2xl font-bold text-purple-600" data-oid="3iud2wx">
                         {analytics.ctr}%
                     </div>
-                    <div className="text-sm text-gray-500" data-oid="ha_0l:9">
+                    <div className="text-sm text-gray-500" data-oid=":2q0vn6">
                         点击率
                     </div>
                 </div>

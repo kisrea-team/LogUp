@@ -25,7 +25,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Project Updates API"}
+    return {"message": "aaaaProject Updates API"}
 
 @app.get("/projects", response_model=List[Project])
 async def get_projects():
