@@ -142,11 +142,10 @@ export default function Page() {
                                     <button
                                         key={version.version}
                                         onClick={() => setSelectedVersion(version)}
-                                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                            selectedVersion?.version === version.version
+                                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedVersion?.version === version.version
                                                 ? 'bg-blue-100 text-blue-700 font-medium'
                                                 : 'text-gray-700 hover:bg-gray-100'
-                                        }`}
+                                            }`}
                                         data-oid="i-4ewmw"
                                     >
                                         {version.version}
