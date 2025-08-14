@@ -7,10 +7,10 @@ load_dotenv()
 
 class Database:
     def __init__(self):
-        self.host = '127.0.0.1'
+        self.host = '192.3.164.131'
         self.port = 3306
         self.user = 'root'
-        self.password = 'zhangkuo'
+        self.password = 'mysql_Ki48fA'
         self.database = 'project_updates'
         self.connection = None
 
