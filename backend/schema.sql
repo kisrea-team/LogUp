@@ -4,7 +4,7 @@ USE project_updates;
 
 -- Create projects table
 CREATE TABLE IF NOT EXISTS projects (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     icon VARCHAR(10) NOT NULL,
     name VARCHAR(255) NOT NULL,
     latest_version VARCHAR(50) NOT NULL,
@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- Create versions table
 CREATE TABLE IF NOT EXISTS versions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    project_id INT NOT NULL,
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    project_id INT(10) UNSIGNED NOT NULL,
     version VARCHAR(50) NOT NULL,
     update_time DATE NOT NULL,
     content TEXT NOT NULL,
