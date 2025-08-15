@@ -17,7 +17,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    db.connect()
+    if not db.connect():
+        print("Failed to connect to database on startup")
+    else:
+        print("Database connected successfully on startup")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -31,15 +34,21 @@ async def root():
 async def get_projects():
     """获取所有项目列表"""
     try:
+        # Create new database connection for this request
+        local_db = db.__class__()
+        if not local_db.connect():
+            return []
+        
         # Get all projects
         projects_query = """
         SELECT id, icon, name, latest_version, latest_update_time 
         FROM projects 
         ORDER BY latest_update_time DESC
         """
-        projects_data = db.execute_query(projects_query)
+        projects_data = local_db.execute_query(projects_query)
         
         if not projects_data:
+            local_db.disconnect()
             return []
         
         projects = []
@@ -51,7 +60,7 @@ async def get_projects():
             WHERE project_id = %s 
             ORDER BY update_time DESC
             """
-            versions_data = db.execute_query(versions_query, (project_data['id'],))
+            versions_data = local_db.execute_query(versions_query, (project_data['id'],))
             
             versions = [Version(**version) for version in versions_data] if versions_data else []
             
@@ -61,9 +70,11 @@ async def get_projects():
             )
             projects.append(project)
         
+        local_db.disconnect()
         return projects
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching projects: {str(e)}")
+        print(f"Error in get_projects: {e}")
+        return []
 
 @app.get("/projects/{project_id}", response_model=Project)
 async def get_project(project_id: int):
