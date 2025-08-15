@@ -24,7 +24,9 @@ import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 
-# Load environment variables
+# Load environment variables from backend directory
+backend_dir = os.path.dirname(__file__)
+os.chdir(backend_dir)
 load_dotenv()
 
 def parse_version_from_title(title):
