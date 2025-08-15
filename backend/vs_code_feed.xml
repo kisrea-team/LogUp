@@ -1,0 +1,861 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="text" xml:lang="en">Visual Studio Code - Code Editing. Redefined.</title>
+  <link type="application/atom+xml" href="https://code.visualstudio.com/feed.xml" rel="self"/>
+  <link type="text/html" href="https://code.visualstudio.com/" rel="alternate"/>
+  <updated>2025-08-07T17:00:00.000Z</updated>
+  <id>https://code.visualstudio.com/</id>
+  <rights>Copyright (c) 2021, Microsoft, Inc.; all rights reserved.</rights>
+
+  
+  <entry>
+    <title>July 2025 (version 1.103)</title>
+    <link href="https://code.visualstudio.com/updates/v1_103"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_103/release-highlights.png"/>
+    <updated>2025-08-07T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_103</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code July 2025 Release (1.103)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_103"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Command GitHub's Coding Agent from VS Code</title>
+    <link href="https://code.visualstudio.com/blogs/2025/07/17/copilot-coding-agent"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/07/17/copilot-wip.png"/>
+    <updated>2025-07-17T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/07/17/copilot-coding-agent</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;VS Code's integration with GitHub Copilot Coding Agent allows you to delegate tasks to the agent and let it handle them in the background.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/07/17/copilot-coding-agent"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Burke Holland</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>June 2025 (version 1.102)</title>
+    <link href="https://code.visualstudio.com/updates/v1_102"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_102/release-highlights.png"/>
+    <updated>2025-07-09T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_102</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code June 2025 Release (1.102)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_102"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Open Source AI Editor: First Milestone</title>
+    <link href="https://code.visualstudio.com/blogs/2025/06/30/openSourceAIEditorFirstMilestone"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/06/30/open_source_ai_editor.png"/>
+    <updated>2025-06-30T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/06/30/openSourceAIEditorFirstMilestone</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;We are open sourcing the GitHub Copilot Chat extension. It’s the first milestone in making VS Code an open source AI editor.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/06/30/openSourceAIEditorFirstMilestone"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>The VS Code team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>May 2025 (version 1.101)</title>
+    <link href="https://code.visualstudio.com/updates/v1_101"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_101/release-highlights.png"/>
+    <updated>2025-06-12T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_101</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code May 2025 Release (1.101)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_101"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>The Complete MCP Experience: Full Specification Support in VS Code</title>
+    <link href="https://code.visualstudio.com/blogs/2025/06/12/full-mcp-spec-support"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/06/12/mcp-resources-context.png"/>
+    <updated>2025-06-12T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/06/12/full-mcp-spec-support</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;VS Code now supports the complete Model Context Protocol specification, including authorization, prompts, resources, and sampling.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/06/12/full-mcp-spec-support"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Harald Kirschner</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Enhance productivity with AI + Remote Dev</title>
+    <link href="https://code.visualstudio.com/blogs/2025/05/27/ai-and-remote"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/05/27/ai-remote-development-social.png"/>
+    <updated>2025-05-27T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/05/27/ai-and-remote</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Enhance your developer productivity with AI and Remote Development.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/05/27/ai-and-remote"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Brigit Murtaugh, Christof Marti, Josh Spicer, Olivia Guzzardo McVicker</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>VS Code: Open Source AI Editor</title>
+    <link href="https://code.visualstudio.com/blogs/2025/05/19/openSourceAIEditor"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/05/19/open_source_ai_editor.png"/>
+    <updated>2025-05-19T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/05/19/openSourceAIEditor</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;We will open source the GitHub Copilot Chat extension. It’s the next step towards making VS Code an open source AI editor.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/05/19/openSourceAIEditor"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>The VS Code team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Beyond the tools, adding MCP in VS Code</title>
+    <link href="https://code.visualstudio.com/blogs/2025/05/12/agent-mode-meets-mcp"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/05/12/agent-mcp-tools.png"/>
+    <updated>2025-05-14T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/05/12/agent-mode-meets-mcp</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Bring your own tools to VS Code's agent mode with MCP.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/05/12/agent-mode-meets-mcp"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Harald Kirschner</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>April 2025 (version 1.100)</title>
+    <link href="https://code.visualstudio.com/updates/v1_100"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_100/release-highlights.png"/>
+    <updated>2025-05-08T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_100</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code April 2025 Release (1.100)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_100"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Agent mode: available to all users and supports MCP</title>
+    <link href="https://code.visualstudio.com/blogs/2025/04/07/agentMode"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/04/07/agent_full.png"/>
+    <updated>2025-04-07T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/04/07/agentMode</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Agent mode is now available to all users and supports MCP.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/04/07/agentMode"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Isidor Nikolic</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>March 2025 (version 1.99)</title>
+    <link href="https://code.visualstudio.com/updates/v1_99"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_99/release-highlights.png"/>
+    <updated>2025-04-03T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_99</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code March 2025 Release (1.99)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_99"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Context is all you need: Better AI results with custom instructions</title>
+    <link href="https://code.visualstudio.com/blogs/2025/03/26/custom-instructions"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/03/26/tail-recursion.jpg"/>
+    <updated>2025-03-26T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/03/26/custom-instructions</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Announcing the general availability of custom instructions for VS Code.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/03/26/custom-instructions"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Rob Conery, Harald Kirschner</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>February 2025 (version 1.98)</title>
+    <link href="https://code.visualstudio.com/updates/v1_98"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_98/release-highlights.png"/>
+    <updated>2025-03-05T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_98</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code February 2025 Release (1.98)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_98"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Introducing GitHub Copilot agent mode (preview)</title>
+    <link href="https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/02/24/agent-mode.png"/>
+    <updated>2025-02-24T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Announcing the GitHub Copilot agent mode in Visual Studio Code.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Isidor Nikolic</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Copilot Next Edit Suggestions (preview)</title>
+    <link href="https://code.visualstudio.com/blogs/2025/02/12/next-edit-suggestions"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2025/02/12/nes-gutter-cover.png"/>
+    <updated>2025-02-12T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2025/02/12/next-edit-suggestions</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Announcing the Next Edit Suggestions and Agent Mode for GitHub Copilot in Visual Studio Code.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2025/02/12/next-edit-suggestions"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Brigit Murtaugh, Burke Holland</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>January 2025 (version 1.97)</title>
+    <link href="https://code.visualstudio.com/updates/v1_97"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_97/release-highlights.png"/>
+    <updated>2025-02-06T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_97</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code January 2025 Release (1.97)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_97"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Announcing a free GitHub Copilot for VS Code</title>
+    <link href="https://code.visualstudio.com/blogs/2024/12/18/free-github-copilot"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/12/18/copilot-free.jpg"/>
+    <updated>2024-12-18T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/12/18/free-github-copilot</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Announcing a free plan for GitHub Copilot in Visual Studio Code.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/12/18/free-github-copilot"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Burke Holland</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>November 2024 (version 1.96)</title>
+    <link href="https://code.visualstudio.com/updates/v1_96"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_96/release-highlights.png"/>
+    <updated>2024-12-11T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_96</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code November 2024 Release (1.96)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_96"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Introducing GitHub Copilot for Azure (preview)</title>
+    <link href="https://code.visualstudio.com/blogs/2024/11/15/introducing-github-copilot-for-azure"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/11/15/quickstart-create.png"/>
+    <updated>2024-11-15T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/11/15/introducing-github-copilot-for-azure</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Introducing GitHub Copilot for Azure, a chat participant to ask about Azure and help you manage and troubleshoot your Azure resources.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/11/15/introducing-github-copilot-for-azure"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Chris Harris</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Introducing Copilot Edits (preview)</title>
+    <link href="https://code.visualstudio.com/blogs/2024/11/12/introducing-copilot-edits"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/11/12/copilot-edits.png"/>
+    <updated>2024-11-12T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/11/12/introducing-copilot-edits</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Copilot Edits allows you to get to the changes you need in your workspace, across multiple files, using a UI designed for fast iteration. You can specify a set of files to be edited, and then use natural language to simply ask Copilot what you need. You stay in the flow of your code while reviewing the suggested changes, accepting what works, and iterating with follow-up asks.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/11/12/introducing-copilot-edits"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Isidor Nikolic</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>October 2024 (version 1.95)</title>
+    <link href="https://code.visualstudio.com/updates/v1_95"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_95/release-highlights.png"/>
+    <updated>2024-10-29T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_95</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code October 2024 Release (1.95)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_95"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>September 2024 (version 1.94)</title>
+    <link href="https://code.visualstudio.com/updates/v1_94"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_94/release-highlights.png"/>
+    <updated>2024-10-03T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_94</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code September 2024 Release (1.94)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_94"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>August 2024 (version 1.93)</title>
+    <link href="https://code.visualstudio.com/updates/v1_93"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_93/release-highlights.png"/>
+    <updated>2024-09-05T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_93</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code August 2024 Release (1.93)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_93"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>July 2024 (version 1.92)</title>
+    <link href="https://code.visualstudio.com/updates/v1_92"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_92/release-highlights.png"/>
+    <updated>2024-08-01T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_92</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code July 2024 Release (1.92)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_92"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>June 2024 (version 1.91)</title>
+    <link href="https://code.visualstudio.com/updates/v1_91"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_91/release-highlights.png"/>
+    <updated>2024-07-03T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_91</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code June 2024 Release (1.91)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_91"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>GitHub Copilot Extensions are all you need</title>
+    <link href="https://code.visualstudio.com/blogs/2024/06/24/extensions-are-all-you-need"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/06/24/chat-extension-sample.png"/>
+    <updated>2024-06-24T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/06/24/extensions-are-all-you-need</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Learn how to extend GitHub Copilot by using the Chat and Language Model APIs in your Visual Studio Code extension. Get inspired by early adopters and their extensions.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/06/24/extensions-are-all-you-need"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Isidor Nikolic</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Using WebAssembly for Extension Development - Part Two</title>
+    <link href="https://code.visualstudio.com/blogs/2024/06/07/wasm-part2"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/06/07/goto-definition.png"/>
+    <updated>2024-06-07T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/06/07/wasm-part2</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Use WebAssembly in VS Code extensions to run in a separate worker, or write a language server with a language that compiles to WebAssembly.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/06/07/wasm-part2"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Dirk Bäumer</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>May 2024 (version 1.90)</title>
+    <link href="https://code.visualstudio.com/updates/v1_90"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_90/release-highlights.png"/>
+    <updated>2024-06-05T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_90</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code May 2024 Release (1.90)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_90"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Using WebAssembly for Extension Development</title>
+    <link href="https://code.visualstudio.com/blogs/2024/05/08/wasm"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/05/08/resource-memory.png"/>
+    <updated>2024-05-08T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/05/08/wasm</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Using WebAssembly for Extension Development.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/05/08/wasm"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Dirk Bäumer</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>April 2024 (version 1.89)</title>
+    <link href="https://code.visualstudio.com/updates/v1_89"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_89/release-highlights.png"/>
+    <updated>2024-05-02T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_89</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code April 2024 Release (1.89)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_89"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Your Ultimate Guide to VS Code Day 2024</title>
+    <link href="https://code.visualstudio.com/blogs/2024/04/15/vscode-day"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/blogs/2024/04/15/vscodeday-promo.png"/>
+    <updated>2024-04-15T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2024/04/15/vscode-day</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Learn about the latest Visual Studio Code features and extensions during VS Code Day 2024 on April 24, 2024&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2024/04/15/vscode-day"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Reynald Adolphe</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>March 2024 (version 1.88)</title>
+    <link href="https://code.visualstudio.com/updates/v1_88"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_88/release-highlights.png"/>
+    <updated>2024-04-04T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_88</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code March 2024 Release (1.88)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_88"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>February 2024 (version 1.87)</title>
+    <link href="https://code.visualstudio.com/updates/v1_87"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_87/release-highlights.png"/>
+    <updated>2024-02-28T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_87</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code February 2024 Release (1.87)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_87"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>January 2024 (version 1.86)</title>
+    <link href="https://code.visualstudio.com/updates/v1_86"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_86/release-highlights.png"/>
+    <updated>2024-02-01T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_86</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code January 2024 Release (1.86)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_86"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>November 2023 (version 1.85)</title>
+    <link href="https://code.visualstudio.com/updates/v1_85"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_85/release-highlights.png"/>
+    <updated>2023-12-07T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_85</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code November 2023 Release (1.85)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_85"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Pursuit of wicked smartness in VS Code</title>
+    <link href="https://code.visualstudio.com/blogs/2023/11/13/vscode-copilot-smarter"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2023-11-13T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2023/11/13/vscode-copilot-smarter</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Smart artificial intelligence features in Visual Studio Code with GitHub Copilot&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2023/11/13/vscode-copilot-smarter"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Chris Dias</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>October 2023 (version 1.84)</title>
+    <link href="https://code.visualstudio.com/updates/v1_84"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_84/release-highlights.png"/>
+    <updated>2023-11-01T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_84</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code October 2023 Release (1.84)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_84"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>September 2023 (version 1.83)</title>
+    <link href="https://code.visualstudio.com/updates/v1_83"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_83/release-highlights.png"/>
+    <updated>2023-10-04T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_83</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code September 2023 Release (1.83)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_83"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>August 2023 (version 1.82)</title>
+    <link href="https://code.visualstudio.com/updates/v1_82"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_82/release-highlights.png"/>
+    <updated>2023-09-07T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_82</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code August 2023 Release (1.82)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_82"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>July 2023 (version 1.81)</title>
+    <link href="https://code.visualstudio.com/updates/v1_81"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_81/release-highlights.png"/>
+    <updated>2023-08-03T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_81</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code July 2023 Release (1.81)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_81"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Shrinking VS Code with name mangling</title>
+    <link href="https://code.visualstudio.com/blogs/2023/07/20/mangling-vscode"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2023-07-20T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2023/07/20/mangling-vscode</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;A look at how we cut 20% off the size of VS Code's JavaScript with name mangling.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2023/07/20/mangling-vscode"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Matt Bierner</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>June 2023 (version 1.80)</title>
+    <link href="https://code.visualstudio.com/updates/v1_80"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_80/release-highlights.png"/>
+    <updated>2023-07-06T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_80</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code June 2023 Release (1.80)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_80"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>May 2023 (version 1.79)</title>
+    <link href="https://code.visualstudio.com/updates/v1_79"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_79/release-highlights.png"/>
+    <updated>2023-06-08T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_79</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code May 2023 Release (1.79)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_79"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Run WebAssemblies in VS Code for the Web</title>
+    <link href="https://code.visualstudio.com/blogs/2023/06/05/vscode-wasm-wasi"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2023-06-05T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2023/06/05/vscode-wasm-wasi</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Running WebAssemblies in VS Code for the Web.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2023/06/05/vscode-wasm-wasi"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Dirk Bäumer</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>April 2023 (version 1.78)</title>
+    <link href="https://code.visualstudio.com/updates/v1_78"/>
+    <link rel="related" href="https://code.visualstudio.com/assets/updates/1_78/release-highlights.png"/>
+    <updated>2023-05-03T17:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/updates/v1_78</id>
+    <category term="release" />
+    <content type="html">
+      &lt;p&gt;Learn what is new in the Visual Studio Code April 2023 Release (1.78)&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/updates/v1_78"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Visual Studio Code Team</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>VS Code Day: An event for an editor?</title>
+    <link href="https://code.visualstudio.com/blogs/2023/04/13/vscode-day"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2023-04-13T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2023/04/13/vscode-day</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Learn about the latest Visual Studio Code features and extensions during VS Code Day 2023 on April 26, 2023&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2023/04/13/vscode-day"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Burke Holland</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Visual Studio Code and GitHub Copilot</title>
+    <link href="https://code.visualstudio.com/blogs/2023/03/30/vscode-copilot"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2023-03-30T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2023/03/30/vscode-copilot</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Learn about the Visual Studio Code team's experience and future with GitHub Copilot artificial intelligence&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2023/03/30/vscode-copilot"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Chris Dias</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Remote Development Even Better</title>
+    <link href="https://code.visualstudio.com/blogs/2022/12/07/remote-even-better"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2022-12-07T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2022/12/07/remote-even-better</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Announcing the release of the unified Visual Studio Code command-line interface and the latest improvements to remote development.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2022/12/07/remote-even-better"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Brigit Murtaugh</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+  <entry>
+    <title>Migrating VS Code to Process Sandboxing</title>
+    <link href="https://code.visualstudio.com/blogs/2022/11/28/vscode-sandbox"/>
+    <link rel="related" href="https://code.visualstudio.com/opengraphimg/opengraph-blog.png"/>
+    <updated>2022-11-28T00:00:00.000Z</updated>
+    <id>https://code.visualstudio.com/blogs/2022/11/28/vscode-sandbox</id>
+    <category term="blog" />
+    <content type="html">
+      &lt;p&gt;Migrating Visual Studio Code to Electron process sandboxing&lt;/p&gt;
+      &lt;p&gt;&lt;a href="https://code.visualstudio.com/blogs/2022/11/28/vscode-sandbox"&gt;Read the full article&lt;/a&gt;&lt;/p&gt;
+    </content>
+    <author>
+        <name>Benjamin Pasero</name>
+        <uri>https://code.visualstudio.com/images/code-stable.png</uri>
+    </author>
+  </entry>
+  
+</feed>

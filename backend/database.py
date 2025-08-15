@@ -33,22 +33,39 @@ class Database:
             return None
 
     def disconnect(self):
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
+        try:
+            if self.connection and self.connection.is_connected():
+                # Consume any unread results before closing
+                while self.connection.unread_result:
+                    self.connection.get_rows()
+                self.connection.close()
+        except Error as e:
+            print(f"Error disconnecting from database: {e}")
+        finally:
+            self.connection = None
 
     def execute_query(self, query, params=None):
+        cursor = None
         try:
-            cursor = self.connection.cursor(dictionary=True)
+            cursor = self.connection.cursor(dictionary=True, buffered=True)
             cursor.execute(query, params)
             if query.strip().upper().startswith('SELECT'):
                 result = cursor.fetchall()
+                # Ensure we consume all results
+                while cursor.nextset():
+                    pass
             else:
                 self.connection.commit()
                 result = cursor.lastrowid
-            cursor.close()
             return result
         except Error as e:
             print(f"Error executing query: {e}")
             return None
+        finally:
+            if cursor:
+                try:
+                    cursor.close()
+                except:
+                    pass
 
 db = Database()
