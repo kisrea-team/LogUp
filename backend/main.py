@@ -39,7 +39,7 @@ async def get_projects():
         if not local_db.connect():
             return []
         
-        # Get all projects
+        # Get all projects (include unpublished for now)
         projects_query = """
         SELECT id, icon, name, latest_version, latest_update_time 
         FROM projects 
@@ -53,7 +53,7 @@ async def get_projects():
         
         projects = []
         for project_data in projects_data:
-            # Get versions for each project
+            # Get versions for each project (include unpublished for now)
             versions_query = """
             SELECT id, project_id, version, update_time, content, download_url 
             FROM versions 
@@ -80,7 +80,7 @@ async def get_projects():
 async def get_project(project_id: int):
     """获取单个项目详情"""
     try:
-        # Get project
+        # Get project (include unpublished for now)
         project_query = """
         SELECT id, icon, name, latest_version, latest_update_time 
         FROM projects 
@@ -91,7 +91,7 @@ async def get_project(project_id: int):
         if not project_data:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        # Get versions
+        # Get versions (include unpublished for now)
         versions_query = """
         SELECT id, project_id, version, update_time, content, download_url 
         FROM versions 
