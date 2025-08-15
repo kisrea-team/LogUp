@@ -22,6 +22,10 @@ class Database:
                 user=self.user,
                 password=self.password,
                 database=self.database,
+                charset='utf8mb4',
+                collation='utf8mb4_unicode_ci',
+                use_unicode=True,
+                ssl_disabled=True  # Disable SSL to avoid connection issues
             )
             return self.connection
         except Error as e:
