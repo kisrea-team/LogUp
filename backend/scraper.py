@@ -120,42 +120,38 @@ async def fetch_article_content(url, session):
 
 def translate_to_chinese_sync(text):
     """Translate text to Chinese using Tencent Translate API (synchronous version)"""
+    if not text or not isinstance(text, str) or not any(c.isalpha() for c in text):
+        return text
+
     try:
         secret_id = os.getenv('TENCENT_SECRET_ID')
         secret_key = os.getenv('TENCENT_SECRET_KEY')
         region = os.getenv('TENCENT_REGION', 'ap-beijing')
+        
         if not secret_id or not secret_key:
-            print("Warning: Tencent translation credentials not found")
-            return text
+            raise ValueError("Tencent translation credentials not found")
+
         cred = credential.Credential(secret_id, secret_key)
-        http_profile = HttpProfile()
-        http_profile.endpoint = "tmt.tencentcloudapi.com"
-        client_profile = ClientProfile()
-        client_profile.httpProfile = http_profile
+        http_profile = HttpProfile(endpoint="tmt.tencentcloudapi.com")
+        client_profile = ClientProfile(httpProfile=http_profile)
         client = tmt_client.TmtClient(cred, region, client_profile)
+        
         req = models.TextTranslateRequest()
         req.SourceText = text
-        req.Source = "en"  # Explicitly set source language to English
+        req.Source = "en"
         req.Target = "zh"
         req.ProjectId = 0
+        
         resp = client.TextTranslate(req)
-        # Ensure the response text is properly encoded
-        target_text = resp.TargetText
-        if isinstance(target_text, bytes):
-            target_text = target_text.decode('utf-8')
-        # Try to fix encoding issues
-        try:
-            # If the text looks like it has encoding issues, try to fix it
-            if '' in target_text:
-                # Try to encode and decode with different encodings
-                target_text_bytes = target_text.encode('latin1', errors='ignore')
-                target_text = target_text_bytes.decode('utf-8', errors='ignore')
-        except:
-            pass
-        return target_text
+        
+        if resp.TargetText and any('\u4e00' <= char <= '\u9fff' for char in resp.TargetText):
+            return resp.TargetText
+        else:
+            raise ValueError(f"Translation result did not contain Chinese characters. API response: {resp.TargetText}")
+
     except Exception as e:
-        print(f"Translation error: {e}")
-        return text
+        print(f"Translation error occurred: {e}")
+        raise
 
 async def translate_to_chinese(text):
     """Translate text to Chinese using Tencent Translate API (asynchronous version)"""
@@ -187,9 +183,14 @@ async def process_entry(entry, project_id, existing_versions, session):
                 detailed_md = clean_html_content(detailed_content)
                 content = f"{content}\n\n## 详细内容\n\n{detailed_md}"
         
-        # Translate content to Chinese
-        print(f"    Translating content for version {version}...")
-        translated_content = await translate_to_chinese(content)
+        try:
+            # Translate content to Chinese
+            print(f"    Translating content for version {version}...")
+            translated_content = await translate_to_chinese(content)
+            print(f"    Translation successful for version {version}.")
+        except Exception as e:
+            print(f"    Skipping entry '{entry.title}' due to translation failure: {e}")
+            return None # Skip this entry if translation fails
         
         download_url = f"https://code.visualstudio.com/updates/{version.replace('v', '')}"
         
