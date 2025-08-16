@@ -6,9 +6,24 @@
 2. **GitHub 账户** - 确保项目代码已推送到 GitHub
 3. **数据库准备** - 准备好 MySQL 数据库（可以是本地、云服务器或云数据库服务）
 
+## 项目结构说明
+
+项目现在采用以下结构以支持 Vercel 部署：
+
+```
+project-root/
+├── api/
+│   ├── app.py           # FastAPI 应用（主应用）
+│   └── hello.py         # 基础 Python API 函数
+├── app/                 # Next.js 前端应用
+├── backend/             # 原始后端代码
+├── vercel.json          # Vercel 配置文件
+└── requirements.txt     # Python 依赖
+```
+
 ## 部署步骤
 
-### 第一步：部署后端 API
+### 第一步：部署到 Vercel
 
 1. **登录 Vercel 控制台**
    - 访问 https://vercel.com/login
@@ -17,16 +32,15 @@
 2. **创建新项目**
    - 点击 "Add New..." → "Project"
    - 点击 "Import" 选择你的 GitHub 仓库
-   - 选择包含后端代码的仓库
 
 3. **配置项目设置**
-   - **BUILD COMMAND**: 留空（Vercel 会自动检测）
-   - **OUTPUT DIRECTORY**: 留空
-   - **INSTALL COMMAND**: 留空
+   - **BUILD COMMAND**: Vercel 会自动检测
+   - **OUTPUT DIRECTORY**: Vercel 会自动检测
+   - **INSTALL COMMAND**: Vercel 会自动检测
    - **FRAMEWORK PRESET**: 选择 "Other"
 
 4. **配置环境变量**
-   在 "Environment Variables" 部分添加以下变量：
+   在 "Environment Variables" 部分添加数据库配置：
    ```
    DB_HOST=your-database-host
    DB_PORT=3306
@@ -35,19 +49,64 @@
    DB_NAME=project_updates
    ```
    
-   **注意**: 这些环境变量将在部署时注入到应用中，无需在代码中硬编码敏感信息。
+   以及前端 API URL：
+   ```
+   NEXT_PUBLIC_API_BASE_URL=https://your-project.vercel.app
+   ```
 
 5. **部署**
    - 点击 "Deploy" 开始部署
-   - 等待部署完成，记下分配的 URL（这将是你的 API_BASE_URL）
+   - Vercel 会自动部署前端和后端
 
-### 第二步：部署前端应用
+### API 端点访问
 
-1. **创建新项目**（如果前端在不同仓库）
-   - 如果前端和后端在同一仓库，可以跳过这步
-   - 如果在不同仓库，重复上述步骤导入前端仓库
+部署完成后，可以通过以下 URL 访问 API：
 
-**注意**: 后端应用通过 `start.py` 启动，该文件配置了 FastAPI 应用并使用 uvicorn 服务器运行。
+- 主应用: `https://your-project.vercel.app/api/app`
+- 健康检查: `https://your-project.vercel.app/api/app/health`
+- 简单函数: `https://your-project.vercel.app/api/hello`
+
+### 第二步：完整后端功能（可选）
+
+当前部署在 Vercel 上的 API 是一个简化版本。如果需要完整的后端功能（项目和版本管理），建议：
+
+#### 选项 1：Railway（推荐）
+1. 访问 [railway.app](https://railway.app) 并注册账户
+2. 创建新项目并连接 GitHub 仓库
+3. Railway 会自动检测这是 Python 项目
+4. 配置环境变量：
+   ```
+   DB_HOST=your-database-host
+   DB_PORT=3306
+   DB_USER=your-database-username
+   DB_PASSWORD=your-database-password
+   DB_NAME=project_updates
+   ```
+5. 部署应用，Railway 会自动分配 URL
+
+#### 选项 2：Render
+1. 访问 [render.com](https://render.com) 并注册账户
+2. 创建新的 Web Service
+3. 连接 GitHub 仓库
+4. 设置构建命令：
+   ```
+   pip install -r backend/requirements.txt
+   ```
+5. 设置启动命令：
+   ```
+   python backend/start.py
+   ```
+6. 添加环境变量
+7. 部署应用
+
+#### 选项 3：Heroku
+1. 访问 [heroku.com](https://heroku.com) 并注册账户
+2. 安装 Heroku CLI
+3. 在项目根目录创建 `Procfile`：
+   ```
+   web: python backend/start.py
+   ```
+4. 使用 Heroku CLI 部署应用
 
 2. **配置环境变量**
    在 "Environment Variables" 部分添加：

@@ -2,18 +2,29 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/start.py",
+      "src": "api/app.py",
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.9",
         "maxLambdaSize": "15mb"
       }
+    },
+    {
+      "src": "api/hello.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9"
+      }
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "backend/start.py"
+      "src": "/api/app",
+      "dest": "api/app.py"
+    },
+    {
+      "src": "/api/hello",
+      "dest": "api/hello.py"
     }
   ]
 }
