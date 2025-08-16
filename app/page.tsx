@@ -41,7 +41,7 @@ export default function Page() {
         try {
             setLoading(true);
             setErrorMessage(null);
-            const response = await apiFetch(`${API_BASE_URL}/projects`);
+            const response = await apiFetch(`/projects`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

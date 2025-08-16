@@ -48,7 +48,7 @@ export default function ProjectAdminPage() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-            const response = await apiFetch(`${API_BASE_URL}/projects`);
+            const response = await apiFetch(`/projects`);
             if (response.ok) {
                 const data = await response.json();
                 setProjects(data);
