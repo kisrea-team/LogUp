@@ -131,45 +131,45 @@ export default function AdAdminPage() {
                                 className="min-w-full divide-y divide-gray-200"
                                 data-oid="mrq50nh"
                             >
-                                <thead className="bg-gray-50" data-oid="lz.xlp-">
+                                div>ead className="bg-gray-50" data-oid="lz.xlp-">
                                     <tr data-oid="n55me99">
-                                        <th
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="nsgq2m1"
                                         >
                                             广告位ID
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="0vxflcd"
                                         >
                                             类型
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="wikpz2i"
                                         >
                                             展示次数
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="qtktjsz"
                                         >
                                             点击次数
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="5di..7g"
                                         >
                                             点击率
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="_77ed89"
                                         >
                                             收入
-                                        </th>
-                                    </tr>
+                                        </div>
+                                    </div>
                                 </thead>
                                 <tbody
                                     className="bg-white divide-y divide-gray-200"
@@ -233,7 +233,7 @@ export default function AdAdminPage() {
                                             >
                                                 ¥{ad.revenue.toFixed(2)}
                                             </td>
-                                        </tr>
+                                        </div>
                                     ))}
                                 </tbody>
                             </table>

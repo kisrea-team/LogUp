@@ -260,39 +260,39 @@ export default function ProjectAdminPage() {
                                 className="min-w-full divide-y divide-gray-200"
                                 data-oid="9iqb4ts"
                             >
-                                <thead className="bg-gray-50" data-oid="xg_n28t">
+                                div>ead className="bg-gray-50" data-oid="xg_n28t">
                                     <tr data-oid="q1jtq7c">
-                                        <th
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="-8di4lc"
                                         >
                                             项目
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="stcvuc8"
                                         >
                                             最新版本
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="n07:j_m"
                                         >
                                             更新时间
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="_g_032b"
                                         >
                                             版本数量
-                                        </th>
-                                        <th
+                                        </div>
+                                        div>
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             data-oid="6bj_108"
                                         >
                                             操作
-                                        </th>
-                                    </tr>
+                                        </div>
+                                    </div>
                                 </thead>
                                 <tbody
                                     className="bg-white divide-y divide-gray-200"
@@ -373,7 +373,7 @@ export default function ProjectAdminPage() {
                                                     删除
                                                 </button>
                                             </td>
-                                        </tr>
+                                        </div>
                                     ))}
                                 </tbody>
                             </table>
