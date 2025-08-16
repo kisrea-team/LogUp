@@ -154,21 +154,8 @@ You can use any MySQL database service:
 
 For detailed deployment instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)
 
-### Vercel Deployment
+### Backend Deployment
 
-This project is now configured for deployment on Vercel with both frontend and backend:
+The backend runs via `backend/start.py` which configures the FastAPI application and starts it with uvicorn server. It can be deployed separately on Vercel with the provided `backend/vercel.json` configuration.
 
-- **Frontend**: Next.js application in the `app/` directory
-- **Backend**: Python FastAPI application in the `api/` directory
-
-The project uses a hybrid deployment approach:
-1. Simple API endpoints are deployed directly on Vercel
-2. For full backend functionality, deploy the `backend/` directory to a Python-friendly platform
-
-### API Endpoints
-
-After Vercel deployment, the following endpoints will be available:
-
-- Main API: `https://your-project.vercel.app/api/app`
-- Health check: `https://your-project.vercel.app/api/app/health`
-- Simple function: `https://your-project.vercel.app/api/hello`
+**Note**: The backend application is started through `backend/start.py` rather than `backend/main.py`. All backend-specific Vercel configuration is located in the `backend` directory.
