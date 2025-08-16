@@ -44,7 +44,7 @@ export interface ApiError extends Error {
     code?: string;
 }
 
-// 广告相关类型
+// 广告相关类型（保留给admin使用）
 export interface AdConfig {
     id: string;
     size: string;

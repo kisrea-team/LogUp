@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import LazyAd from '@/components/LazyAd';
-import { adConfigs } from '@/lib/adConfigs';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -300,45 +298,11 @@ export default function Page() {
                     </div>
                 )}
 
-                {/* Top Banner Ad */}
-                <div className="bg-gray-100 border-b border-gray-200" data-oid="jj15ra3">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4" data-oid="xrzvc9k">
-                        <LazyAd
-                            config={adConfigs.topBanner}
-                            adType="banner"
-                            className="min-h-[90px]"
-                            fallbackContent={
-                                <div data-oid="6..533r">
-                                    <p className="text-blue-800 text-sm mb-2" data-oid="ucx46um">
-                                        支持我们
-                                    </p>
-                                    <p className="text-blue-600 text-xs" data-oid="q42osxw">
-                                        关闭广告屏蔽器以获得更好体验
-                                    </p>
-                                </div>
-                            }
-                            data-oid="0bmhfm."
-                        />
-                    </div>
-                </div>
-
                 {/* Main content */}
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-oid="3r3rf6a">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8" data-oid="y8-voxx">
-                        {/* Left Sidebar Ad */}
-                        <div className="hidden lg:block" data-oid="qonm8z:">
-                            <div className="sticky top-8" data-oid="novr_s8">
-                                <LazyAd
-                                    config={adConfigs.sidebarSkyscraper}
-                                    adType="sidebar"
-                                    className="mb-6 min-h-[600px]"
-                                    data-oid="lz2:197"
-                                />
-                            </div>
-                        </div>
-
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" data-oid="y8-voxx">
                         {/* Main Content */}
-                        <div className="lg:col-span-2" data-oid="9ns1qfl">
+                        <div className="lg:col-span-3" data-oid="9ns1qfl">
                             <div
                                 className="bg-white shadow-sm rounded-lg overflow-hidden"
                                 data-oid="_s7vjmo"
@@ -451,74 +415,9 @@ export default function Page() {
                                     </p>
                                 </div>
                             )}
-
-                            {/* Middle Content Ad */}
-                            {projects.length > 0 && (
-                                <div className="mt-8" data-oid="3vlc_-d">
-                                    <LazyAd
-                                        config={adConfigs.contentAd}
-                                        adType="content"
-                                        className="min-h-[250px]"
-                                        data-oid="hyut_10"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Right Sidebar Ad */}
-                        <div className="hidden lg:block" data-oid="wo22t5x">
-                            <div className="sticky top-8 space-y-6" data-oid=".rp.kba">
-                                <LazyAd
-                                    config={adConfigs.sidebarSquare}
-                                    adType="sidebar"
-                                    className="min-h-[250px]"
-                                    data-oid="-hs35tm"
-                                />
-
-                                <LazyAd
-                                    config={{
-                                        id: 'sidebar-large-ad',
-                                        size: '300x600',
-                                        slot: '1234567897',
-                                        format: 'vertical',
-                                        responsive: false,
-                                    }}
-                                    adType="sidebar"
-                                    className="min-h-[600px]"
-                                    data-oid="j9uyvl6"
-                                />
-                            </div>
                         </div>
                     </div>
                 </main>
-
-                {/* Mobile Floating Ad */}
-                <div className="fixed bottom-4 left-4 right-4 lg:hidden z-50" data-oid="tfo7-vs">
-                    <div className="bg-white rounded-lg shadow-lg" data-oid="oy3cdos">
-                        <div className="flex justify-between items-center p-2" data-oid="mc1_0p6">
-                            <div className="flex-1" data-oid="qd8rd5g">
-                                <LazyAd
-                                    config={adConfigs.mobileFloating}
-                                    adType="mobile"
-                                    className="min-h-[50px]"
-                                    data-oid="kbex5kk"
-                                />
-                            </div>
-                            <button
-                                className="text-gray-400 hover:text-gray-600 ml-2 p-1"
-                                onClick={() => {
-                                    const floatingAd = document.querySelector(
-                                        '.fixed.bottom-4',
-                                    ) as HTMLElement;
-                                    if (floatingAd) floatingAd.style.display = 'none';
-                                }}
-                                data-oid="mbfpn6h"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </>
     );
