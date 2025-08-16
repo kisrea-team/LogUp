@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
@@ -53,7 +54,7 @@ export default function VersionAdminPage() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/projects`);
+            const response = await apiFetch(`${API_BASE_URL}/projects`);
             if (response.ok) {
                 const data = await response.json();
                 setProjects(data);
@@ -78,7 +79,7 @@ export default function VersionAdminPage() {
                 project_id: selectedProject.id,
             };
 
-            const response = await fetch(`${API_BASE_URL}/versions`, {
+            const response = await apiFetch(`${API_BASE_URL}/versions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ export default function VersionAdminPage() {
                 download_url: editingVersion.download_url,
             };
 
-            const response = await fetch(`${API_BASE_URL}/versions/${editingVersion.id}`, {
+            const response = await apiFetch(`${API_BASE_URL}/versions/${editingVersion.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export default function VersionAdminPage() {
     const handleDeleteVersion = async (versionId: number) => {
         if (confirm('确定要删除这个版本吗？')) {
             try {
-                const response = await fetch(`${API_BASE_URL}/versions/${versionId}`, {
+                const response = await apiFetch(`${API_BASE_URL}/versions/${versionId}`, {
                     method: 'DELETE',
                 });
 
