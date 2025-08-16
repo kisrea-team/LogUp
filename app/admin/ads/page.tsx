@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 // AdAnalytics 组件已被移除，相关功能已整合到页面中
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
 interface AdPerformance {
     adId: string;
     adType: string;
@@ -24,7 +26,7 @@ export default function AdAdminPage() {
     const fetchAdPerformance = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/analytics?timeRange=${selectedTimeRange}`);
+            const response = await fetch(`${API_BASE_URL}/api/analytics?timeRange=${selectedTimeRange}`);
             const data = await response.json();
 
             // Use the adPerformance data from the API response
