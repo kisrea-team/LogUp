@@ -1,0 +1,11 @@
+.projectlist-nav {
+    flex-wrap: wrap;
+}
+.projectlist-nav th {
+    padding: 1.5rem 1rem;
+    text-align: left;
+}
+.projectlist-content {
+    flex-direction: column;
+    color: azure;
+}

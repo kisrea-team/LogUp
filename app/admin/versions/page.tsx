@@ -436,41 +436,41 @@ export default function VersionAdminPage() {
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <div className="min-w-full divide-y divide-gray-200">
+                                        <div className="bg-gray-50">
+                                            <div>
+                                                <p>
                                                     版本
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                </p>
+                                                <p>
                                                     更新时间
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                </p>
+                                                <p>
                                                     内容预览
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                </p>
+                                                <p>
                                                     操作
-                                                </th>
-                                            </tr>
-                                        </thead>
+                                                </p>
+                                            </div>
+                                        </div>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {versions.map((version) => (
-                                                <tr key={version.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                <div key={version.id} className="hover:bg-gray-50">
+                                                    <p className="px-6 py-4 whitespace-nowrap">
                                                         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                                                             {version.version}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    </p>
+                                                    <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {version.update_time}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                                                    </p>
+                                                    <p className="px-6 py-4 text-sm text-gray-500 max-w-md">
                                                         <div className="truncate max-w-xs">
                                                             {version.content.substring(0, 100)}
                                                             {version.content.length > 100 ? '...' : ''}
                                                         </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                    </p>
+                                                    <p className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                                         <button
                                                             onClick={() => setEditingVersion(version)}
                                                             className="text-blue-600 hover:text-blue-900"
@@ -483,11 +483,11 @@ export default function VersionAdminPage() {
                                                         >
                                                             删除
                                                         </button>
-                                                    </td>
-                                                </tr>
+                                                    </p>
+                                                </div>
                                             ))}
                                         </tbody>
-                                    </table>
+                                    </div>
                                 </div>
                             )}
                         </div>

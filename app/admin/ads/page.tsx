@@ -52,15 +52,13 @@ export default function AdAdminPage() {
     const averageCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8" data-oid="z2bdlu.">
-            <div className="max-w-7xl mx-auto" data-oid="ot79q44">
-                <div className="mb-8" data-oid="lfpryht">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4" data-oid="8m-8di1">
-                        广告管理后台
-                    </h1>
+        <div className="min-h-screen bg-gray-50 p-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">广告管理后台</h1>
 
                     {/* 时间范围选择器 */}
-                    <div className="flex space-x-4 mb-6" data-oid="5u64_-6">
+                    <div className="flex space-x-4 mb-6">
                         {['24h', '7d', '30d'].map((range) => (
                             <button
                                 key={range}
@@ -70,7 +68,6 @@ export default function AdAdminPage() {
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-white text-gray-700 border border-gray-300'
                                 }`}
-                                data-oid="4viyh9h"
                             >
                                 {range === '24h' ? '24小时' : range === '7d' ? '7天' : '30天'}
                             </button>
@@ -78,36 +75,28 @@ export default function AdAdminPage() {
                     </div>
 
                     {/* 总览统计 */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" data-oid="mqfu:oo">
-                        <div className="bg-white rounded-lg shadow p-6" data-oid="t.xqn41">
-                            <div className="text-sm font-medium text-gray-500" data-oid="mk7pafk">
-                                总收入
-                            </div>
-                            <div className="text-2xl font-bold text-green-600" data-oid="2i-_:s_">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm font-medium text-gray-500">总收入</div>
+                            <div className="text-2xl font-bold text-green-600">
                                 ¥{totalRevenue.toFixed(2)}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6" data-oid="48_x-qp">
-                            <div className="text-sm font-medium text-gray-500" data-oid="pm59osa">
-                                总展示
-                            </div>
-                            <div className="text-2xl font-bold text-blue-600" data-oid="s474hn.">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm font-medium text-gray-500">总展示</div>
+                            <div className="text-2xl font-bold text-blue-600">
                                 {totalImpressions.toLocaleString()}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6" data-oid=":j449rv">
-                            <div className="text-sm font-medium text-gray-500" data-oid="5g.h.0j">
-                                总点击
-                            </div>
-                            <div className="text-2xl font-bold text-purple-600" data-oid="vcuylb-">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm font-medium text-gray-500">总点击</div>
+                            <div className="text-2xl font-bold text-purple-600">
                                 {totalClicks.toLocaleString()}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6" data-oid="-0_oqwt">
-                            <div className="text-sm font-medium text-gray-500" data-oid="euz8_:y">
-                                平均CTR
-                            </div>
-                            <div className="text-2xl font-bold text-orange-600" data-oid="fw:5y.h">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm font-medium text-gray-500">平均CTR</div>
+                            <div className="text-2xl font-bold text-orange-600">
                                 {averageCTR.toFixed(2)}%
                             </div>
                         </div>
@@ -115,112 +104,59 @@ export default function AdAdminPage() {
                 </div>
 
                 {/* 广告性能表格 */}
-                <div className="bg-white rounded-lg shadow overflow-hidden mb-8" data-oid="3.k3ayj">
-                    <div className="px-6 py-4 border-b border-gray-200" data-oid="1742epw">
-                        <h2 className="text-lg font-semibold text-gray-900" data-oid="ft8gyrt">
-                            广告位性能
-                        </h2>
+                <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                        <h2 className="text-lg font-semibold text-gray-900">广告位性能</h2>
                     </div>
 
                     {loading ? (
-                        <div className="p-8 text-center" data-oid="92lmggi">
-                            <div
-                                className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"
-                                data-oid="hjo:mij"
-                            ></div>
-                            <p className="text-gray-600" data-oid="gbcv.hr">
-                                加载中...
-                            </p>
+                        <div className="p-8 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-gray-600">加载中...</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto" data-oid="qs3::1:">
-                            <table
-                                className="min-w-full divide-y divide-gray-200"
-                                data-oid="mrq50nh"
-                            >
-                                <thead className="bg-gray-50" data-oid="lz.xlp-">
-                                    <tr data-oid="n55me99">
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="nsgq2m1"
-                                        >
+                        <div className="overflow-x-auto">
+                            <div className="min-w-full divide-y divide-gray-200">
+                                <div className="bg-gray-50">
+                                    <div>
+                                        <p>
                                             广告位ID
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="0vxflcd"
-                                        >
+                                        </p>
+                                        <p>
                                             类型
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="wikpz2i"
-                                        >
+                                        </p>
+                                        <p>
                                             展示次数
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="qtktjsz"
-                                        >
+                                        </p>
+                                        <p>
                                             点击次数
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="5di..7g"
-                                        >
+                                        </p>
+                                        <p>
                                             点击率
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="_77ed89"
-                                        >
+                                        </p>
+                                        <p>
                                             收入
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody
-                                    className="bg-white divide-y divide-gray-200"
-                                    data-oid="azw1a7x"
-                                >
+                                        </p>
+                                    </div>
+                                </div>
+                                <tbody className="bg-white divide-y divide-gray-200">
                                     {adPerformance.map((ad) => (
-                                        <tr
-                                            key={ad.adId}
-                                            className="hover:bg-gray-50"
-                                            data-oid="7.zq9zq"
-                                        >
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                                                data-oid="f1wdyne"
-                                            >
+                                        <div key={ad.adId} className="hover:bg-gray-50">
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {ad.adId}
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                                                data-oid="c1h81it"
-                                            >
-                                                <span
-                                                    className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                                                    data-oid="z.voo-d"
-                                                >
+                                            </p>
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                                                     {ad.adType}
                                                 </span>
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                                                data-oid="6ylae90"
-                                            >
+                                            </p>
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {ad.impressions.toLocaleString()}
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                                                data-oid="eg9v.x5"
-                                            >
+                                            </p>
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {ad.clicks.toLocaleString()}
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                                                data-oid="ge4ybt6"
-                                            >
+                                            </p>
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 <span
                                                     className={`font-medium ${
                                                         ad.ctr >= 3
@@ -229,21 +165,17 @@ export default function AdAdminPage() {
                                                               ? 'text-yellow-600'
                                                               : 'text-red-600'
                                                     }`}
-                                                    data-oid="e68k7m-"
                                                 >
                                                     {ad.ctr.toFixed(2)}%
                                                 </span>
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium"
-                                                data-oid="1ngodxx"
-                                            >
+                                            </p>
+                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                                 ¥{ad.revenue.toFixed(2)}
-                                            </td>
-                                        </tr>
+                                            </p>
+                                        </div>
                                     ))}
                                 </tbody>
-                            </table>
+                            </div>
                         </div>
                     )}
                 </div>
