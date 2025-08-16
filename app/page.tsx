@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { apiFetch, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
 
 interface Version {
     id?: number;
@@ -40,7 +41,7 @@ export default function Page() {
         try {
             setLoading(true);
             setErrorMessage(null);
-            const response = await fetch(`${API_BASE_URL}/projects`);
+            const response = await apiFetch(`${API_BASE_URL}/projects`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
