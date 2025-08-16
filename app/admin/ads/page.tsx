@@ -27,13 +27,17 @@ export default function AdAdminPage() {
             const response = await fetch(`/api/analytics?timeRange=${selectedTimeRange}`);
             const data = await response.json();
 
-            // 模拟广告性能数据
-                // Remove mock data
-                const mockPerformance: AdPerformance[] = []; // Placeholder to avoid errors
-
-            setAdPerformance(mockPerformance);
+            // Use the adPerformance data from the API response
+            if (data.adPerformance) {
+                setAdPerformance(data.adPerformance);
+            } else {
+                // Fallback to empty array if no data
+                setAdPerformance([]);
+            }
         } catch (error) {
             console.error('获取广告性能数据失败:', error);
+            // Fallback to empty array on error
+            setAdPerformance([]);
         } finally {
             setLoading(false);
         }
