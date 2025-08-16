@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import LazyAd from '@/components/LazyAd';
 import { adConfigs } from '@/lib/adConfigs';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 interface Version {
     id?: number;
