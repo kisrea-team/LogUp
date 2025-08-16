@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdAnalytics from '@/components/AdAnalytics';
+// AdAnalytics 组件已被移除，相关功能已整合到页面中
 
 interface AdPerformance {
     adId: string;
@@ -246,7 +246,7 @@ export default function AdAdminPage() {
                 </div>
 
                 {/* 详细分析组件 */}
-                <AdAnalytics data-oid="-.g5d7h" />
+                {/* AdAnalytics 组件已被移除，相关功能已整合到页面中 */}
             </div>
         </div>
     );
