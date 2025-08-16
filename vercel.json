@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/main.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9",
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "backend/main.py"
+    }
+  ],
+  "env": {
+    "DB_HOST": "@db-host",
+    "DB_PORT": "@db-port",
+    "DB_USER": "@db-user",
+    "DB_PASSWORD": "@db-password",
+    "DB_NAME": "@db-name"
+  }
+}

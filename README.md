@@ -56,3 +56,26 @@ To start the backend server:
 cd backend
 python main.py
 ```
+
+## Vercel Deployment
+
+This project is configured for deployment on Vercel with separate frontend and backend deployments.
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory with:
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+For Vercel deployment, set these environment variables in your Vercel project settings:
+- `NEXT_PUBLIC_API_BASE_URL` - Your deployed backend URL
+- `DB_HOST` - Your MySQL database host
+- `DB_PORT` - Your MySQL database port (usually 3306)
+- `DB_USER` - Your MySQL database username
+- `DB_PASSWORD` - Your MySQL database password
+- `DB_NAME` - Your MySQL database name
+
+### Backend Deployment
+
+The backend can be deployed separately on Vercel with the provided `vercel.json` configuration.
