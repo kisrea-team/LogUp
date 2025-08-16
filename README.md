@@ -156,6 +156,6 @@ For detailed deployment instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DE
 
 ### Backend Deployment
 
-The backend runs via `backend/start.py` which configures the FastAPI application and starts it with uvicorn server. It can be deployed separately on Vercel with the provided `backend/vercel.json` configuration.
+The backend has been separated into its own repository at [zitons/LogUp---Backend](https://github.com/zitons/LogUp---Backend). The backend API is built with FastAPI and Python, and can be deployed to platforms that support Python applications such as Railway, Render, or Heroku.
 
-**Note**: The backend application is started through `backend/start.py` rather than `backend/main.py`. All backend-specific Vercel configuration is located in the `backend` directory.
+**Note**: The backend application is started through `start.py` and is now maintained in a separate repository.
