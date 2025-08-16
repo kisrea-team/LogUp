@@ -8,17 +8,20 @@
 
 ## 项目结构说明
 
-项目现在采用以下结构以支持 Vercel 部署：
+项目采用标准的 Next.js 结构：
 
 ```
 project-root/
-├── api/
-│   ├── app.py           # FastAPI 应用（主应用）
-│   └── hello.py         # 基础 Python API 函数
 ├── app/                 # Next.js 前端应用
-├── backend/             # 原始后端代码
-├── vercel.json          # Vercel 配置文件
-└── requirements.txt     # Python 依赖
+├── backend/             # Python 后端代码
+│   ├── start.py         # 后端启动文件
+│   ├── main.py          # FastAPI 应用主文件
+│   ├── database.py      # 数据库连接
+│   ├── models.py        # 数据模型
+│   ├── requirements.txt # Python 依赖
+│   ├── vercel.json      # Vercel 配置文件
+│   └── vercel.env       # Vercel 环境变量配置
+└── ...
 ```
 
 ## 部署步骤
@@ -58,55 +61,6 @@ project-root/
    - 点击 "Deploy" 开始部署
    - Vercel 会自动部署前端和后端
 
-### API 端点访问
-
-部署完成后，可以通过以下 URL 访问 API：
-
-- 主应用: `https://your-project.vercel.app/api/app`
-- 健康检查: `https://your-project.vercel.app/api/app/health`
-- 简单函数: `https://your-project.vercel.app/api/hello`
-
-### 第二步：完整后端功能（可选）
-
-当前部署在 Vercel 上的 API 是一个简化版本。如果需要完整的后端功能（项目和版本管理），建议：
-
-#### 选项 1：Railway（推荐）
-1. 访问 [railway.app](https://railway.app) 并注册账户
-2. 创建新项目并连接 GitHub 仓库
-3. Railway 会自动检测这是 Python 项目
-4. 配置环境变量：
-   ```
-   DB_HOST=your-database-host
-   DB_PORT=3306
-   DB_USER=your-database-username
-   DB_PASSWORD=your-database-password
-   DB_NAME=project_updates
-   ```
-5. 部署应用，Railway 会自动分配 URL
-
-#### 选项 2：Render
-1. 访问 [render.com](https://render.com) 并注册账户
-2. 创建新的 Web Service
-3. 连接 GitHub 仓库
-4. 设置构建命令：
-   ```
-   pip install -r backend/requirements.txt
-   ```
-5. 设置启动命令：
-   ```
-   python backend/start.py
-   ```
-6. 添加环境变量
-7. 部署应用
-
-#### 选项 3：Heroku
-1. 访问 [heroku.com](https://heroku.com) 并注册账户
-2. 安装 Heroku CLI
-3. 在项目根目录创建 `Procfile`：
-   ```
-   web: python backend/start.py
-   ```
-4. 使用 Heroku CLI 部署应用
 
 2. **配置环境变量**
    在 "Environment Variables" 部分添加：
