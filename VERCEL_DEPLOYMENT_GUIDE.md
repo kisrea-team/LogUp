@@ -8,20 +8,21 @@
 
 ## 项目结构说明
 
-项目采用标准的 Next.js 结构：
+项目现在采用前后端分离的结构：
 
 ```
 project-root/
 ├── app/                 # Next.js 前端应用
-├── backend/             # Python 后端代码
-│   ├── start.py         # 后端启动文件
-│   ├── main.py          # FastAPI 应用主文件
-│   ├── database.py      # 数据库连接
-│   ├── models.py        # 数据模型
-│   ├── requirements.txt # Python 依赖
-│   ├── vercel.json      # Vercel 配置文件
-│   └── vercel.env       # Vercel 环境变量配置
 └── ...
+
+backend-repo/            # 独立的后端仓库 (单独的 GitHub 仓库)
+├── start.py             # 后端启动文件
+├── main.py              # FastAPI 应用主文件
+├── database.py          # 数据库连接
+├── models.py            # 数据模型
+├── requirements.txt     # Python 依赖
+├── README.md            # 后端说明文档
+└── .gitignore           # Git 忽略文件
 ```
 
 ## 部署步骤
