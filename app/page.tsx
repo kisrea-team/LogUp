@@ -48,7 +48,7 @@ export default function Page() {
             setProjects(data);
         } catch (err) {
             console.error('获取项目数据失败:', err);
-            setErrorMessage('无法连接到服务器，请确保后端服务正在运行 (http://localhost:8000)');
+            setErrorMessage('无法连接到服务器，请确保后端服务正在运行');
             setProjects([]);
         } finally {
             setLoading(false);
