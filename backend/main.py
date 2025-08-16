@@ -28,11 +28,12 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "aaaaProject Updates API"}
+    return {"message": "Project Updates API"}
 
 @app.get("/projects", response_model=List[Project])
 async def get_projects():
     """获取所有项目列表"""
+    local_db = None
     try:
         # Create new database connection for this request
         local_db = db.__class__()
@@ -48,7 +49,6 @@ async def get_projects():
         projects_data = local_db.execute_query(projects_query)
         
         if not projects_data:
-            local_db.disconnect()
             return []
         
         projects = []
@@ -70,11 +70,14 @@ async def get_projects():
             )
             projects.append(project)
         
-        local_db.disconnect()
         return projects
     except Exception as e:
         print(f"Error in get_projects: {e}")
         return []
+    finally:
+        # Ensure database connection is closed
+        if local_db:
+            local_db.disconnect()
 
 @app.get("/projects/{project_id}", response_model=Project)
 async def get_project(project_id: int):
@@ -179,6 +182,70 @@ async def create_version(version: VersionCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating version: {str(e)}")
+
+@app.put("/versions/{version_id}", response_model=Version)
+async def update_version(version_id: int, version: VersionCreate):
+    """更新版本信息"""
+    try:
+        # Check if version exists
+        version_check = db.execute_query("SELECT id FROM versions WHERE id = %s", (version_id,))
+        if not version_check:
+            raise HTTPException(status_code=404, detail="Version not found")
+        
+        # Update version
+        update_query = """
+        UPDATE versions 
+        SET version = %s, update_time = %s, content = %s, download_url = %s 
+        WHERE id = %s
+        """
+        db.execute_query(
+            update_query,
+            (version.version, version.update_time, version.content, version.download_url, version_id)
+        )
+        
+        # Update project's latest version if this is newer
+        update_project_query = """
+        UPDATE projects 
+        SET latest_version = %s, latest_update_time = %s 
+        WHERE id = %s AND latest_update_time < %s
+        """
+        db.execute_query(
+            update_project_query,
+            (version.version, version.update_time, version.project_id, version.update_time)
+        )
+        
+        # Get the updated version
+        version_query = """
+        SELECT id, project_id, version, update_time, content, download_url 
+        FROM versions 
+        WHERE id = %s
+        """
+        version_data = db.execute_query(version_query, (version_id,))
+        
+        return Version(**version_data[0])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating version: {str(e)}")
+
+@app.delete("/versions/{version_id}")
+async def delete_version(version_id: int):
+    """删除版本"""
+    try:
+        # Check if version exists
+        version_check = db.execute_query("SELECT id FROM versions WHERE id = %s", (version_id,))
+        if not version_check:
+            raise HTTPException(status_code=404, detail="Version not found")
+        
+        # Delete version
+        delete_query = "DELETE FROM versions WHERE id = %s"
+        db.execute_query(delete_query, (version_id,))
+        
+        return {"message": "Version deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting version: {str(e)}")
 
 @app.delete("/projects/{project_id}")
 async def delete_project(project_id: int):
