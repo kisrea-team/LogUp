@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/main.py",
+      "src": "backend/start.py",
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.9",
@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "backend/main.py"
+      "dest": "backend/start.py"
     }
   ]
 }
