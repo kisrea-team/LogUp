@@ -94,6 +94,8 @@ This project is configured for deployment on Vercel with separate frontend and b
    DB_PASSWORD=your-database-password
    DB_NAME=project_updates
    ```
+   
+   **Note**: These environment variables will be injected into your application at runtime. Vercel securely handles sensitive information.
 
 5. **Deploy**
    - Click "Deploy" to start deployment

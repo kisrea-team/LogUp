@@ -34,6 +34,8 @@
    DB_PASSWORD=your-database-password
    DB_NAME=project_updates
    ```
+   
+   **注意**: 这些环境变量将在部署时注入到应用中，无需在代码中硬编码敏感信息。
 
 5. **部署**
    - 点击 "Deploy" 开始部署
