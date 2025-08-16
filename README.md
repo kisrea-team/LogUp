@@ -153,3 +153,7 @@ You can use any MySQL database service:
    - Check CORS configuration
 
 For detailed deployment instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)
+
+### Backend Startup
+
+The backend application is started through `backend/start.py` which configures the FastAPI application and runs it with uvicorn server. This is different from directly running `main.py`.
