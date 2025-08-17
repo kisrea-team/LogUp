@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+// import ReactMarkdown from 'react-markdown';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import Loading from '@/components/Loading';
 import ProjectLog from '@/components/ProjectLog';
 import ProjectList from '@/components/ProjectList';
 
-const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
+//const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
 
 interface Version {
     id?: number;
@@ -32,6 +33,7 @@ export default function Page() {
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(10);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // 从API获取项目数据
@@ -42,19 +44,26 @@ export default function Page() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
+            setProgress(10); // 开始加载
             setErrorMessage(null);
+            // 模拟网络延迟
+            await new Promise(res => setTimeout(res, 200));
+            setProgress(40); // 请求已发出
             const response = await apiFetch(`/projects`);
+            setProgress(60); // 已收到响应
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+            setProgress(90); // 数据已解析
             setProjects(data);
         } catch (err) {
             console.error('获取项目数据失败:', err);
             setErrorMessage('无法连接到服务器，请确保后端服务正在运行');
             setProjects([]);
         } finally {
-            setLoading(false);
+            setProgress(100);
+            setTimeout(() => setLoading(false), 200); // 延迟关闭 loading，保证进度条动画
         }
     };
 
@@ -70,12 +79,7 @@ export default function Page() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">加载中...</p>
-                </div>
-            </div>
+            <Loading progress={progress} />
         );
     }
 
