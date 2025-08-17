@@ -305,7 +305,7 @@ export default function ProjectAdminPage() {
                                             className="hover:bg-gray-50"
 
                                         >
-                                            <p
+                                            <div
                                                 className="px-6 py-4 whitespace-nowrap"
 
                                             >
@@ -326,7 +326,7 @@ export default function ProjectAdminPage() {
                                                         {project.name}
                                                     </div>
                                                 </div>
-                                            </p>
+                                            </div>
                                             <p
                                                 className="px-6 py-4 whitespace-nowrap"
 

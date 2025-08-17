@@ -8,6 +8,7 @@
 import React from 'react';
 import './assets.css';
 import { Badge } from '@/components/ui/badge';
+import { Card } from './ui/card';
 
 interface Version {
     id?: number;
@@ -35,8 +36,9 @@ interface ProjectListProps {
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) => {
     return (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main className="flex gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Card className=" p-4 w-1/5">分类</Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                 <div className="lg:col-span-3">
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -67,9 +69,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) =
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <Badge variant="blue">
-                                                {project.latest_version}
-                                            </Badge>
+                                            <Badge variant="blue">{project.latest_version}</Badge>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {project.latest_update_time}
