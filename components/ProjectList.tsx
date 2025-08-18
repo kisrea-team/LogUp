@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-17
+ * @LastEditTime: 2025-08-18
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -37,7 +37,9 @@ interface ProjectListProps {
 const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) => {
     return (
         <main className="flex gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Card className=" p-4 w-1/5">分类</Card>
+            <Card className="flex flex-col projectlist-classify">
+                <p className=" mx-auto">分类</p>
+            </Card>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                 <div className="lg:col-span-3">
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
