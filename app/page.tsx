@@ -47,7 +47,7 @@ export default function Page() {
             setProgress(10); // 开始加载
             setErrorMessage(null);
             // 模拟网络延迟
-            await new Promise(res => setTimeout(res, 200));
+            await new Promise((res) => setTimeout(res, 200));
             setProgress(40); // 请求已发出
             const response = await apiFetch(`/projects`);
             setProgress(60); // 已收到响应
@@ -78,9 +78,7 @@ export default function Page() {
     };
 
     if (loading) {
-        return (
-            <Loading progress={progress} />
-        );
+        return <Loading progress={progress} />;
     }
 
     // 如果有错误消息但仍有数据，显示警告横幅
@@ -129,9 +127,8 @@ export default function Page() {
                 {/* Header */}
                 <header className="bg-white shadow-sm border-b border-gray-200">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="py-6">
-                            <h1 className="text-3xl font-bold text-gray-900">项目更新日志聚合</h1>
-                            <p className="mt-2 text-gray-600">查看所有项目的最新更新和版本历史</p>
+                        <div className="py-2">
+                            <h1 className="text-xl font-bold">LogUp!</h1>
                         </div>
                     </div>
                 </header>

@@ -9,3 +9,7 @@
     flex-direction: column;
     color: azure;
 }
+.projectlist-classify {
+    width: 12%;
+    padding: 1rem 0.5rem;
+}
