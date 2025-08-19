@@ -55,7 +55,7 @@ export default function ProjectAdminPage() {
             setProgress(10);
             await new Promise((res) => setTimeout(res, 150));
             setProgress(40);
-            const response = await apiFetch(`/projects`);
+            const response = await apiFetch(`/api/projects`);
             setProgress(60);
             if (response.ok) {
                 const data = await response.json();
@@ -73,7 +73,7 @@ export default function ProjectAdminPage() {
     const handleAddProject = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await apiFetch(`${API_BASE_URL}/projects`, {
+            const response = await apiFetch(`/api/projects`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ export default function ProjectAdminPage() {
     const handleDeleteProject = async (projectId: number) => {
         if (confirm('确定要删除这个项目吗？')) {
             try {
-                const response = await apiFetch(`${API_BASE_URL}/projects/${projectId}`, {
+                const response = await apiFetch(`/api/projects/${projectId}`, {
                     method: 'DELETE',
                 });
 
