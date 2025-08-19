@@ -7,7 +7,7 @@ import Loading from '@/components/Loading';
 import ProjectLog from '@/components/ProjectLog';
 import ProjectList from '@/components/ProjectList';
 
-//const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
+const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
 
 interface Version {
     id?: number;
@@ -49,7 +49,7 @@ export default function Page() {
             // 模拟网络延迟
             await new Promise((res) => setTimeout(res, 200));
             setProgress(40); // 请求已发出
-            const response = await apiFetch(`/projects`);
+            const response = await apiFetch(`/api/projects`);
             setProgress(60); // 已收到响应
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

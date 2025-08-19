@@ -1,38 +1,34 @@
-import { NextRequest } from 'next/server';
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://logup-back.zeabur.app';
 
-// POST /api/versions - 创建新版本
-export async function POST(request: NextRequest) {
+export async function DELETE(_request: Request, context: any) {
   try {
-    const body = await request.json();
-    
-    const response = await fetch(`${API_BASE_URL}/versions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const projectId = context.params?.id;
+
+    const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return new Response(JSON.stringify({ error: errorData.detail || 'Failed to create version' }), {
+      return new Response(JSON.stringify({ error: errorData.detail || 'Failed to delete project' }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error creating version:', error);
+    console.error('Error deleting project:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 }
+
+
