@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
-import { projectTable } from '@/components/data/ProjectTable';
+import { projectTable } from '@/components/data/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
 
 const API_BASE_URL = getApiBaseUrl();

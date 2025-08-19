@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-18
+ * @LastEditTime: 2025-08-19
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -36,7 +36,7 @@ interface ProjectListProps {
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) => {
     return (
-        <main className="flex gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex gap-4 max-w-md-1k mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Card className="flex flex-col projectlist-classify">
                 <p className=" mx-auto">分类</p>
             </Card>
@@ -79,7 +79,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) =
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
                                                 onClick={() => onProjectClick(project)}
-                                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                className="text-sky-600 hover:text-sky-900 transition-colors"
                                             >
                                                 查看详情
                                             </button>
