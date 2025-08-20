@@ -39,6 +39,10 @@
     .text-balance {
         text-wrap: balance;
     }
+    .flex-col{
+        display: flex;
+        flex-direction: column;
+    }
 }
 
 @layer base {
@@ -67,7 +71,7 @@
         --chart-3: 197 37% 24%;
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
-        --radius: 0.5rem;
+        --radius: 12px;
     }
     .dark {
         --background: 0 0% 3.9%;
@@ -102,7 +106,34 @@
         @apply bg-background text-foreground;
     }
 }
-
-.normal-table--p {
-    font-size: 18px;
+@layer components {
+    .normal-table--p {
+        font-size: 18px;
+    }
+    .projectlist {
+        display: grid;
+        /* width: 100%; */
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+    .projectlist #list {
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .projectlist-nav {
+        flex-wrap: wrap;
+    }
+    .projectlist-nav p {
+        padding: 1.5rem 1rem;
+        text-align: left;
+    }
+    .projectlist-content {
+        flex-direction: column;
+        color: azure;
+    }
+    .projectlist-classify {
+        width: 12%;
+        padding: 1rem 0.5rem;
+    }
 }

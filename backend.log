@@ -1,8 +1,0 @@
-INFO:     Will watch for changes in these directories: ['C:\\Users\\zitons\\xwechat_files\\wxid_mztiavl6mfu022_79c4\\msg\\file\\2025-08\\project-1754923484572\\project-1754923484572']
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [16712] using StatReload
-INFO:     Started server process [2556]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-WARNING:  StatReload detected changes in 'backend\main.py'. Reloading...
-

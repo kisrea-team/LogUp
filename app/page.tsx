@@ -63,7 +63,7 @@ export default function Page() {
             setProjects([]);
         } finally {
             setProgress(100);
-            setTimeout(() => setLoading(false), 200); // 延迟关闭 loading，保证进度条动画
+            setTimeout(() => setLoading(false), 2); // 延迟关闭 loading，保证进度条动画
         }
     };
 
@@ -77,9 +77,9 @@ export default function Page() {
         setSelectedVersion(null);
     };
 
-    if (loading) {
-        return <Loading progress={progress} />;
-    }
+    // if (loading) {
+    //     return <Loading progress={progress} />;
+    // }
 
     // 如果有错误消息但仍有数据，显示警告横幅
     const showErrorBanner = errorMessage && projects.length > 0;
