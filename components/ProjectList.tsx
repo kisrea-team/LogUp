@@ -90,7 +90,11 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) =
                     </table> */}
 
                     {projects.map((project) => (
-                        <Card key={project.id} className="flex py-4 px-2">
+                        <Card 
+                            key={project.id} 
+                            className="flex py-4 px-2 cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => onProjectClick(project)}
+                        >
                             <div className=" text-3xl">{project.icon}</div>
                             <div className="flex-col">
                                 <div className="flex items-center gap-2">
