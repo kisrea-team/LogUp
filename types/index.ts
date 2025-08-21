@@ -14,6 +14,10 @@ export interface ApiProject {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
     versions: ApiVersion[];
 }
 
@@ -27,6 +31,10 @@ export interface ProjectCreate {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
 }
 
 export interface VersionCreate {
