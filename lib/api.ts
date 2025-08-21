@@ -2,7 +2,7 @@
 export const apiFetch = async (url: string, options: RequestInit = {}) => {
     // If URL starts with http, use it directly (for external APIs)
     // Otherwise, treat it as a relative path that will be handled by Next.js rewrites
-    const fullUrl = url.startsWith('http') ? url : url;
+    const fullUrl = url.startsWith('http') ? url : `/api${url}`;
     
     const defaultHeaders = {
         'Content-Type': 'application/json',

@@ -25,6 +25,10 @@ interface Project {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
     versions: Version[];
 }
 
@@ -89,17 +93,19 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick }) =
                         <Card key={project.id} className="flex py-4 px-2">
                             <div className=" text-3xl">{project.icon}</div>
                             <div className="flex-col">
-                                <div className="flex">
-                                    <p>{project.name}</p>
-                                    <span>--</span>
-                                    <p>这是一段描述</p>
-                                    <p>{project.latest_version}</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-medium">{project.name}</p>
+                                    <span className="text-gray-400">--</span>
+                                    <p className="text-gray-600">{project.summar || '暂无简介'}</p>
+                                    <Badge variant="blue" className="ml-auto">{project.latest_version}</Badge>
                                 </div>
-                                <div>
-                                    <p>开源AI代码编辑器啦啦啦啦啦啦啦啦啦啦啦啦</p>
-                                    <p>{project.latest_update_time}</p>
-                                    <p>作者</p>
-                                    <p>分类</p>
+                                <div className="mt-2 space-y-1">
+                                    <p className="text-sm text-gray-700">{project.describe || '暂无详细描述'}</p>
+                                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                                        <span>{project.latest_update_time}</span>
+                                        <span>作者: {project.author || '未知'}</span>
+                                        <Badge variant="secondary">{project.type || '未分类'}</Badge>
+                                    </div>
                                 </div>
                             </div>
                         </Card>

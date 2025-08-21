@@ -25,6 +25,10 @@ interface Project {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
     versions: Version[];
 }
 
@@ -49,7 +53,7 @@ export default function Page() {
             // 模拟网络延迟
             await new Promise((res) => setTimeout(res, 200));
             setProgress(40); // 请求已发出
-            const response = await apiFetch(`/api/projects`);
+            const response = await apiFetch(`/projects`);
             setProgress(60); // 已收到响应
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
