@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin "tailwindcss-animate";
 
 @layer base {
     :root {
@@ -138,7 +137,7 @@
     }
     .projectlist {
         display: grid;
-        /* width: 100%; */
+        width: 60%;
         grid-template-columns: repeat(1, minmax(0, 1fr));
     }
     .projectlist #list {
