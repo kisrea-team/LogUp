@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-19
+ * @LastEditTime: 2025-08-22
  * @FilePath: /LogUp/app/layout.tsx
  * Helllllloo
  */
@@ -20,10 +20,8 @@ export const metadata: Metadata = {
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
-        <html lang="en">
-            <body>
-                {children}
-            </body>
+        <html>
+            <body>{children}</body>
         </html>
     );
 }
