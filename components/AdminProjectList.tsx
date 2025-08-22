@@ -1,11 +1,12 @@
 /*
  * @Date: 2025-08-18
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-18
+ * @LastEditTime: 2025-08-22
  * @FilePath: /LogUp/components/AdminProjectList.tsx
  * Helllllloo!
  */
 // import Loading from '@/components/Loading';
+import { Button } from "./ui/button";
 
 interface Project {
     id: number;
@@ -90,21 +91,21 @@ export default function AdminProjectList({ loading, progress, table, projects, h
                                         {project.versions.length} 个版本
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        <button
+                                        <Button
                                             onClick={() =>
                                                 window.open(`/?project=${project.id}`, '_blank')
                                             }
                                             className="text-blue-600 hover:text-blue-900"
                                         >
                                             查看
-                                        </button>
+                                        </Button>
                                         {handleEditProject && (
-                                            <button
+                                            <Button
                                                 onClick={() => handleEditProject(project)}
                                                 className="text-green-600 hover:text-green-900"
                                             >
                                                 编辑
-                                            </button>
+                                            </Button>
                                         )}
                                         <button
                                             onClick={() => handleDeleteProject(project.id)}

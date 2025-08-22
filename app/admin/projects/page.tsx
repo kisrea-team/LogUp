@@ -79,7 +79,7 @@ export default function ProjectAdminPage() {
             console.error('获取项目失败:', error);
         } finally {
             setProgress(100);
-            setTimeout(() => setLoading(false), 200);
+            setTimeout(() => setLoading(false), 100);
         }
     };
 
