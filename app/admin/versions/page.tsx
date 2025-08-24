@@ -197,7 +197,9 @@ export default function VersionAdminPage() {
                                 <div className="flex items-center">
                                     <span className="text-2xl mr-3">{project.icon}</span>
                                     <div>
-                                        <h3 className="font-medium text-gray-900">{project.name}</h3>
+                                        <h3 className="font-medium text-gray-900">
+                                            {project.name}
+                                        </h3>
                                         <p className="text-sm text-gray-500">
                                             {project.versions.length} 个版本
                                         </p>
@@ -343,8 +345,11 @@ export default function VersionAdminPage() {
                                                 value={editingVersion.version}
                                                 onChange={(e) =>
                                                     setEditingVersion((prev) =>
-                                                        prev ? { ...prev, version: e.target.value } : null
-                                                    )}
+                                                        prev
+                                                            ? { ...prev, version: e.target.value }
+                                                            : null,
+                                                    )
+                                                }
                                                 placeholder="v1.0.0"
                                                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                                                 required
@@ -359,8 +364,14 @@ export default function VersionAdminPage() {
                                                 value={editingVersion.update_time}
                                                 onChange={(e) =>
                                                     setEditingVersion((prev) =>
-                                                        prev ? { ...prev, update_time: e.target.value } : null
-                                                    )}
+                                                        prev
+                                                            ? {
+                                                                  ...prev,
+                                                                  update_time: e.target.value,
+                                                              }
+                                                            : null,
+                                                    )
+                                                }
                                                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                                                 required
                                             />
@@ -374,8 +385,14 @@ export default function VersionAdminPage() {
                                                 value={editingVersion.download_url}
                                                 onChange={(e) =>
                                                     setEditingVersion((prev) =>
-                                                        prev ? { ...prev, download_url: e.target.value } : null
-                                                    )}
+                                                        prev
+                                                            ? {
+                                                                  ...prev,
+                                                                  download_url: e.target.value,
+                                                              }
+                                                            : null,
+                                                    )
+                                                }
                                                 placeholder="https://example.com/download"
                                                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                                             />
@@ -389,8 +406,11 @@ export default function VersionAdminPage() {
                                             value={editingVersion.content}
                                             onChange={(e) =>
                                                 setEditingVersion((prev) =>
-                                                    prev ? { ...prev, content: e.target.value } : null
-                                                )}
+                                                    prev
+                                                        ? { ...prev, content: e.target.value }
+                                                        : null,
+                                                )
+                                            }
                                             placeholder="版本更新内容..."
                                             rows={6}
                                             className="w-full border border-gray-300 rounded-md px-3 py-2"
@@ -438,24 +458,19 @@ export default function VersionAdminPage() {
                                 <div className="overflow-x-auto">
                                     <div className="min-w-full divide-y divide-gray-200">
                                         <div className="bg-gray-50">
-                                            <div>
-                                                <p>
-                                                    版本
-                                                </p>
-                                                <p>
-                                                    更新时间
-                                                </p>
-                                                <p>
-                                                    内容预览
-                                                </p>
-                                                <p>
-                                                    操作
-                                                </p>
+                                            <div className="flex">
+                                                <p>版本</p>
+                                                <p>更新时间</p>
+                                                <p>内容预览</p>
+                                                <p>操作</p>
                                             </div>
                                         </div>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <div className="bg-white divide-y divide-gray-200">
                                             {versions.map((version) => (
-                                                <div key={version.id} className="hover:bg-gray-50">
+                                                <div
+                                                    key={version.id}
+                                                    className="hover:bg-gray-50 flex justify-between"
+                                                >
                                                     <p className="px-6 py-4 whitespace-nowrap">
                                                         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                                                             {version.version}
@@ -464,21 +479,27 @@ export default function VersionAdminPage() {
                                                     <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {version.update_time}
                                                     </p>
-                                                    <p className="px-6 py-4 text-sm text-gray-500 max-w-md">
-                                                        <div className="truncate max-w-xs">
+                                                    <div className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                                                        <p className="truncate max-w-xs">
                                                             {version.content.substring(0, 100)}
-                                                            {version.content.length > 100 ? '...' : ''}
-                                                        </div>
-                                                    </p>
+                                                            {version.content.length > 100
+                                                                ? '...'
+                                                                : ''}
+                                                        </p>
+                                                    </div>
                                                     <p className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                                         <button
-                                                            onClick={() => setEditingVersion(version)}
+                                                            onClick={() =>
+                                                                setEditingVersion(version)
+                                                            }
                                                             className="text-blue-600 hover:text-blue-900"
                                                         >
                                                             编辑
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteVersion(version.id!)}
+                                                            onClick={() =>
+                                                                handleDeleteVersion(version.id!)
+                                                            }
                                                             className="text-red-600 hover:text-red-900"
                                                         >
                                                             删除
@@ -486,7 +507,7 @@ export default function VersionAdminPage() {
                                                     </p>
                                                 </div>
                                             ))}
-                                        </tbody>
+                                        </div>
                                     </div>
                                 </div>
                             )}
