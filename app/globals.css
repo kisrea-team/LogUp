@@ -1,12 +1,13 @@
 @import 'tailwindcss';
 @plugin "tailwindcss-animate";
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *)); */
 /* 上面坚决不要动！ */
 @layer base {
     :root {
         /* 颜色 */
         --background: #ffffff;
         --card: #f9fafb;
+        --border: oklch(0.92 0.00 0);
         /*圆角*/
         --radius: 12px;
         /* 不常用尺寸 */
@@ -15,7 +16,9 @@
     @media (prefers-color-scheme: dark) {
         :root {
             /* 颜色 */
-            --background: #111827;
+            --background: oklch(14.5% 0 0);
+            --card: oklch(20.5% 0 0);
+            --border: oklch(100% 0 0/.1);
             /* 不常用尺寸 */
             --version-tag: #0a0a0a;
         }
@@ -45,6 +48,9 @@
     .bg-card {
         background-color: var(--card);
     }
+    .border{
+        border-color: var(--border);
+    }
 }
 
 @layer components {
@@ -64,7 +70,8 @@
     }
     .projectlist-card {
         display: grid;
-        grid-template-columns: 8% 1fr;
+        grid-template-columns: 10% 1fr;
+        align-items: center;
         cursor: pointer;
         padding: 1.2rem 1rem;
         padding-right: 1.4rem;

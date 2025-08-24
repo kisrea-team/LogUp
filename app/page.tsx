@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 // import ReactMarkdown from 'react-markdown';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
-import ProjectLog from '@/components/ProjectLog';
 import ProjectList from '@/components/ProjectList';
 
 const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
@@ -34,8 +33,6 @@ interface Project {
 
 export default function Page() {
     const [projects, setProjects] = useState<Project[]>([]);
-    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-    const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,16 +68,6 @@ export default function Page() {
         }
     };
 
-    const handleProjectClick = (project: Project) => {
-        setSelectedProject(project);
-        setSelectedVersion(project.versions[0] || null); // Select latest version by default
-    };
-
-    const handleBackToList = () => {
-        setSelectedProject(null);
-        setSelectedVersion(null);
-    };
-
     // if (loading) {
     //     return <Loading progress={progress} />;
     // }
@@ -88,48 +75,11 @@ export default function Page() {
     // 如果有错误消息但仍有数据，显示警告横幅
     const showErrorBanner = errorMessage && projects.length > 0;
 
-    if (selectedProject) {
-        return (
-            <div className="min-h-screen bg-white">
-                {/* Header */}
-                <header className="border-b border-gray-200 bg-white sticky top-0 z-10">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={handleBackToList}
-                                    className="text-blue-600 hover:text-blue-800 flex items-center space-x-2"
-                                >
-                                    <span>←</span>
-                                    <span>返回项目列表</span>
-                                </button>
-                                <div className="h-6 w-px bg-gray-300"></div>
-                                <div className="flex items-center space-x-3">
-                                    <span className="text-2xl">{selectedProject.icon}</span>
-                                    <h1 className="text-xl font-semibold text-gray-900">
-                                        {selectedProject.name}
-                                    </h1>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                {/* 项目详情组件 */}
-                <ProjectLog
-                    selectedProject={selectedProject}
-                    selectedVersion={selectedVersion}
-                    setSelectedVersion={setSelectedVersion}
-                />
-            </div>
-        );
-    }
-
     return (
         <>
             <div className="min-h-screen bg-background">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200">
+                <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="py-2">
                             <h1 className="text-xl font-bold">LogUp!</h1>
@@ -160,7 +110,7 @@ export default function Page() {
                 )}
 
                 {/* Main content */}
-                <ProjectList projects={projects} onProjectClick={handleProjectClick} />
+                <ProjectList projects={projects} />
             </div>
         </>
     );
