@@ -7,7 +7,8 @@
         /* 颜色 */
         --background: #ffffff;
         --card: #f9fafb;
-        --border: oklch(0.92 0.00 0);
+        --border: oklch(0.92 0 0);
+        --border-style: oklch(0.92 0 0);
         /*圆角*/
         --radius: 12px;
         /* 不常用尺寸 */
@@ -18,7 +19,7 @@
             /* 颜色 */
             --background: oklch(14.5% 0 0);
             --card: oklch(20.5% 0 0);
-            --border: oklch(100% 0 0/.1);
+            --border: oklch(100% 0 0/0.1);
             /* 不常用尺寸 */
             --version-tag: #0a0a0a;
         }
@@ -28,6 +29,12 @@
     }
     body {
         @apply bg-white;
+    }
+    .card {
+        /* rounded-lg border bg-card text-card-foreground shadow-sm */
+        border-radius: var(--radius);
+        border-width: 1px solid var(--border-style);
+        background-color: var(--card);
     }
 }
 
@@ -48,8 +55,11 @@
     .bg-card {
         background-color: var(--card);
     }
-    .border{
+    .border {
         border-color: var(--border);
+    }
+    .grid-cols-main {
+        grid-template-columns: 15% auto 15%;
     }
 }
 
@@ -57,18 +67,14 @@
     .normal-table--p {
         font-size: 18px;
     }
+
     .projectlist {
-        display: grid;
-        width: 60%;
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-    }
-    .projectlist #list {
         display: flex;
         flex-wrap: nowrap;
         flex-direction: column;
         gap: 0.5rem;
     }
-    .projectlist-card {
+    .projectlist #card {
         display: grid;
         grid-template-columns: 10% 1fr;
         align-items: center;
@@ -88,8 +94,12 @@
         color: azure;
     }
     .projectlist-classify {
-        width: 12%;
+        /* width: 12%; */
         padding: 1rem 0.5rem;
+    }
+    .projectlist-about {
+        width: 100%;
+        padding: 10px;
     }
     .projectlist-version-tag {
         font-size: 12px;
