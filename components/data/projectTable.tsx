@@ -1,8 +1,8 @@
 /*
  * @Date: 2025-08-18
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-18
- * @FilePath: /LogUp/components/data/ProjectTable.tsx
+ * @LastEditTime: 2025-08-26
+ * @FilePath: /LogUp/components/data/projectTable.tsx
  * Helllllloo!
  */
 export const projectTable = [

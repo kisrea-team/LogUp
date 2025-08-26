@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-24
+ * @LastEditTime: 2025-08-26
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -9,6 +9,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card } from './ui/card';
+import ListClassify from './asset/Listclassify';
 
 interface Version {
     id?: number;
@@ -44,20 +45,18 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
         router.push(`/project/${project.id}`);
     };
     return (
-        <main className="flex gap-4 max-w-md-1k mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Card className="flex flex-col projectlist-classify">
-                <p className="mx-auto">分类</p>
-            </Card>
-            <div className="projectlist">
-                <div className="rounded-lg" id="list">
+        <main className="grid grid-cols-main gap-4 max-w-md-1k mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <ListClassify />
+            <div>
+                <div className="rounded-lg projectlist">
                     {projects.map((project) => (
                         <Card
                             key={project.id}
-                            className="projectlist-card hover:shadow-md transition-shadow "
+                            id="card"
                             onClick={() => handleProjectClick(project)}
                         >
                             <div className="text-3xl">{project.icon}</div>
-                            <div className="flex-col ">
+                            <div className="flex-col">
                                 <div className="flex items-start gap-2">
                                     <div>
                                         <div className="flex">
@@ -91,13 +90,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
                         </Card>
                     ))}
                 </div>
-
-                {/* {projects.length === 0 && (
-                    <div className="text-center py-12">
-                        <p className="text-gray-500">暂无项目数据</p>
-                    </div>
-                )} */}
             </div>
+            <Card className="projectlist-about">
+                <h1>hello</h1>
+            </Card>
         </main>
     );
 };
