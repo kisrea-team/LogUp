@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-19
+ * @LastEditTime: 2025-08-31
  * @FilePath: /LogUp/next.config.mjs
  * Helllllloo!
  */
@@ -14,7 +14,7 @@ const nextConfig = {
         return [
             {
                 source: '/api/:path*',
-                destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://logup-back.zeabur.app'}/:path*`,
+                destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.3.164.131:8000'}/:path*`,
             },
         ];
     },
