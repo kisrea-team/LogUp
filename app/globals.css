@@ -6,9 +6,11 @@
     :root {
         /* 颜色 */
         --background: #ffffff;
+        --text: oklch(0.14 0 0);
         --card: #f9fafb;
         --border: oklch(0.92 0 0);
         --border-style: oklch(0.92 0 0);
+        --datail-background: oklch(0.556 0 0);
         /*圆角*/
         --radius: 12px;
         /* 不常用尺寸 */
@@ -18,8 +20,11 @@
         :root {
             /* 颜色 */
             --background: oklch(14.5% 0 0);
+            --text: oklch(0.99 0 0);
             --card: oklch(20.5% 0 0);
             --border: oklch(100% 0 0/0.1);
+            --border-style: oklch(0.44 0 0);
+            --datail-background: oklch(0.708 0 0);
             /* 不常用尺寸 */
             --version-tag: #0a0a0a;
         }
@@ -29,12 +34,19 @@
     }
     body {
         @apply bg-white;
+        p,
+        span {
+            color: var(--text);
+        }
     }
     .card {
         /* rounded-lg border bg-card text-card-foreground shadow-sm */
         border-radius: var(--radius);
-        border-width: 1px solid var(--border-style);
+        border: 1px solid var(--border-style);
         background-color: var(--card);
+    }
+    .text-datail {
+        color: var(--datail-background);
     }
 }
 
@@ -67,14 +79,23 @@
     .normal-table--p {
         font-size: 18px;
     }
-
     .projectlist {
+        display: grid;
+        grid-template-columns: 15% auto 15%;
+        gap: 1rem;
+        max-width: 1111px;
+        margin: auto;
+        padding: 2rem 1rem;
+        align-items: start;
+    }
+    .projectlist-content {
         display: flex;
         flex-wrap: nowrap;
         flex-direction: column;
         gap: 0.5rem;
+        border-radius: var(--radius);
     }
-    .projectlist #card {
+    .projectlist-content #card {
         display: grid;
         grid-template-columns: 10% 1fr;
         align-items: center;
@@ -89,12 +110,10 @@
         padding: 1.5rem 1rem;
         text-align: left;
     }
-    .projectlist-content {
-        flex-direction: column;
-        color: azure;
-    }
+
     .projectlist-classify {
-        /* width: 12%; */
+        display: flex;
+        flex-direction: column;
         padding: 1rem 0.5rem;
     }
     .projectlist-about {
@@ -107,5 +126,39 @@
         border: 1px solid var(--version-tag);
         padding: 0.1rem 0.4rem;
         border-radius: 6px;
+    }
+    .classify--items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .classify--items > div {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.2rem 0.4rem;
+        min-width: 50%;
+        align-items: center;
+    }
+    .classify--items div:hover {
+        background-color: var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .classify--items > div:hover p svg path,
+    .classify--items > div:hover span {
+        color: oklch(0.52 0.09 223);
+        fill: oklch(0.52 0.09 223);
+    }
+    .classify--items > div p svg path {
+        fill: #afafaf; /* 默认灰色 */
+        transition: fill 0.3s;
+    }
+    .class-icon::before {
+        /* content: url('https://img.vvkkoo.cc/file/1756563969516_App.svg'); */
+    }
+    .class-icon ::after {
+        background: url('https://img.vvkkoo.cc/file/1756563969516_App.svg');
     }
 }

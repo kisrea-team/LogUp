@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 // import ReactMarkdown from 'react-markdown';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
+import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
 
 const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
@@ -79,13 +80,7 @@ export default function Page() {
         <>
             <div className="min-h-screen bg-background">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="py-2">
-                            <h1 className="text-xl font-bold">LogUp!</h1>
-                        </div>
-                    </div>
-                </header>
+                <Header />
 
                 {/* Error Banner */}
                 {showErrorBanner && (

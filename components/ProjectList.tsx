@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-26
+ * @LastEditTime: 2025-08-30
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -45,10 +45,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
         router.push(`/project/${project.id}`);
     };
     return (
-        <main className="grid grid-cols-main gap-4 max-w-md-1k mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="projectlist">
             <ListClassify />
             <div>
-                <div className="rounded-lg projectlist">
+                <div className="projectlist-content">
                     {projects.map((project) => (
                         <Card
                             key={project.id}
@@ -61,12 +61,12 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
                                     <div>
                                         <div className="flex">
                                             <p className="font-medium">{project.name}</p>
-                                            <span className="text-gray-400 px-0.5">——</span>
-                                            <p className="text-gray-400">
+                                            <span className="text-datail px-0.5">——</span>
+                                            <p className="text-datail">
                                                 {project.summar || '暂无简介'}
                                             </p>
                                         </div>
-                                        <p className="text-sm text-gray-700">
+                                        <p className="text-sm text-datail">
                                             {project.describe || '暂无详细描述'}
                                         </p>
                                     </div>
