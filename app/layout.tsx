@@ -1,16 +1,9 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-22
+ * @LastEditTime: 2025-08-31
  * @FilePath: /LogUp/app/layout.tsx
  * Helllllloo
- */
-/*
- * @Date: 2025-08-16
- * @LastEditors: vhko
- * @LastEditTime: 2025-08-17
- * @FilePath: /LogUp/app/layout.tsx
- * Helllllloo!
  */
 import type { Metadata } from 'next';
 import './globals.css';
@@ -21,8 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html>
-            <body>
-                {children}</body>
+            <body>{children}</body>
         </html>
     );
 }

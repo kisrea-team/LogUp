@@ -1,33 +1,36 @@
+/*
+ * @Date: 2025-08-16
+ * @LastEditors: vhko
+ * @LastEditTime: 2025-08-31
+ * @FilePath: /LogUp/app/admin/layout.tsx
+ * Helllllloo!
+ */
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const router = useRouter();
-  
-  const navItems = [
-    { name: '项目管理', href: '/admin/projects' },
-    { name: '广告管理', href: '/admin/ads' },
-    { name: '版本管理', href: '/admin/versions' },
-  ];
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const router = useRouter();
 
-  const handleLogout = () => {
-    // Remove admin login status
-    document.cookie = 'adminLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    localStorage.removeItem('adminLoggedIn');
-    router.push('/admin/login');
-  };
+    const navItems = [
+        { name: '项目管理', href: '/admin/projects' },
+        { name: '广告管理', href: '/admin/ads' },
+        { name: '版本管理', href: '/admin/versions' },
+    ];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Admin Header */}
-      <header className="bg-white shadow">
+    const handleLogout = () => {
+        // Remove admin login status
+        document.cookie = 'adminLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        localStorage.removeItem('adminLoggedIn');
+        router.push('/admin/login');
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Admin Header */}
+            {/* <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -60,13 +63,9 @@ export default function AdminLayout({
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
-      <main>
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          {children}
+            <main>{children}</main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
