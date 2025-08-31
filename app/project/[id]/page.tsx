@@ -22,6 +22,7 @@ interface Project {
     id: number;
     icon: string;
     name: string;
+    slug?: string;
     latest_version: string;
     latest_update_time: string;
     describe?: string;

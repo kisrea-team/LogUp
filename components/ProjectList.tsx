@@ -25,6 +25,7 @@ interface Project {
     id: number;
     icon: string;
     name: string;
+    slug?: string;
     latest_version: string;
     latest_update_time: string;
     describe?: string;
@@ -42,7 +43,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
     const router = useRouter();
 
     const handleProjectClick = (project: Project) => {
-        router.push(`/project/${project.id}`);
+        router.push(`/project/${project.slug || project.id}`);
     };
     return (
         <main className="projectlist">
