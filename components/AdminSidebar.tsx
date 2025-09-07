@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-31
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-31
+ * @LastEditTime: 2025-09-06
  * @FilePath: /LogUp/components/AdminSidebar.tsx
  * Helllllloo!
  */
@@ -9,11 +9,13 @@
 import {
     Sidebar,
     SidebarContent,
-    // SidebarFooter,
+    SidebarFooter,
     // SidebarGroup,
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useRouter, usePathname } from 'next/navigation';
+import { clearAdminAuth } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const datamain = [
     { id: 0, label: '首页', href: '/admin' },
@@ -29,6 +31,11 @@ export default function AdminSidebar() {
 
     const handleItemClick = (href: string) => {
         router.push(href);
+    };
+
+    const handleLogout = () => {
+        clearAdminAuth();
+        router.push('/admin/login');
     };
 
     return (
@@ -55,6 +62,21 @@ export default function AdminSidebar() {
                         );
                     })}
                 </SidebarContent>
+                <SidebarFooter className="p-4">
+                    <div className="space-y-3">
+                        <div className="text-sm text-gray-600">
+                            <p>管理员</p>
+                        </div>
+                        <Button 
+                            onClick={handleLogout} 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                        >
+                            退出登录
+                        </Button>
+                    </div>
+                </SidebarFooter>
             </div>
         </Sidebar>
     );

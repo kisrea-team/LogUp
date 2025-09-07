@@ -1,13 +1,13 @@
 /*
  * @Date: 2025-08-18
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-22
+ * @LastEditTime: 2025-09-05
  * @FilePath: /LogUp/components/AdminProjectList.tsx
  * Helllllloo!
  */
 // import Loading from '@/components/Loading';
-import { Button } from "./ui/button";
-
+import { Button } from './ui/button';
+import { RenderIcon } from '@/components/utils/renderIcon';
 interface Project {
     id: number;
     icon: string;
@@ -35,10 +35,17 @@ interface AdminProjectListProps {
     handleEditProject?: (project: Project) => void;
 }
 
-export default function AdminProjectList({ loading, progress, table, projects, handleDeleteProject, handleEditProject }: AdminProjectListProps) {
+export default function AdminProjectList({
+    loading,
+    progress,
+    table,
+    projects,
+    handleDeleteProject,
+    handleEditProject,
+}: AdminProjectListProps) {
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-6 py-4 border border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">项目列表</h2>
             </div>
 
@@ -53,7 +60,10 @@ export default function AdminProjectList({ loading, progress, table, projects, h
                         <thead className="bg-gray-50">
                             <tr>
                                 {table.map((column) => (
-                                    <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th
+                                        key={column.key}
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    >
                                         {column.label}
                                     </th>
                                 ))}
@@ -64,7 +74,9 @@ export default function AdminProjectList({ loading, progress, table, projects, h
                                 <tr key={project.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <span className="text-2xl mr-3">{project.icon}</span>
+                                            <span className="text-2xl mr-3">
+                                                <RenderIcon icon={project.icon} />
+                                            </span>
                                             <div className="text-sm font-medium text-gray-900">
                                                 {project.name}
                                             </div>
@@ -92,6 +104,7 @@ export default function AdminProjectList({ loading, progress, table, projects, h
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         <Button
+                                            variant="ghost"
                                             onClick={() =>
                                                 window.open(`/?project=${project.id}`, '_blank')
                                             }
@@ -101,18 +114,20 @@ export default function AdminProjectList({ loading, progress, table, projects, h
                                         </Button>
                                         {handleEditProject && (
                                             <Button
+                                                variant="ghost"
                                                 onClick={() => handleEditProject(project)}
                                                 className="text-green-600 hover:text-green-900"
                                             >
                                                 编辑
                                             </Button>
                                         )}
-                                        <button
+                                        <Button
+                                            variant="ghost"
                                             onClick={() => handleDeleteProject(project.id)}
                                             className="text-red-600 hover:text-red-900"
                                         >
                                             删除
-                                        </button>
+                                        </Button>
                                     </td>
                                 </tr>
                             ))}

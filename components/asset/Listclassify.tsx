@@ -6,7 +6,7 @@
  * Helllllloo!
  */
 import { Card } from '../ui/card';
-import { classify } from '@/components/data/classify';
+import { classify } from '@/components/utils/classify';
 // interface
 const ListClassify = () => {
     return (

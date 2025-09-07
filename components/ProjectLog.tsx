@@ -1,12 +1,13 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-23
+ * @LastEditTime: 2025-09-06
  * @FilePath: /LogUp/components/ProjectLog.tsx
  * Helllllloo!
  */
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import { RenderIcon } from '@/components/utils/renderIcon';
 
 interface Version {
     id?: number;
@@ -76,7 +77,9 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                     <div className="max-w-4xl mb-8">
                         <div className="bg-white border border-gray-200 rounded-lg p-6">
                             <div className="flex items-start space-x-4 mb-4">
-                                <span className="text-4xl">{selectedProject.icon}</span>
+                                <span className="text-4xl">
+                                    <RenderIcon icon={selectedProject.icon} />
+                                </span>
                                 <div className="flex-1">
                                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
                                         {selectedProject.name}
@@ -174,7 +177,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                 </div>
                             </div>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div className="bg-blue-50 border borderlue-200 rounded-lg p-6">
                                 <h3 className="text-lg font-semibold text-blue-900 mb-4">下载</h3>
                                 <a
                                     href={

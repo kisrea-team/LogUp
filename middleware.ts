@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   );
   
   if (isProtectedPath) {
-    // Check for admin login status
+    // Check for admin login status - check cookie first (for SSR compatibility)
     const adminLoggedIn = request.cookies.get('adminLoggedIn')?.value === 'true';
     
     if (!adminLoggedIn) {

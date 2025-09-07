@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
-import { projectTable } from '@/components/data/projectTable';
+import { projectTable } from '@/components/utils/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
 
 const API_BASE_URL = getApiBaseUrl();
@@ -125,22 +125,22 @@ export default function ProjectAdminPage() {
         try {
             console.log('Updating project with ID:', editingProject.id);
             console.log('Project data:', editingProject);
-            
+
             const response = await apiFetch(`/projects/${editingProject.id}/update`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                icon: editingProject.icon,
-                name: editingProject.name,
-                latest_version: editingProject.latest_version,
-                latest_update_time: editingProject.latest_update_time,
-                describe: editingProject.describe,
-                summar: editingProject.summar,
-                author: editingProject.author,
-                type: editingProject.type,
-              }),
+                    icon: editingProject.icon,
+                    name: editingProject.name,
+                    latest_version: editingProject.latest_version,
+                    latest_update_time: editingProject.latest_update_time,
+                    describe: editingProject.describe,
+                    summar: editingProject.summar,
+                    author: editingProject.author,
+                    type: editingProject.type,
+                }),
             });
 
             console.log('Update response status:', response.status);
@@ -176,7 +176,7 @@ export default function ProjectAdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div>
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
                     <div className="flex justify-between items-center">
@@ -203,19 +203,33 @@ export default function ProjectAdminPage() {
                         <h2 className="text-lg font-semibold mb-4">
                             {editingProject ? '编辑项目' : '添加新项目'}
                         </h2>
-                        <form onSubmit={editingProject ? handleUpdateProject : handleAddProject} className="space-y-4">
+                        <form
+                            onSubmit={editingProject ? handleUpdateProject : handleAddProject}
+                            className="space-y-4"
+                        >
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         简介
                                     </label>
                                     <textarea
-                                        value={editingProject ? editingProject.describe || '' : newProject.describe}
+                                        value={
+                                            editingProject
+                                                ? editingProject.describe || ''
+                                                : newProject.describe
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, describe: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, describe: e.target.value }
+                                                        : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, describe: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    describe: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="项目详细描述"
@@ -229,12 +243,23 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.summar || '' : newProject.summar}
+                                        value={
+                                            editingProject
+                                                ? editingProject.summar || ''
+                                                : newProject.summar
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, summar: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, summar: e.target.value }
+                                                        : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, summar: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    summar: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="简短描述"
@@ -247,12 +272,23 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.author || '' : newProject.author}
+                                        value={
+                                            editingProject
+                                                ? editingProject.author || ''
+                                                : newProject.author
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, author: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, author: e.target.value }
+                                                        : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, author: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    author: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="项目作者"
@@ -265,12 +301,21 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.type || '' : newProject.type}
+                                        value={
+                                            editingProject
+                                                ? editingProject.type || ''
+                                                : newProject.type
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, type: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev ? { ...prev, type: e.target.value } : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, type: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    type: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="工具、框架、服务等"
@@ -283,12 +328,19 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.icon : newProject.icon}
+                                        value={
+                                            editingProject ? editingProject.icon : newProject.icon
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, icon: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev ? { ...prev, icon: e.target.value } : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, icon: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    icon: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="🚀"
@@ -302,12 +354,19 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.name : newProject.name}
+                                        value={
+                                            editingProject ? editingProject.name : newProject.name
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, name: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev ? { ...prev, name: e.target.value } : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, name: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    name: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="项目名称"
@@ -321,12 +380,26 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editingProject ? editingProject.latest_version : newProject.latest_version}
+                                        value={
+                                            editingProject
+                                                ? editingProject.latest_version
+                                                : newProject.latest_version
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, latest_version: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              latest_version: e.target.value,
+                                                          }
+                                                        : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, latest_version: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    latest_version: e.target.value,
+                                                }));
                                             }
                                         }}
                                         placeholder="v1.0.0"
@@ -340,12 +413,26 @@ export default function ProjectAdminPage() {
                                     </label>
                                     <input
                                         type="date"
-                                        value={editingProject ? editingProject.latest_update_time : newProject.latest_update_time}
+                                        value={
+                                            editingProject
+                                                ? editingProject.latest_update_time
+                                                : newProject.latest_update_time
+                                        }
                                         onChange={(e) => {
                                             if (editingProject) {
-                                                setEditingProject(prev => prev ? { ...prev, latest_update_time: e.target.value } : null);
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              latest_update_time: e.target.value,
+                                                          }
+                                                        : null,
+                                                );
                                             } else {
-                                                setNewProject(prev => ({ ...prev, latest_update_time: e.target.value }));
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    latest_update_time: e.target.value,
+                                                }));
                                             }
                                         }}
                                         className="w-full border border-gray-300 rounded-md px-3 py-2"

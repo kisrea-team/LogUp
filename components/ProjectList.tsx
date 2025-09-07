@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-30
+ * @LastEditTime: 2025-09-07
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card } from './ui/card';
 import ListClassify from './asset/Listclassify';
+import { RenderIcon } from './utils/renderIcon';
 
 interface Version {
     id?: number;
@@ -45,18 +46,28 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
     const handleProjectClick = (project: Project) => {
         router.push(`/project/${project.slug || project.id}`);
     };
+
     return (
         <main className="projectlist">
             <ListClassify />
             <div>
                 <div className="projectlist-content">
                     {projects.map((project) => (
-                        <Card
+                        <div
                             key={project.id}
                             id="card"
+                            className="bg-card"
                             onClick={() => handleProjectClick(project)}
                         >
-                            <div className="text-3xl">{project.icon}</div>
+                            {/* <div className="text-3xl">{project.icon}</div> */}
+                            <div className="text-3xl">
+                                {/* {project.icon.trim().startsWith('<svg') ? (
+                                    <p dangerouslySetInnerHTML={{ __html: project.icon }} />
+                                ) : (
+                                    <span>{project.icon}</span>
+                                )} */}
+                                <RenderIcon icon={project.icon} />
+                            </div>
                             <div className="flex-col">
                                 <div className="flex items-start gap-2">
                                     <div>
@@ -88,7 +99,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
                                     </div>
                                 </div>
                             </div>
-                        </Card>
+                        </div>
                     ))}
                 </div>
             </div>

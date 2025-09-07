@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { RenderIcon } from '@/components/utils/renderIcon';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -152,10 +153,10 @@ export default function VersionAdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 p-8">
+            <div>
                 <div className="max-w-7xl mx-auto">
                     <div className="p-8 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 borderlue-600 mx-auto mb-4"></div>
                         <p className="text-gray-600">加载中...</p>
                     </div>
                 </div>
@@ -164,7 +165,7 @@ export default function VersionAdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div>
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
                     <div className="flex justify-between items-center">
@@ -190,12 +191,14 @@ export default function VersionAdminPage() {
                                 onClick={() => setSelectedProject(project)}
                                 className={`p-4 border rounded-md cursor-pointer ${
                                     selectedProject?.id === project.id
-                                        ? 'border-blue-500 bg-blue-50'
+                                        ? 'borderlue-500 bg-blue-50'
                                         : 'border-gray-200 hover:bg-gray-50'
                                 }`}
                             >
                                 <div className="flex items-center">
-                                    <span className="text-2xl mr-3">{project.icon}</span>
+                                    <span className="text-2xl mr-3">
+                                        <RenderIcon icon={project.icon} />
+                                    </span>
                                     <div>
                                         <h3 className="font-medium text-gray-900">
                                             {project.name}
@@ -438,7 +441,7 @@ export default function VersionAdminPage() {
 
                         {/* 版本列表 */}
                         <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="px-6 py-4 border border-gray-200">
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     {selectedProject.name} - 版本列表
                                 </h2>
