@@ -52,7 +52,7 @@ export default function AdAdminPage() {
     const averageCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div>
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4">广告管理后台</h1>
@@ -105,13 +105,13 @@ export default function AdAdminPage() {
 
                 {/* 广告性能表格 */}
                 <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="px-6 py-4 border border-gray-200">
                         <h2 className="text-lg font-semibold text-gray-900">广告位性能</h2>
                     </div>
 
                     {loading ? (
                         <div className="p-8 text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 borderlue-600 mx-auto mb-4"></div>
                             <p className="text-gray-600">加载中...</p>
                         </div>
                     ) : (
@@ -119,24 +119,12 @@ export default function AdAdminPage() {
                             <div className="min-w-full divide-y divide-gray-200">
                                 <div className="bg-gray-50">
                                     <div>
-                                        <p>
-                                            广告位ID
-                                        </p>
-                                        <p>
-                                            类型
-                                        </p>
-                                        <p>
-                                            展示次数
-                                        </p>
-                                        <p>
-                                            点击次数
-                                        </p>
-                                        <p>
-                                            点击率
-                                        </p>
-                                        <p>
-                                            收入
-                                        </p>
+                                        <p>广告位ID</p>
+                                        <p>类型</p>
+                                        <p>展示次数</p>
+                                        <p>点击次数</p>
+                                        <p>点击率</p>
+                                        <p>收入</p>
                                     </div>
                                 </div>
                                 <tbody className="bg-white divide-y divide-gray-200">

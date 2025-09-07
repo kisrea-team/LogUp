@@ -26,6 +26,7 @@ export default function AdminLoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -35,8 +36,26 @@ export default function AdminLoginPage() {
 
         // Simple authentication check (in a real app, this would be done server-side)
         if (username === 'admin' && password === 'admin123') {
-            // Set cookie for authentication
-            document.cookie = 'adminLoggedIn=true; path=/; max-age=86400'; // 24 hours
+            // Set authentication data
+            const authData = {
+                isLoggedIn: true,
+                username: username,
+                loginTime: new Date().toISOString(),
+                rememberMe: rememberMe
+            };
+
+            if (rememberMe) {
+                // 如果选择"记住我"，使用localStorage（1天过期）
+                localStorage.setItem('adminAuth', JSON.stringify(authData));
+                // 同时设置cookie作为备用（1天过期）
+                document.cookie = 'adminLoggedIn=true; path=/; max-age=86400'; // 1 day
+            } else {
+                // 如果不选择"记住我"，使用sessionStorage（3小时过期）
+                sessionStorage.setItem('adminAuth', JSON.stringify(authData));
+                // 设置cookie（3小时过期）
+                document.cookie = 'adminLoggedIn=true; path=/; max-age=10800'; // 3 hours
+            }
+
             router.push('/admin');
         } else {
             setError('用户名或密码错误');
@@ -79,6 +98,18 @@ export default function AdminLoginPage() {
                                             onChange={(e) => setPassword(e.target.value)}
                                         />
                                     </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            id="rememberMe"
+                                            type="checkbox"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <Label htmlFor="rememberMe" className="text-sm text-gray-600">
+                                            记住我
+                                        </Label>
+                                    </div>
                                 </div>
                             {/* </form> */}
                         </CardContent>
@@ -95,6 +126,9 @@ export default function AdminLoginPage() {
                 <div className="text-center text-sm text-gray-500">
                     <p>默认账号: admin</p>
                     <p>默认密码: admin123</p>
+                    <p className="mt-2 text-xs">
+                        💡 勾选&ldquo;记住我&rdquo;可保持登录1天，不勾选则保持3小时
+                    </p>
                 </div>
             </div>
         </div>

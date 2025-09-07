@@ -49,7 +49,7 @@ export default function Page() {
             setProgress(10); // 开始加载
             setErrorMessage(null);
             // 模拟网络延迟
-            await new Promise((res) => setTimeout(res, 200));
+            await new Promise((res) => setTimeout(res, 0));
             setProgress(40); // 请求已发出
             const response = await apiFetch(`/projects`);
             setProgress(60); // 已收到响应
@@ -65,7 +65,7 @@ export default function Page() {
             setProjects([]);
         } finally {
             setProgress(100);
-            setTimeout(() => setLoading(false), 2); // 延迟关闭 loading，保证进度条动画
+            setTimeout(() => setLoading(false), 200); // 延迟关闭 loading，保证进度条动画
         }
     };
 
@@ -84,7 +84,7 @@ export default function Page() {
 
                 {/* Error Banner */}
                 {showErrorBanner && (
-                    <div className="bg-yellow-50 border-b border-yellow-200">
+                    <div className="bg-yellow-50  border-yellow-200">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                             <div className="flex items-center">
                                 <div className="text-yellow-600 mr-3">⚠️</div>

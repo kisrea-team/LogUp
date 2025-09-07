@@ -64,7 +64,7 @@ export default function UsersPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b">
+                                <tr className="border">
                                     <th className="text-left p-2">ID</th>
                                     <th className="text-left p-2">姓名</th>
                                     <th className="text-left p-2">邮箱</th>
@@ -75,7 +75,7 @@ export default function UsersPage() {
                             </thead>
                             <tbody>
                                 {users.map((user) => (
-                                    <tr key={user.id} className="border-b hover:bg-gray-50">
+                                    <tr key={user.id} className="border hover:bg-gray-50">
                                         <td className="p-2">{user.id}</td>
                                         <td className="p-2">{user.name}</td>
                                         <td className="p-2">{user.email}</td>

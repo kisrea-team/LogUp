@@ -1,73 +1,70 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-31
+ * @LastEditTime: 2025-09-06
  * @FilePath: /LogUp/app/admin/page.tsx
  * Helllllloo!
  */
 'use client';
-import AdminSidebar from '@/components/AdminSidebar';
-import { AdminChartArea } from '@/components/Admin-chart';
-import Link from 'next/link';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AdminChartArea } from '@/components/asset/Admin-chart';
+import {
+    Card,
+    CardAction,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 export default function AdminPage() {
     return (
         <div>
-            <SidebarProvider className="flex w-full min-h-svh">
-                <AdminSidebar />
-                <div className='w-full'>
-                    <SidebarTrigger />
-                    <AdminChartArea />
-                    {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <Link
-                            href="/admin/projects"
-                            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200"
-                        >
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0 bg-blue-100 p-3 rounded-md">
-                                    <div className="h-6 w-6 text-blue-600">📊</div>
-                                </div>
-                                <div className="ml-4">
-                                    <h3 className="text-lg font-medium text-gray-900">项目管理</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        添加、编辑、删除项目
-                                    </p>
-                                </div>
-                            </div>
-                        </Link>
-
-                        <Link
-                            href="/admin/versions"
-                            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200"
-                        >
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0 bg-green-100 p-3 rounded-md">
-                                    <div className="h-6 w-6 text-green-600">🔄</div>
-                                </div>
-                                <div className="ml-4">
-                                    <h3 className="text-lg font-medium text-gray-900">版本管理</h3>
-                                    <p className="mt-1 text-sm text-gray-500">管理项目版本信息</p>
-                                </div>
-                            </div>
-                        </Link>
-
-                        <Link
-                            href="/admin/ads"
-                            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200"
-                        >
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0 bg-purple-100 p-3 rounded-md">
-                                    <div className="h-6 w-6 text-purple-600">📢</div>
-                                </div>
-                                <div className="ml-4">
-                                    <h3 className="text-lg font-medium text-gray-900">广告管理</h3>
-                                    <p className="mt-1 text-sm text-gray-500">查看广告性能数据</p>
-                                </div>
-                            </div>
-                        </Link>
-                    </div> */}
-                </div>
-            </SidebarProvider>
+            <div className="grid grid-cols-4 gap-4 mb-4">
+                <Card>
+                    <CardHeader>
+                        <CardDescription>总项目数</CardDescription>
+                        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                            100+
+                        </CardTitle>
+                        <CardAction>
+                            昨日： <Badge>+12.5%</Badge>
+                        </CardAction>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardDescription>版本数量</CardDescription>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardDescription>浏览量</CardDescription>
+                    </CardHeader>
+                </Card>
+                <Card className="@container/card">
+                    <CardHeader>
+                        <CardDescription>Total Revenue</CardDescription>
+                        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                            $1,250.00
+                        </CardTitle>
+                        <CardAction>
+                            <Badge variant="outline">
+                                {/* <IconTrendingUp /> */}
+                                +12.5%
+                            </Badge>
+                        </CardAction>
+                    </CardHeader>
+                    <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                        <div className="line-clamp-1 flex gap-2 font-medium">
+                            Trending up this month
+                            {/* <IconTrendingUp className="size-4" /> */}
+                        </div>
+                        <div className="text-muted-foreground">Visitors for the last 6 months</div>
+                    </CardFooter>
+                </Card>
+            </div>
+            <AdminChartArea />
         </div>
     );
 }
