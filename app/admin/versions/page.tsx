@@ -23,7 +23,7 @@ interface Project {
     name: string;
     latest_version: string;
     latest_update_time: string;
-    versions: Version[];
+    versions?: Version[]; // 变为可选，用于按需加载
 }
 
 export default function VersionAdminPage() {
@@ -31,6 +31,7 @@ export default function VersionAdminPage() {
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [versions, setVersions] = useState<Version[]>([]);
     const [loading, setLoading] = useState(true);
+    const [versionsLoading, setVersionsLoading] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingVersion, setEditingVersion] = useState<Version | null>(null);
     const [newVersion, setNewVersion] = useState<Omit<Version, 'id'>>({
@@ -47,7 +48,7 @@ export default function VersionAdminPage() {
 
     useEffect(() => {
         if (selectedProject) {
-            setVersions(selectedProject.versions);
+            fetchVersions(selectedProject.id);
         } else {
             setVersions([]);
         }
@@ -61,17 +62,47 @@ export default function VersionAdminPage() {
                 const data = await response.json();
                 console.log('Projects API Response:', data); // Debug log
 
-                // Handle different data structures
+                // Handle different data structures - 不包含版本数据
                 const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
-                setProjects(projectsData);
-                if (projectsData.length > 0 && !selectedProject) {
-                    setSelectedProject(projectsData[0]);
+                // 过滤掉版本数据，只保留基本信息
+                const projectsBasic = projectsData.map((project: any) => ({
+                    id: project.id,
+                    icon: project.icon,
+                    name: project.name,
+                    latest_version: project.latest_version || '',
+                    latest_update_time: project.latest_update_time || '',
+                    versions: undefined // 不预加载版本数据
+                }));
+
+                setProjects(projectsBasic);
+                if (projectsBasic.length > 0 && !selectedProject) {
+                    setSelectedProject(projectsBasic[0]);
                 }
             }
         } catch (error) {
             console.error('获取项目失败:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchVersions = async (projectId: number) => {
+        try {
+            setVersionsLoading(true);
+            const response = await apiFetch(`/projects/${projectId}/versions`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Versions for project ${projectId}:`, data); // Debug log
+
+                // Handle different data structures for versions
+                const versionsData = Array.isArray(data) ? data : (data.data || data.versions || []);
+                setVersions(versionsData);
+            }
+        } catch (error) {
+            console.error('获取版本失败:', error);
+            setVersions([]);
+        } finally {
+            setVersionsLoading(false);
         }
     };
 
@@ -94,7 +125,7 @@ export default function VersionAdminPage() {
             });
 
             if (response.ok) {
-                await fetchProjects(); // Refresh projects and versions
+                await fetchVersions(selectedProject.id); // Only refresh versions, not projects
                 setNewVersion({
                     project_id: selectedProject.id,
                     version: '',
@@ -132,7 +163,7 @@ export default function VersionAdminPage() {
             });
 
             if (response.ok) {
-                await fetchProjects(); // Refresh projects and versions
+                await fetchVersions(selectedProject.id); // Only refresh versions, not projects
                 setEditingVersion(null);
             }
         } catch (error) {
@@ -148,7 +179,7 @@ export default function VersionAdminPage() {
                 });
 
                 if (response.ok) {
-                    await fetchProjects(); // Refresh projects and versions
+                    await fetchVersions(selectedProject.id); // Only refresh versions, not projects
                 }
             } catch (error) {
                 console.error('删除版本失败:', error);
@@ -208,7 +239,7 @@ export default function VersionAdminPage() {
                                             {project.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {project.versions.length} 个版本
+                                            点击查看版本
                                         </p>
                                     </div>
                                 </div>
@@ -449,7 +480,12 @@ export default function VersionAdminPage() {
                                 </h2>
                             </div>
 
-                            {versions.length === 0 ? (
+                            {versionsLoading ? (
+                                <div className="p-8 text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 mx-auto mb-4"></div>
+                                    <p className="text-gray-600">加载版本信息中...</p>
+                                </div>
+                            ) : versions.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <p className="text-gray-600">该项目还没有版本信息</p>
                                     <Button
