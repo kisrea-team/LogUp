@@ -6,6 +6,7 @@ import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
 import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
+import Pagination from '@/components/Pagination';
 
 const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
 
@@ -32,18 +33,34 @@ interface Project {
     versions: Version[];
 }
 
+interface PaginatedResponse {
+    data: Project[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+}
+
 export default function Page() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalProjects, setTotalProjects] = useState(0);
+    const [perPage, setPerPage] = useState(10);
 
     // 从API获取项目数据
     useEffect(() => {
         fetchProjects();
     }, []);
 
-    const fetchProjects = async () => {
+    const fetchProjects = async (page: number = currentPage) => {
+        // Validate page number
+        if (page < 1) page = 1;
+        if (page > totalPages && totalPages > 0) page = totalPages;
+        
         try {
             setLoading(true);
             setProgress(10); // 开始加载
@@ -51,14 +68,25 @@ export default function Page() {
             // 模拟网络延迟
             await new Promise((res) => setTimeout(res, 0));
             setProgress(40); // 请求已发出
-            const response = await apiFetch(`/projects`);
+            const response = await apiFetch(`/projects?page=${page}&per_page=${perPage}`);
             setProgress(60); // 已收到响应
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             setProgress(90); // 数据已解析
-            setProjects(data);
+            console.log('API Response:', data); // 添加调试日志
+            
+            // 处理不同的数据结构
+            const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+            const totalPagesData = data.total_pages || data.totalPages || 1;
+            const totalItemsData = data.total || data.totalItems || projectsData.length;
+            const currentPageData = data.page || data.currentPage || 1;
+            
+            setProjects(projectsData);
+            setTotalPages(totalPagesData);
+            setTotalProjects(totalItemsData);
+            setCurrentPage(currentPageData);
         } catch (err) {
             console.error('获取项目数据失败:', err);
             setErrorMessage('无法连接到服务器，请确保后端服务正在运行');
@@ -106,6 +134,15 @@ export default function Page() {
 
                 {/* Main content */}
                 <ProjectList projects={projects} />
+                
+                {/* Pagination Controls */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalProjects}
+                    itemsPerPage={perPage}
+                    onPageChange={fetchProjects}
+                />
             </div>
         </>
     );

@@ -40,7 +40,7 @@ interface ProjectListProps {
     projects: Project[];
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
     const router = useRouter();
 
     const handleProjectClick = (project: Project) => {
@@ -52,11 +52,15 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
             <ListClassify />
             <div>
                 <div className="projectlist-content">
-                    {projects.map((project) => (
+                    {(projects || []).length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-gray-500">暂无项目数据</p>
+                        </div>
+                    ) : (projects || []).map((project) => (
                         <div
                             key={project.id}
                             id="card"
-                            className="bg-card"
+                            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => handleProjectClick(project)}
                         >
                             {/* <div className="text-3xl">{project.icon}</div> */}
@@ -68,17 +72,17 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects }) => {
                                 )} */}
                                 <RenderIcon icon={project.icon} />
                             </div>
-                            <div className="flex-col">
+                            <div className="flex-1">
                                 <div className="flex items-start gap-2">
-                                    <div>
-                                        <div className="flex">
+                                    <div className="flex-1">
+                                        <div className="flex items-center">
                                             <p className="font-medium">{project.name}</p>
-                                            <span className="text-datail px-0.5">——</span>
-                                            <p className="text-datail">
+                                            <span className="text-detail px-0.5">——</span>
+                                            <p className="text-detail">
                                                 {project.summar || '暂无简介'}
                                             </p>
                                         </div>
-                                        <p className="text-sm text-datail">
+                                        <p className="text-sm text-detail">
                                             {project.describe || '暂无详细描述'}
                                         </p>
                                     </div>
