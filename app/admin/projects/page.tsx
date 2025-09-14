@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import { projectTable } from '@/components/utils/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
+import Pagination from '@/components/Pagination';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -29,6 +30,14 @@ interface Project {
     versions: Version[];
 }
 
+interface PaginatedResponse {
+    data: Project[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+}
+
 interface ProjectCreate {
     icon: string;
     name: string;
@@ -43,6 +52,10 @@ interface ProjectCreate {
 export default function ProjectAdminPage() {
     const table = projectTable.filter((item) => item.sort === 'a');
     const [projects, setProjects] = useState<Project[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalProjects, setTotalProjects] = useState(0);
+    const [perPage, setPerPage] = useState(10);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -62,18 +75,33 @@ export default function ProjectAdminPage() {
         fetchProjects();
     }, []);
 
-    const fetchProjects = async () => {
+    const fetchProjects = async (page: number = currentPage) => {
+        // Validate page number
+        if (page < 1) page = 1;
+        if (page > totalPages && totalPages > 0) page = totalPages;
+        
         try {
             setLoading(true);
             setProgress(10);
             await new Promise((res) => setTimeout(res, 150));
             setProgress(40);
-            const response = await apiFetch(`/projects`);
+            const response = await apiFetch(`/projects?page=${page}&per_page=${perPage}`);
             setProgress(60);
             if (response.ok) {
                 const data = await response.json();
                 setProgress(90);
-                setProjects(data);
+                console.log('Admin API Response:', data); // 添加调试日志
+                
+                // 处理不同的数据结构
+                const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+                const totalPagesData = data.total_pages || data.totalPages || 1;
+                const totalItemsData = data.total || data.totalItems || projectsData.length;
+                const currentPageData = data.page || data.currentPage || 1;
+                
+                setProjects(projectsData);
+                setTotalPages(totalPagesData);
+                setTotalProjects(totalItemsData);
+                setCurrentPage(currentPageData);
             }
         } catch (error) {
             console.error('获取项目失败:', error);
@@ -95,7 +123,7 @@ export default function ProjectAdminPage() {
             });
 
             if (response.ok) {
-                await fetchProjects();
+                await fetchProjects(currentPage);
                 setNewProject({
                     icon: '',
                     name: '',
@@ -147,7 +175,7 @@ export default function ProjectAdminPage() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Update response data:', data);
-                await fetchProjects();
+                await fetchProjects(currentPage);
                 setEditingProject(null);
                 setShowAddForm(false);
             } else {
@@ -167,7 +195,7 @@ export default function ProjectAdminPage() {
                 });
 
                 if (response.ok) {
-                    await fetchProjects();
+                    await fetchProjects(currentPage);
                 }
             } catch (error) {
                 console.error('删除项目失败:', error);
@@ -470,6 +498,15 @@ export default function ProjectAdminPage() {
                     projects={projects}
                     handleDeleteProject={handleDeleteProject}
                     handleEditProject={handleEditProject}
+                />
+                
+                {/* Pagination Controls */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalProjects}
+                    itemsPerPage={perPage}
+                    onPageChange={fetchProjects}
                 />
             </div>
         </div>

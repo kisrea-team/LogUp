@@ -39,7 +39,7 @@ export default function AdminProjectList({
     loading,
     progress,
     table,
-    projects,
+    projects = [],
     handleDeleteProject,
     handleEditProject,
 }: AdminProjectListProps) {
@@ -70,7 +70,13 @@ export default function AdminProjectList({
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {projects.map((project) => (
+                            {(projects || []).length === 0 ? (
+                                <tr>
+                                    <td colSpan={table.length + 1} className="px-6 py-8 text-center">
+                                        <p className="text-gray-500">暂无项目数据</p>
+                                    </td>
+                                </tr>
+                            ) : (projects || []).map((project) => (
                                 <tr key={project.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">

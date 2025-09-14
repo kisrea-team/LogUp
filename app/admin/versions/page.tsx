@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import { RenderIcon } from '@/components/utils/renderIcon';
+import { Button } from '@/components/ui/button';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -58,9 +59,13 @@ export default function VersionAdminPage() {
             const response = await apiFetch(`/projects`);
             if (response.ok) {
                 const data = await response.json();
-                setProjects(data);
-                if (data.length > 0 && !selectedProject) {
-                    setSelectedProject(data[0]);
+                console.log('Projects API Response:', data); // Debug log
+
+                // Handle different data structures
+                const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+                setProjects(projectsData);
+                if (projectsData.length > 0 && !selectedProject) {
+                    setSelectedProject(projectsData[0]);
                 }
             }
         } catch (error) {
@@ -80,7 +85,7 @@ export default function VersionAdminPage() {
                 project_id: selectedProject.id,
             };
 
-            const response = await apiFetch(`${API_BASE_URL}/versions`, {
+            const response = await apiFetch(`/versions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -118,7 +123,7 @@ export default function VersionAdminPage() {
                 download_url: editingVersion.download_url,
             };
 
-            const response = await apiFetch(`${API_BASE_URL}/versions/${editingVersion.id}`, {
+            const response = await apiFetch(`/versions/${editingVersion.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -138,7 +143,7 @@ export default function VersionAdminPage() {
     const handleDeleteVersion = async (versionId: number) => {
         if (confirm('确定要删除这个版本吗？')) {
             try {
-                const response = await apiFetch(`${API_BASE_URL}/versions/${versionId}`, {
+                const response = await apiFetch(`/versions/${versionId}`, {
                     method: 'DELETE',
                 });
 
@@ -156,7 +161,7 @@ export default function VersionAdminPage() {
             <div>
                 <div className="max-w-7xl mx-auto">
                     <div className="p-8 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 borderlue-600 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 mx-auto mb-4"></div>
                         <p className="text-gray-600">加载中...</p>
                     </div>
                 </div>
@@ -171,12 +176,11 @@ export default function VersionAdminPage() {
                     <div className="flex justify-between items-center">
                         <h1 className="text-3xl font-bold text-gray-900">版本管理</h1>
                         {selectedProject && (
-                            <button
+                            <Button
                                 onClick={() => setShowAddForm(!showAddForm)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                             >
                                 {showAddForm ? '取消' : '添加版本'}
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -191,7 +195,7 @@ export default function VersionAdminPage() {
                                 onClick={() => setSelectedProject(project)}
                                 className={`p-4 border rounded-md cursor-pointer ${
                                     selectedProject?.id === project.id
-                                        ? 'borderlue-500 bg-blue-50'
+                                        ? 'border-blue-500 bg-blue-50'
                                         : 'border-gray-200 hover:bg-gray-50'
                                 }`}
                             >
@@ -304,19 +308,18 @@ export default function VersionAdminPage() {
                                         />
                                     </div>
                                     <div className="flex space-x-4">
-                                        <button
+                                        <Button
                                             type="submit"
-                                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                                         >
                                             添加版本
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             type="button"
+                                            variant="outline"
                                             onClick={() => setShowAddForm(false)}
-                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                                         >
                                             取消
-                                        </button>
+                                        </Button>
                                     </div>
                                 </form>
                             </div>
@@ -421,19 +424,18 @@ export default function VersionAdminPage() {
                                         />
                                     </div>
                                     <div className="flex space-x-4">
-                                        <button
+                                        <Button
                                             type="submit"
-                                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                                         >
                                             更新版本
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             type="button"
+                                            variant="outline"
                                             onClick={() => setEditingVersion(null)}
-                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                                         >
                                             取消
-                                        </button>
+                                        </Button>
                                     </div>
                                 </form>
                             </div>
@@ -450,12 +452,12 @@ export default function VersionAdminPage() {
                             {versions.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <p className="text-gray-600">该项目还没有版本信息</p>
-                                    <button
+                                    <Button
                                         onClick={() => setShowAddForm(true)}
-                                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        className="mt-4"
                                     >
                                         添加第一个版本
-                                    </button>
+                                    </Button>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -523,7 +525,7 @@ export default function VersionAdminPage() {
                         <p className="text-gray-600 mb-4">暂无项目数据</p>
                         <Link
                             href="/admin/projects"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                         >
                             去创建项目
                         </Link>
