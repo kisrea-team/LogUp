@@ -7,6 +7,7 @@
  */
 import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from '@/components/theme/ThemeContext';
 export const metadata: Metadata = {
     title: 'LogUp - 开源项目版本更新日志管理工具',
     description: 'by Kisrea',
@@ -14,7 +15,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html>
-            <body>{children}</body>
+            <body>
+                <ThemeProvider>
+                    {children}
+                </ThemeProvider>
+            </body>
         </html>
     );
 }
