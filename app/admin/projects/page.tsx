@@ -55,7 +55,7 @@ export default function ProjectAdminPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProjects, setTotalProjects] = useState(0);
-    const [perPage, setPerPage] = useState(10);
+    const [perPage, setPerPage] = useState(3);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -94,11 +94,24 @@ export default function ProjectAdminPage() {
                 
                 // 处理不同的数据结构
                 const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
-                const totalPagesData = data.total_pages || data.totalPages || 1;
-                const totalItemsData = data.total || data.totalItems || projectsData.length;
-                const currentPageData = data.page || data.currentPage || 1;
-                
-                setProjects(projectsData);
+                let totalPagesData = data.total_pages || data.totalPages;
+                let totalItemsData = data.total || data.totalItems;
+                let currentPageData = data.page || data.currentPage || page;
+
+                // 前端兜底分页：当后端未返回分页信息时
+                if (!totalPagesData || !totalItemsData) {
+                    const total = projectsData.length;
+                    const pages = Math.max(1, Math.ceil(total / perPage));
+                    totalItemsData = total;
+                    totalPagesData = pages;
+                    currentPageData = Math.min(Math.max(1, currentPageData), pages);
+                    const start = (currentPageData - 1) * perPage;
+                    const end = start + perPage;
+                    setProjects(projectsData.slice(start, end));
+                } else {
+                    setProjects(projectsData);
+                }
+
                 setTotalPages(totalPagesData);
                 setTotalProjects(totalItemsData);
                 setCurrentPage(currentPageData);

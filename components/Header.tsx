@@ -1,12 +1,12 @@
 /*
  * @Date: 2025-08-31
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-07
+ * @LastEditTime: 2025-09-15
  * @FilePath: /LogUp/components/Header.tsx
  * Helllllloo!
  */
 import ThemeToggle from './theme/ThemeToggle';
-import ThemeTest from './theme/ThemeTest';
+// import ThemeTest from './theme/ThemeTest';
 
 export default function Header() {
     return (
@@ -19,7 +19,7 @@ export default function Header() {
                     </div>
                 </div>
             </header>
-            <ThemeTest />
+            {/* <ThemeTest /> */}
         </>
     );
 }

@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-26
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-31
+ * @LastEditTime: 2025-09-17
  * @FilePath: /LogUp/components/asset/Listclassify.tsx
  * Helllllloo!
  */
@@ -15,7 +15,7 @@ const ListClassify = () => {
             <div className="classify--items">
                 {classify.map((item) => (
                     <div key={item.key}>
-                        <p>{item.icon}</p>
+                        <item.icon />
                         <span>{item.label}</span>
                     </div>
                 ))}
