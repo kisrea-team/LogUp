@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-07
+ * @LastEditTime: 2025-09-15
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -57,10 +57,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                             <p className="text-gray-500">暂无项目数据</p>
                         </div>
                     ) : (projects || []).map((project) => (
-                        <div
+                        <Card
                             key={project.id}
                             id="card"
-                            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                            className="grid rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => handleProjectClick(project)}
                         >
                             {/* <div className="text-3xl">{project.icon}</div> */}
@@ -103,7 +103,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </Card>
                     ))}
                 </div>
             </div>

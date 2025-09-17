@@ -1,3 +1,10 @@
+/*
+ * @Date: 2025-08-17
+ * @LastEditors: vhko
+ * @LastEditTime: 2025-09-15
+ * @FilePath: /LogUp/components/ui/card.tsx
+ * Helllllloo!
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -7,7 +14,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "bg-card text-card-foreground  gap-6 rounded-xl border py-6 shadow-sm",
         className
       )}
       {...props}

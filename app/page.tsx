@@ -49,7 +49,7 @@ export default function Page() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProjects, setTotalProjects] = useState(0);
-    const [perPage, setPerPage] = useState(10);
+    const [perPage, setPerPage] = useState(5);
 
     // 从API获取项目数据
     useEffect(() => {
@@ -79,11 +79,24 @@ export default function Page() {
             
             // 处理不同的数据结构
             const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
-            const totalPagesData = data.total_pages || data.totalPages || 1;
-            const totalItemsData = data.total || data.totalItems || projectsData.length;
-            const currentPageData = data.page || data.currentPage || 1;
-            
-            setProjects(projectsData);
+            let totalPagesData = data.total_pages || data.totalPages;
+            let totalItemsData = data.total || data.totalItems;
+            let currentPageData = data.page || data.currentPage || page;
+
+            // 如果后端没有返回分页信息，则在前端做兜底分页
+            if (!totalPagesData || !totalItemsData) {
+                const total = projectsData.length;
+                const pages = Math.max(1, Math.ceil(total / perPage));
+                totalItemsData = total;
+                totalPagesData = pages;
+                currentPageData = Math.min(Math.max(1, currentPageData), pages);
+                const start = (currentPageData - 1) * perPage;
+                const end = start + perPage;
+                setProjects(projectsData.slice(start, end));
+            } else {
+                setProjects(projectsData);
+            }
+
             setTotalPages(totalPagesData);
             setTotalProjects(totalItemsData);
             setCurrentPage(currentPageData);
@@ -122,7 +135,7 @@ export default function Page() {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={fetchProjects}
+                                    onClick={() => fetchProjects()}
                                     className="text-sm text-yellow-800 hover:text-yellow-900 underline"
                                 >
                                     重试连接

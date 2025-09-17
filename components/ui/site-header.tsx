@@ -1,13 +1,14 @@
 /*
  * @Date: 2025-08-31
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-05
+ * @LastEditTime: 2025-09-15
  * @FilePath: /LogUp/components/ui/site-header.tsx
  * Helllllloo!
  */
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import ThemeToggle from '../theme/ThemeToggle';
 
 export function SiteHeader() {
     return (
@@ -19,6 +20,7 @@ export function SiteHeader() {
                     className="mx-2 data-[orientation=vertical]:h-4"
                 />
                 <div className="ml-auto flex items-center gap-2">
+                    <ThemeToggle />
                     <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
                         <a
                             href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
@@ -26,7 +28,7 @@ export function SiteHeader() {
                             target="_blank"
                             className="dark:text-foreground"
                         >
-                              GitHub
+                            GitHub
                         </a>
                     </Button>
                 </div>
