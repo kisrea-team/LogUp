@@ -9,7 +9,7 @@
 
 import { useTheme } from './ThemeContext';
 import { Button } from '../ui/button';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon, Baseline } from 'lucide-react';
 
 export default function ThemeToggle() {
     const { theme, setTheme, currentTheme } = useTheme();
@@ -24,14 +24,14 @@ export default function ThemeToggle() {
         }
     };
 
-    // 明暗模式切换按钮
-    const toggleLightDark = () => {
+    // 主题切换按钮 (auto -> light -> dark -> auto)
+    const toggleTheme = () => {
         if (theme === 'auto') {
-            // 如果当前是自动模式，切换到手动模式并设置为当前实际主题的相反模式
-            setTheme(currentTheme === 'light' ? 'dark' : 'light');
+            setTheme('light');
+        } else if (theme === 'light') {
+            setTheme('dark');
         } else {
-            // 如果当前是手动模式，在明暗之间切换
-            setTheme(theme === 'light' ? 'dark' : 'light');
+            setTheme('auto');
         }
     };
 
@@ -39,59 +39,55 @@ export default function ThemeToggle() {
     const getAutoButtonContent = () => {
         const isAuto = theme === 'auto';
         return {
-            icon: <Monitor className="h-5 w-5" />,
+            icon: <Baseline className="h-5 w-5" />,
             isActive: isAuto,
             title: isAuto ? '自动模式 (已启用)' : '自动模式',
         };
     };
 
-    // 获取明暗切换按钮的图标和状态
-    const getLightDarkButtonContent = () => {
-        const isAuto = theme === 'auto';
-        const actualTheme = isAuto ? currentTheme : theme;
+    // 获取主题切换按钮的图标和状态
+    const getThemeButtonContent = () => {
+        const actualTheme = theme === 'auto' ? currentTheme : theme;
+
+        let icon;
+        let title;
+
+        if (theme === 'auto') {
+            icon = <Baseline className="size-6" />;
+            title = `自动模式: ${actualTheme === 'light' ? '浅色' : '深色'}`;
+        } else if (theme === 'light') {
+            icon = <Sun className="size-6" />;
+            title = '手动模式: 浅色';
+        } else {
+            icon = <Moon className="size-6" />;
+            title = '手动模式: 深色';
+        }
 
         return {
-            icon:
-                actualTheme === 'light' ? (
-                    <Sun className="size-6" />
-                ) : (
-                    <Moon className="size-6" />
-                ),
-            isActive: !isAuto,
-            title: isAuto
-                ? `当前: ${actualTheme === 'light' ? '浅色' : '深色'}`
-                : `手动模式: ${actualTheme === 'light' ? '浅色' : '深色'}`,
+            icon,
+            isActive: true,
+            title,
         };
     };
-    const autoButton = getAutoButtonContent();
-    const lightDarkButton = getLightDarkButtonContent();
+    // 主题按钮内容
+    const themeButton = getThemeButtonContent();
 
     return (
         <div className="flex gap-1">
-            {/* 自动模式按钮 */}
-            {/* <Button
-                onClick={toggleAutoMode}
-                variant="ghost"
-                size="sm"
-                className={`hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                    autoButton.isActive ? 'bg-gray-200 dark:bg-gray-600' : ''
-                }`}
-                title={autoButton.title}
-            >
-                {autoButton.icon}
-            </Button> */}
-
-            {/* 明暗模式切换按钮 */}
+            {/* 主题切换按钮 */}
             <Button
-                onClick={toggleLightDark}
+                onClick={toggleTheme}
                 variant="ghost"
                 size="sm"
                 className={`hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                    lightDarkButton.isActive ? '' : ''
+                    themeButton.isActive ? 'dark:bg-gray-700' : ''
                 }`}
-                title={lightDarkButton.title}
+                style={{
+                    backgroundColor: 'transparent'
+                }}
+                title={themeButton.title}
             >
-                {lightDarkButton.icon}
+                {themeButton.icon}
             </Button>
         </div>
     );
