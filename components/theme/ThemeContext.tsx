@@ -29,24 +29,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Apply theme based on current setting
     const applyTheme = () => {
-      let themeToApply: 'light' | 'dark';
+      const html = document.documentElement;
+
+      // Remove all manual classes first
+      html.classList.remove('manual-light', 'manual-dark');
 
       if (theme === 'auto') {
-        themeToApply = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        // Auto mode - let media queries handle it, no manual classes
+        setCurrentTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       } else {
-        themeToApply = theme;
-      }
-
-      setCurrentTheme(themeToApply);
-
-      // Apply theme to document
-      console.log('Applying theme:', themeToApply);
-      if (themeToApply === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.documentElement.setAttribute('data-theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.removeAttribute('data-theme');
+        // Manual mode - add specific class
+        html.classList.add(`manual-${theme}`);
+        setCurrentTheme(theme);
       }
     };
 
@@ -58,7 +52,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Listen for system theme changes if in auto mode
     if (theme === 'auto') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyTheme();
+      const handleChange = () => {
+        setCurrentTheme(mediaQuery.matches ? 'dark' : 'light');
+      };
       mediaQuery.addEventListener('change', handleChange);
 
       return () => mediaQuery.removeEventListener('change', handleChange);
