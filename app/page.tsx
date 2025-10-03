@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 // import ReactMarkdown from 'react-markdown';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
@@ -145,17 +146,39 @@ export default function Page() {
                     </div>
                 )}
 
-                {/* Main content */}
-                <ProjectList projects={projects} />
-                
-                {/* Pagination Controls */}
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalProjects}
-                    itemsPerPage={perPage}
-                    onPageChange={fetchProjects}
-                />
+                {/* Main content with animation */}
+                <AnimatePresence mode="wait">
+                    {loading ? (
+                        <motion.div
+                            key="loading"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <Loading progress={progress} />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="content"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <ProjectList projects={projects} />
+
+                            {/* Pagination Controls */}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={totalProjects}
+                                itemsPerPage={perPage}
+                                onPageChange={fetchProjects}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );
