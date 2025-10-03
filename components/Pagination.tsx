@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import {
     Pagination,
     PaginationContent,
@@ -71,8 +72,13 @@ const Paginations: React.FC<PaginationProps> = ({
     };
 
     return (
-        <div className="flex flex-col items-center my-8">
-            <div className="text-sm text-gray-600 mb-2">
+        <motion.div
+            className="flex flex-col items-center my-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
+            <div className="text-sm text-gray-600 mb-2 dark:text-gray-400">
                 共 {totalItems} 个项目，第 {Math.max(currentPage, 1)} 页，共{' '}
                 {Math.max(totalPages, 1)} 页
             </div>
@@ -88,22 +94,28 @@ const Paginations: React.FC<PaginationProps> = ({
                     </PaginationItem>
 
                     {pageNumbers.map((page, index) => (
-                        <PaginationItem
+                        <motion.div
                             key={`${page}-${index}`}
-                            className=" hover:bg-gray-100 rounded-md transition-all"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.2, delay: index * 0.05 }}
                         >
-                            {page === 'ellipsis' ? (
-                                <PaginationEllipsis />
-                            ) : (
-                                <PaginationLink
-                                    href="#"
-                                    isActive={currentPage === page}
-                                    onClick={(e) => handleClick(e, page as number)}
-                                >
-                                    {page}
-                                </PaginationLink>
-                            )}
-                        </PaginationItem>
+                            <PaginationItem
+                                className=" hover:bg-gray-100 rounded-md transition-all dark:hover:bg-gray-800"
+                            >
+                                {page === 'ellipsis' ? (
+                                    <PaginationEllipsis />
+                                ) : (
+                                    <PaginationLink
+                                        href="#"
+                                        isActive={currentPage === page}
+                                        onClick={(e) => handleClick(e, page as number)}
+                                    >
+                                        {page}
+                                    </PaginationLink>
+                                )}
+                            </PaginationItem>
+                        </motion.div>
                     ))}
 
                     <PaginationItem>
@@ -115,7 +127,7 @@ const Paginations: React.FC<PaginationProps> = ({
                     </PaginationItem>
                 </PaginationContent>
             </Pagination>
-        </div>
+        </motion.div>
     );
 };
 

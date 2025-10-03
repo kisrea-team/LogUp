@@ -19,8 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 export default function AdminPage() {
     return (
-        <div>
-            <div className="grid grid-cols-4 gap-4 mb-4">
+        <div className="px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <Card>
                     <CardHeader>
                         <CardDescription>总项目数</CardDescription>

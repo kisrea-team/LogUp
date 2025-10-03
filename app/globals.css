@@ -47,6 +47,12 @@
         --datail-background: oklch(0.708 0 0);
         --version-tag: #0a0a0a;
     }
+    .manual-dark .bg-popover {
+        background-color: var(--card);
+    }
+    .manual-dark .border-border {
+        border-color: var(--border-style);
+    }
     .manual-light {
         --color-black: oklch(0.97 0 0);
         --background: #ffffff;
@@ -57,6 +63,12 @@
         --border-style: oklch(0.92 0 0);
         --datail-background: oklch(0.556 0 0);
         --version-tag: #fafafa;
+    }
+    .manual-light .bg-popover {
+        background-color: var(--card);
+    }
+    .manual-light .border-border {
+        border-color: var(--border-style);
     }
     .manual-dark * {
         border-color: oklch(0.44 0 0);
@@ -81,6 +93,12 @@
     .text-datail {
         color: var(--datail-background);
     }
+    .bg-popover {
+        background-color: var(--card);
+    }
+    .border-border {
+        border-color: var(--border-style);
+    }
 }
 
 @layer utilities {
@@ -99,6 +117,15 @@
     }
     .theme-test-text {
         @apply text-gray-900 dark:text-white;
+    }
+    /* 响应式下拉菜单宽度 */
+    .select-trigger-full {
+        @apply w-full;
+    }
+    @media (min-width: 640px) {
+        .select-trigger-full {
+            max-width: 300px;
+        }
     }
     .flex-col {
         display: flex;
@@ -127,12 +154,39 @@
     }
     .projectlist {
         display: grid;
-        grid-template-columns: 15% auto 15%;
+        grid-template-columns: 1fr;
         gap: 1rem;
         max-width: 1111px;
         margin: auto;
         padding: 1rem;
         align-items: start;
+    }
+
+    /* 平板端: 两栏布局 */
+    @media (min-width: 768px) {
+        .projectlist {
+            grid-template-columns: 200px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+        .projectlist-about {
+            display: none;
+        }
+    }
+
+    /* 桌面端: 三栏布局 */
+    @media (min-width: 1024px) {
+        .projectlist {
+            grid-template-columns: 15% auto 15%;
+            gap: 2rem;
+        }
+    }
+
+    /* 大屏优化 */
+    @media (min-width: 1280px) {
+        .projectlist {
+            max-width: 1200px;
+        }
     }
     .projectlist-content {
         display: flex;
@@ -143,7 +197,7 @@
     }
     .projectlist-content #card {
         display: grid;
-        grid-template-columns: 10% 1fr;
+        grid-template-columns: auto 1fr;
         align-items: center;
         cursor: pointer;
         padding: 1.2rem 1rem;
@@ -151,6 +205,28 @@
         border-radius: var(--radius);
         transition: all 0.2s ease-in-out;
         border: 1px solid var(--border-style);
+    }
+
+    /* 移动端卡片优化 */
+    @media (max-width: 767px) {
+        .projectlist-content #card {
+            grid-template-columns: auto 1fr;
+            padding: 1rem 0.8rem;
+            gap: 0.8rem;
+        }
+
+        .projectlist-content #card .text-3xl {
+            font-size: 1.5rem !important;
+        }
+
+        .projectlist-content #card .font-medium {
+            font-size: 0.95rem;
+        }
+
+        .projectlist-version-tag {
+            font-size: 10px;
+            padding: 0.05rem 0.3rem;
+        }
     }
     #card:hover {
         border: 1px solid var(--border-style);
@@ -176,6 +252,13 @@
         padding: 10px;
         position: sticky;
         top: 4rem;
+    }
+
+    /* 移动端隐藏侧边栏 */
+    @media (max-width: 767px) {
+        .projectlist-about {
+            display: none;
+        }
     }
     .projectlist-version-tag {
         font-size: 12px;
