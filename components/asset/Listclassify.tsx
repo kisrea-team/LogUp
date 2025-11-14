@@ -10,7 +10,7 @@ import { classify } from '@/components/utils/classify';
 // interface
 const ListClassify = () => {
     return (
-        <Card className="projectlist-classify">
+        <Card className="projectlist-classify hidden md:block">
             <p className="mx-auto">分类</p>
             <div className="classify--items">
                 {classify.map((item) => (
