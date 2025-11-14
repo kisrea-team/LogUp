@@ -76,25 +76,25 @@ export default function AdAdminPage() {
 
                     {/* 总览统计 */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="rounded-lg shadow p-6">
                             <div className="text-sm font-medium text-gray-500">总收入</div>
                             <div className="text-2xl font-bold text-green-600">
                                 ¥{totalRevenue.toFixed(2)}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="rounded-lg shadow p-6">
                             <div className="text-sm font-medium text-gray-500">总展示</div>
                             <div className="text-2xl font-bold text-blue-600">
                                 {totalImpressions.toLocaleString()}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className=" rounded-lg shadow p-6">
                             <div className="text-sm font-medium text-gray-500">总点击</div>
                             <div className="text-2xl font-bold text-purple-600">
                                 {totalClicks.toLocaleString()}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="rounded-lg shadow p-6">
                             <div className="text-sm font-medium text-gray-500">平均CTR</div>
                             <div className="text-2xl font-bold text-orange-600">
                                 {averageCTR.toFixed(2)}%
@@ -104,7 +104,7 @@ export default function AdAdminPage() {
                 </div>
 
                 {/* 广告性能表格 */}
-                <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+                <div className="rounded-lg shadow overflow-hidden mb-8">
                     <div className="px-6 py-4 border border-gray-200">
                         <h2 className="text-lg font-semibold text-gray-900">广告位性能</h2>
                     </div>
@@ -117,7 +117,7 @@ export default function AdAdminPage() {
                     ) : (
                         <div className="overflow-x-auto">
                             <div className="min-w-full divide-y divide-gray-200">
-                                <div className="bg-gray-50">
+                                <div className="">
                                     <div>
                                         <p>广告位ID</p>
                                         <p>类型</p>
@@ -127,7 +127,7 @@ export default function AdAdminPage() {
                                         <p>收入</p>
                                     </div>
                                 </div>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className=" divide-y divide-gray-200">
                                     {adPerformance.map((ad) => (
                                         <div key={ad.adId} className="hover:bg-gray-50">
                                             <p className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

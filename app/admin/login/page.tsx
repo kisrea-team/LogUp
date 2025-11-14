@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-17
+ * @LastEditTime: 2025-09-19
  * @FilePath: /LogUp/app/admin/login/page.tsx
  * Helllllloo!
  */
@@ -65,7 +65,7 @@ export default function AdminLoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8">
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <Card className="w-full max-w-sm">
