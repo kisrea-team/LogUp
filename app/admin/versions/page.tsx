@@ -217,7 +217,7 @@ export default function VersionAdminPage() {
                 </div>
 
                 {/* 项目选择器 */}
-                <div className="bg-white rounded-lg shadow p-6 mb-8">
+                <div className=" rounded-lg shadow p-6 mb-8">
                     <h2 className="text-lg font-semibold mb-4">选择项目</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {projects.map((project) => (
@@ -252,7 +252,7 @@ export default function VersionAdminPage() {
                     <>
                         {/* 添加版本表单 */}
                         {showAddForm && (
-                            <div className="bg-white rounded-lg shadow p-6 mb-8">
+                            <div className=" rounded-lg shadow p-6 mb-8">
                                 <h2 className="text-lg font-semibold mb-4">添加新版本</h2>
                                 <form onSubmit={handleAddVersion} className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -358,7 +358,7 @@ export default function VersionAdminPage() {
 
                         {/* 编辑版本表单 */}
                         {editingVersion && (
-                            <div className="bg-white rounded-lg shadow p-6 mb-8">
+                            <div className=" rounded-lg shadow p-6 mb-8">
                                 <h2 className="text-lg font-semibold mb-4">编辑版本</h2>
                                 <form onSubmit={handleUpdateVersion} className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -473,7 +473,7 @@ export default function VersionAdminPage() {
                         )}
 
                         {/* 版本列表 */}
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <div className=" rounded-lg shadow overflow-hidden">
                             <div className="px-6 py-4 border border-gray-200">
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     {selectedProject.name} - 版本列表
@@ -506,7 +506,7 @@ export default function VersionAdminPage() {
                                                 <p>操作</p>
                                             </div>
                                         </div>
-                                        <div className="bg-white divide-y divide-gray-200">
+                                        <div className=" divide-y divide-gray-200">
                                             {versions.map((version) => (
                                                 <div
                                                     key={version.id}
@@ -557,7 +557,7 @@ export default function VersionAdminPage() {
                 )}
 
                 {!selectedProject && projects.length === 0 && (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
+                    <div className=" rounded-lg shadow p-8 text-center">
                         <p className="text-gray-600 mb-4">暂无项目数据</p>
                         <Link
                             href="/admin/projects"

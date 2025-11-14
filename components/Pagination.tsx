@@ -25,7 +25,7 @@ const Paginations: React.FC<PaginationProps> = ({
 }) => {
     const getPageNumbers = () => {
         const pages: Array<number | 'ellipsis'> = [];
-        const maxVisiblePages = 5;
+        const maxVisiblePages = 8;
 
         if (totalPages <= maxVisiblePages) {
             for (let i = 1; i <= Math.max(totalPages, 1); i++) {
@@ -73,7 +73,7 @@ const Paginations: React.FC<PaginationProps> = ({
     return (
         <div className="flex flex-col items-center my-8">
             <div className="text-sm text-gray-600 mb-2">
-                共 {totalItems} 个项目，第 {Math.max(currentPage, 1)} 页，共{' '}
+                共 {totalItems} 个项目，第 {Math.max(currentPage, 1)} 页，共
                 {Math.max(totalPages, 1)} 页
             </div>
 

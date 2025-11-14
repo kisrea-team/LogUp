@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-18
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-05
+ * @LastEditTime: 2025-09-19
  * @FilePath: /LogUp/components/AdminProjectList.tsx
  * Helllllloo!
  */
@@ -44,7 +44,7 @@ export default function AdminProjectList({
     handleEditProject,
 }: AdminProjectListProps) {
     return (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className=" rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">项目列表</h2>
             </div>
@@ -57,7 +57,7 @@ export default function AdminProjectList({
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="">
                             <tr>
                                 {table.map((column) => (
                                     <th
@@ -69,7 +69,7 @@ export default function AdminProjectList({
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className=" divide-y divide-gray-200">
                             {(projects || []).length === 0 ? (
                                 <tr>
                                     <td colSpan={table.length + 1} className="px-6 py-8 text-center">

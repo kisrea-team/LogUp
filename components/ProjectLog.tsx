@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-06
+ * @LastEditTime: 2025-09-19
  * @FilePath: /LogUp/components/ProjectLog.tsx
  * Helllllloo!
  */
@@ -46,7 +46,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
     return (
         <div className="max-w-7xl mx-auto flex">
             {/* Sidebar */}
-            <aside className="w-64 bg-gray-50 min-h-screen border-r border-gray-200">
+            <div className="w-64 fixed min-h-screen border-r border-gray-200">
                 <div className="p-4">
                     <h2 className="text-sm font-medium text-gray-900 mb-4">版本历史</h2>
                     <nav className="space-y-1">
@@ -68,20 +68,20 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                         ))}
                     </nav>
                 </div>
-            </aside>
+            </div>
 
             {/* Main content */}
             <main className="flex-1 p-8 ">
                 {/* Project Info */}
-                <div className="fixed">
+                <div className="">
                     <div className="max-w-4xl mb-8">
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className=" border border-gray-200 rounded-lg p-6">
                             <div className="flex items-start space-x-4 mb-4">
                                 <span className="text-4xl">
                                     <RenderIcon icon={selectedProject.icon} />
                                 </span>
                                 <div className="flex-1">
-                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                                    <h1 className="text-2xl font-bold mb-2">
                                         {selectedProject.name}
                                     </h1>
                                     <p className="text-gray-600 mb-3">
@@ -99,7 +99,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                     <h3 className="text-sm font-medium text-gray-900 mb-2">
                                         项目介绍
                                     </h3>
-                                    <p className="text-gray-700">{selectedProject.describe}</p>
+                                    <p className="">{selectedProject.describe}</p>
                                 </div>
                             )}
                         </div>
@@ -121,10 +121,8 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                 </p>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                    更新内容
-                                </h3>
+                            <div className=" border border-gray-200 rounded-lg p-6 mb-6">
+                                <h3 className="text-lg font-semibold  mb-4">更新内容</h3>
                                 <div className="prose prose-sm max-w-none">
                                     <ReactMarkdown
                                         components={{
@@ -147,7 +145,10 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                                 />
                                             ),
                                             p: ({ node, ...props }) => (
-                                                <p className="text-gray-700 mb-3" {...props} />
+                                                <p
+                                                    className="text-content mb-3"
+                                                    {...props}
+                                                />
                                             ),
                                             ul: ({ node, ...props }) => (
                                                 <ul className="list-disc pl-5 mb-4" {...props} />

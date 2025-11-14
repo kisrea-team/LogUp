@@ -55,7 +55,7 @@ export default function ProjectAdminPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProjects, setTotalProjects] = useState(0);
-    const [perPage, setPerPage] = useState(3);
+    const [perPage, setPerPage] = useState(10);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -240,7 +240,7 @@ export default function ProjectAdminPage() {
 
                 {/* 添加/编辑项目表单 */}
                 {showAddForm && (
-                    <div className="bg-white rounded-lg shadow p-6 mb-8">
+                    <div className="rounded-lg shadow p-6 mb-8">
                         <h2 className="text-lg font-semibold mb-4">
                             {editingProject ? '编辑项目' : '添加新项目'}
                         </h2>
