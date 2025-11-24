@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-19
+ * @LastEditTime: 2025-11-24
  * @FilePath: /LogUp/components/ProjectLog.tsx
  * Helllllloo!
  */
@@ -60,7 +60,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
             <Select
                 value={selectedVersion?.version || ''}
                 onValueChange={(value) => {
-                    const version = selectedProject.versions.find(v => v.version === value);
+                    const version = selectedProject.versions.find((v) => v.version === value);
                     if (version) setSelectedVersion(version);
                 }}
             >
@@ -147,7 +147,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                 </div>
                             )}
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* 版本详情 */}
                     {selectedVersion && (
@@ -196,19 +196,25 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                                 />
                                             ),
                                             p: ({ node, ...props }) => (
-                                                <p
-                                                    className="text-content mb-3"
+                                                <p className="text-content mb-3" {...props} />
+                                            ),
+                                            ul: ({ node, ...props }) => (
+                                                <ul
+                                                    className="list-disc pl-5 mb-4 dark:text-gray-300"
                                                     {...props}
                                                 />
                                             ),
-                                            ul: ({ node, ...props }) => (
-                                                <ul className="list-disc pl-5 mb-4 dark:text-gray-300" {...props} />
-                                            ),
                                             ol: ({ node, ...props }) => (
-                                                <ol className="list-decimal pl-5 mb-4 dark:text-gray-300" {...props} />
+                                                <ol
+                                                    className="list-decimal pl-5 mb-4 dark:text-gray-300"
+                                                    {...props}
+                                                />
                                             ),
                                             li: ({ node, ...props }) => (
-                                                <li className="mb-1 dark:text-gray-300" {...props} />
+                                                <li
+                                                    className="mb-1 dark:text-gray-300"
+                                                    {...props}
+                                                />
                                             ),
                                             a: ({ node, ...props }) => (
                                                 <a
@@ -217,17 +223,23 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                                 />
                                             ),
                                             strong: ({ node, ...props }) => (
-                                                <strong className="font-semibold dark:text-white" {...props} />
+                                                <strong
+                                                    className="font-semibold dark:text-white"
+                                                    {...props}
+                                                />
                                             ),
                                             em: ({ node, ...props }) => (
-                                                <em className="italic dark:text-gray-300" {...props} />
+                                                <em
+                                                    className="italic dark:text-gray-300"
+                                                    {...props}
+                                                />
                                             ),
                                         }}
                                     >
                                         {selectedVersion.content}
                                     </ReactMarkdown>
                                 </div>
-                            </motion.div>
+                            </div>
 
                             {/* 下载 */}
                             <motion.div
@@ -236,7 +248,9 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: 0.3 }}
                             >
-                                <h3 className="text-lg font-semibold text-blue-900 mb-4 dark:text-blue-100">下载</h3>
+                                <h3 className="text-lg font-semibold text-blue-900 mb-4 dark:text-blue-100">
+                                    下载
+                                </h3>
                                 <motion.a
                                     href={
                                         selectedVersion.download_url || selectedVersion.downloadUrl
@@ -253,8 +267,8 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                             </motion.div>
                         </motion.div>
                     )}
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     );
 };
