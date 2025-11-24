@@ -61,7 +61,7 @@ export default function Page() {
         // Validate page number
         if (page < 1) page = 1;
         if (page > totalPages && totalPages > 0) page = totalPages;
-        
+
         try {
             setLoading(true);
             setProgress(10); // 开始加载
@@ -77,9 +77,9 @@ export default function Page() {
             const data = await response.json();
             setProgress(90); // 数据已解析
             console.log('API Response:', data); // 添加调试日志
-            
+
             // 处理不同的数据结构
-            const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+            const projectsData = Array.isArray(data) ? data : data.data || data.projects || [];
             let totalPagesData = data.total_pages || data.totalPages;
             let totalItemsData = data.total || data.totalItems;
             let currentPageData = data.page || data.currentPage || page;
@@ -119,67 +119,63 @@ export default function Page() {
     const showErrorBanner = errorMessage && projects.length > 0;
 
     return (
-        <>
-            <div className="min-h-screen bg-background">
-                {/* Header */}
-                <Header />
-
-                {/* Error Banner */}
-                {showErrorBanner && (
-                    <div className="bg-yellow-50  border-yellow-200">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                            <div className="flex items-center">
-                                <div className="text-yellow-600 mr-3">⚠️</div>
-                                <div className="flex-1">
-                                    <p className="text-sm text-yellow-800">
-                                        无法连接到后端服务，正在显示示例数据
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => fetchProjects()}
-                                    className="text-sm text-yellow-800 hover:text-yellow-900 underline"
-                                >
-                                    重试连接
-                                </button>
+        <div className="min-h-screen bg-background">
+            <Header />
+            {/* Error Banner */}
+            {showErrorBanner && (
+                <div className="bg-yellow-50  border-yellow-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                        <div className="flex items-center">
+                            <div className="text-yellow-600 mr-3">⚠️</div>
+                            <div className="flex-1">
+                                <p className="text-sm text-yellow-800">
+                                    无法连接到后端服务，正在显示示例数据
+                                </p>
                             </div>
+                            <button
+                                onClick={() => fetchProjects()}
+                                className="text-sm text-yellow-800 hover:text-yellow-900 underline"
+                            >
+                                重试连接
+                            </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Main content with animation */}
+            <AnimatePresence mode="wait">
+                {loading ? (
+                    <motion.div
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Loading progress={progress} />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="content"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ProjectList projects={projects} />
+
+                        {/* Pagination Controls */}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalProjects}
+                            itemsPerPage={perPage}
+                            onPageChange={fetchProjects}
+                        />
+                    </motion.div>
                 )}
-
-                {/* Main content with animation */}
-                <AnimatePresence mode="wait">
-                    {loading ? (
-                        <motion.div
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Loading progress={progress} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="content"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <ProjectList projects={projects} />
-
-                            {/* Pagination Controls */}
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                totalItems={totalProjects}
-                                itemsPerPage={perPage}
-                                onPageChange={fetchProjects}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </>
+            </AnimatePresence>
+        </div>
     );
 }

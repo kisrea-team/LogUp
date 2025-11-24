@@ -3,7 +3,15 @@
 @plugin "tailwindcss-animate";
 /* 上面坚决不要动！ */
 @theme {
+    /* 颜色变量 */
     --color-trans: oklch(0.97 0 0);
+    --color-background: var(--background);
+    /* 布局尺寸 */
+    --spacing-layout: 1200px;
+    /* 字体尺寸 */
+    --text-small: 0.85rem;
+    --text-default: 1rem;
+    --text-title: 1.35rem;
 }
 @layer base {
     :root {
@@ -92,32 +100,12 @@
         color: var(--text);
     }
     .card {
-        /* rounded-lg border bg-card text-card-foreground shadow-sm */
         border-radius: var(--radius);
         border: 1px solid var(--border-style);
         background-color: var(--card);
     }
     .text-datail {
         color: var(--datail-background);
-    }
-    body::before {
-        --size: 45px;
-        --line: color-mix(in hsl, canvasText, transparent 80%);
-        content: '';
-        height: 100vh;
-        width: 100vw;
-        position: fixed;
-        /* background:
-            linear-gradient(90deg, var(--line) 1px, transparent 1px var(--size))
-                calc(var(--size) * 0.36) 50% / var(--size) var(--size),
-            linear-gradient(var(--line) 1px, transparent 1px var(--size)) 0%
-                calc(var(--size) * 0.32) / var(--size) var(--size); */
-        background: var(--bg-bottom);
-        mask: linear-gradient(180deg, transparent 60%, white);
-        top: 0;
-        transform-style: flat;
-        pointer-events: none;
-        z-index: 2;
     }
 }
 
@@ -176,40 +164,14 @@
         font-size: 18px;
     }
     .projectlist {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        max-width: 1111px;
+        display: flex;
+        /* display: grid; */
+        /* grid-template-columns: 2fr; */
+        gap: 2rem;
         margin: auto;
-        padding: 1rem;
+        padding-top: 1.5rem;
+        padding: 1.5rem 0 0 2rem;
         align-items: start;
-    }
-
-    /* 平板端: 两栏布局 */
-    @media (min-width: 768px) {
-        .projectlist {
-            grid-template-columns: 200px 1fr;
-            gap: 1.5rem;
-            padding: 1.5rem;
-        }
-        .projectlist-about {
-            display: none;
-        }
-    }
-
-    /* 桌面端: 三栏布局 */
-    @media (min-width: 1024px) {
-        .projectlist {
-            grid-template-columns: 15% auto 15%;
-            gap: 2rem;
-        }
-    }
-
-    /* 大屏优化 */
-    @media (min-width: 1280px) {
-        .projectlist {
-            max-width: 1200px;
-        }
     }
     .projectlist-content {
         display: flex;
@@ -217,6 +179,7 @@
         flex-direction: column;
         gap: 0.5rem;
         border-radius: var(--radius);
+        min-width: 66%;
     }
     .projectlist-content #card {
         display: grid;
@@ -227,7 +190,14 @@
         padding-right: 1.4rem;
         border-radius: var(--radius);
         transition: all 0.2s ease-in-out;
-        border: 1px solid var(--border-style);
+        /* border: 1px solid var(--border-style); */
+    }
+    .projectlist-aside {
+        display: flex;
+        flex-direction: column;
+        /* position: sticky; */
+        top: 4rem;
+        gap: 1rem;
     }
 
     /* 移动端卡片优化 */
@@ -294,7 +264,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        align-items: center;
+        align-items: flex-start;
     }
     .classify--items > div {
         display: flex;
