@@ -1,0 +1,36 @@
+{
+    "kind": "collectionType",
+    "collectionName": "projects",
+    "info": {
+        "singularName": "project",
+        "pluralName": "projects",
+        "displayName": "Project"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "icon": {
+            "type": "string",
+            "required": true
+        },
+        "name": {
+            "type": "string",
+            "required": true
+        },
+        "latest_version": {
+            "type": "string",
+            "required": true
+        },
+        "latest_update_time": {
+            "type": "date",
+            "required": true
+        },
+        "versions": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::version.version",
+            "mappedBy": "project"
+        }
+    }
+}

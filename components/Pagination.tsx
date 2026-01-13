@@ -122,7 +122,7 @@ const Paginations: React.FC<PaginationProps> = ({
                     </PaginationItem>
                 </PaginationContent>
             </Pagination>
-        </motion.div>
+        </div>
     );
 };
 
