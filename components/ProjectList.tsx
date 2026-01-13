@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-15
+ * @LastEditTime: 2025-11-24
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -9,9 +9,10 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Card } from './ui/card';
-import ListClassify from './asset/Listclassify';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { RenderIcon } from './utils/renderIcon';
+import { ThumbsUp, MessageCircle } from 'lucide-react';
 
 interface Version {
     id?: number;
@@ -49,20 +50,19 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
     };
 
     return (
-        <main className="projectlist">
-            <ListClassify />
-            <div>
-                <div className="projectlist-content">
-                    {(projects || []).length === 0 ? (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                            className="text-center py-12"
-                        >
-                            <p className="text-gray-500">暂无项目数据</p>
-                        </motion.div>
-                    ) : (projects || []).map((project, index) => (
+        <main className="projectlist max-w-layout">
+            <div className="projectlist-content">
+                {(projects || []).length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-center py-12"
+                    >
+                        <p className="text-gray-500">暂无项目数据</p>
+                    </motion.div>
+                ) : (
+                    (projects || []).map((project, index) => (
                         <motion.div
                             key={project.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -71,18 +71,12 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                             whileHover={{ y: -2 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <Card
+                            <div
                                 id="card"
-                                className="grid rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                                className=" hover:bg-blue-200 "
                                 onClick={() => handleProjectClick(project)}
                             >
-                                {/* <div className="text-3xl">{project.icon}</div> */}
                                 <div className="text-3xl">
-                                    {/* {project.icon.trim().startsWith('<svg') ? (
-                                        <p dangerouslySetInnerHTML={{ __html: project.icon }} />
-                                    ) : (
-                                        <span>{project.icon}</span>
-                                    )} */}
                                     <RenderIcon icon={project.icon} />
                                 </div>
                                 <div className="flex-1">
@@ -113,18 +107,37 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                                                 <span className="mx-1">|</span>
                                                 <span>{project.type || '未分类'}</span>
                                             </div>
-                                            <div className="sm:ml-auto">{project.latest_update_time}</div>
+                                            <div className="sm:ml-auto">
+                                                {project.latest_update_time}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         </motion.div>
-                    ))}
-                </div>
+                    ))
+                )}
             </div>
-            <Card className="projectlist-about">
-                <h1>hello</h1>
-            </Card>
+            <aside className="projectlist-aside">
+                <h1 className="text-title font-bold">近日更新</h1>
+                <div className="text-small gap-2 flex-col">
+                    <a className="flex">
+                        {/* <Annoyed /> */}
+                        <span>项目名称</span>
+                    </a>
+                    <p className="text-default">更新了有关XXX的功能，</p>
+                    <div>
+                        <Button variant="ghost">
+                            <ThumbsUp />
+                            999+
+                        </Button>
+                        <Button>
+                            <MessageCircle />
+                            30
+                        </Button>
+                    </div>
+                </div>
+            </aside>
         </main>
     );
 };

@@ -95,9 +95,7 @@ const Paginations: React.FC<PaginationProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.2, delay: index * 0.05 }}
                         >
-                            <PaginationItem
-                                className=" hover:bg-gray-100 rounded-md transition-all dark:hover:bg-gray-800"
-                            >
+                            <PaginationItem className=" hover:bg-gray-100 rounded-md transition-all dark:hover:bg-gray-800">
                                 {page === 'ellipsis' ? (
                                     <PaginationEllipsis />
                                 ) : (
