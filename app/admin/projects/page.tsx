@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { apiFetch } from '@/lib/api';
+import { projectTable } from '@/components/utils/projectTable';
+import AdminProjectList from '@/components/AdminProjectList';
+import Pagination from '@/components/Pagination';
 
 interface Version {
     id?: number;
@@ -19,7 +21,19 @@ interface Project {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
     versions: Version[];
+}
+
+interface PaginatedResponse {
+    data: Project[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
 }
 
 interface ProjectCreate {
@@ -27,42 +41,152 @@ interface ProjectCreate {
     name: string;
     latest_version: string;
     latest_update_time: string;
+    describe?: string;
+    summar?: string;
+    author?: string;
+    type?: string;
 }
 
 export default function ProjectAdminPage() {
+    const table = projectTable.filter((item) => item.sort === 'a');
     const [projects, setProjects] = useState<Project[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalProjects, setTotalProjects] = useState(0);
+    const [perPage, setPerPage] = useState(10);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(10);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [githubLoading, setGithubLoading] = useState(false);
     const [newProject, setNewProject] = useState<ProjectCreate>({
         icon: '',
         name: '',
         latest_version: '',
         latest_update_time: new Date().toISOString().split('T')[0],
+        describe: '',
+        summar: '',
+        author: '',
+        type: '',
     });
 
     useEffect(() => {
         fetchProjects();
     }, []);
 
-    const fetchProjects = async () => {
+    const fetchGithubRepoInfo = async () => {
+        const repoUrl = (editingProject ? editingProject.name : newProject.name).trim();
+        if (!repoUrl) return;
+
+        try {
+            setGithubLoading(true);
+            const response = await apiFetch(`/scrape/github/repo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repoUrl }),
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.success || !payload?.data) return;
+
+            const info = payload.data as {
+                icon?: string;
+                name?: string;
+                latest_version?: string;
+                latest_update_time?: string;
+                describe?: string;
+                summar?: string;
+                author?: string;
+                type?: string;
+            };
+
+            if (editingProject) {
+                setEditingProject((prev) =>
+                    prev
+                        ? {
+                              ...prev,
+                              icon: info.icon ?? prev.icon,
+                              name: info.name ?? prev.name,
+                              latest_version: info.latest_version ?? prev.latest_version,
+                              latest_update_time: info.latest_update_time ?? prev.latest_update_time,
+                              describe: info.describe ?? prev.describe,
+                              summar: info.summar ?? prev.summar,
+                              author: info.author ?? prev.author,
+                              type: info.type ?? prev.type,
+                          }
+                        : null
+                );
+            } else {
+                setNewProject((prev) => ({
+                    ...prev,
+                    icon: info.icon ?? prev.icon,
+                    name: info.name ?? prev.name,
+                    latest_version: info.latest_version ?? prev.latest_version,
+                    latest_update_time: info.latest_update_time ?? prev.latest_update_time,
+                    describe: info.describe ?? prev.describe,
+                    summar: info.summar ?? prev.summar,
+                    author: info.author ?? prev.author,
+                    type: info.type ?? prev.type,
+                }));
+            }
+        } finally {
+            setGithubLoading(false);
+        }
+    };
+
+    const fetchProjects = async (page: number = currentPage) => {
+        // Validate page number
+        if (page < 1) page = 1;
+        if (page > totalPages && totalPages > 0) page = totalPages;
+        
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/projects`);
+            setProgress(10);
+            await new Promise((res) => setTimeout(res, 150));
+            setProgress(40);
+            const response = await apiFetch(`/projects?page=${page}&per_page=${perPage}`);
+            setProgress(60);
             if (response.ok) {
                 const data = await response.json();
-                setProjects(data);
+                setProgress(90);
+                console.log('Admin API Response:', data); // 添加调试日志
+                
+                // 处理不同的数据结构
+                const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+                let totalPagesData = data.total_pages || data.totalPages;
+                let totalItemsData = data.total || data.totalItems;
+                let currentPageData = data.page || data.currentPage || page;
+
+                // 前端兜底分页：当后端未返回分页信息时
+                if (!totalPagesData || !totalItemsData) {
+                    const total = projectsData.length;
+                    const pages = Math.max(1, Math.ceil(total / perPage));
+                    totalItemsData = total;
+                    totalPagesData = pages;
+                    currentPageData = Math.min(Math.max(1, currentPageData), pages);
+                    const start = (currentPageData - 1) * perPage;
+                    const end = start + perPage;
+                    setProjects(projectsData.slice(start, end));
+                } else {
+                    setProjects(projectsData);
+                }
+
+                setTotalPages(totalPagesData);
+                setTotalProjects(totalItemsData);
+                setCurrentPage(currentPageData);
             }
         } catch (error) {
             console.error('获取项目失败:', error);
         } finally {
-            setLoading(false);
+            setProgress(100);
+            setTimeout(() => setLoading(false), 100);
         }
     };
 
     const handleAddProject = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${API_BASE_URL}/projects`, {
+            const response = await apiFetch(`/projects`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -71,12 +195,16 @@ export default function ProjectAdminPage() {
             });
 
             if (response.ok) {
-                await fetchProjects();
+                await fetchProjects(currentPage);
                 setNewProject({
                     icon: '',
                     name: '',
                     latest_version: '',
                     latest_update_time: new Date().toISOString().split('T')[0],
+                    describe: '',
+                    summar: '',
+                    author: '',
+                    type: '',
                 });
                 setShowAddForm(false);
             }
@@ -85,15 +213,61 @@ export default function ProjectAdminPage() {
         }
     };
 
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+        setShowAddForm(true);
+    };
+
+    const handleUpdateProject = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProject) return;
+
+        try {
+            console.log('Updating project with ID:', editingProject.id);
+            console.log('Project data:', editingProject);
+
+            const response = await apiFetch(`/projects/${editingProject.id}/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    icon: editingProject.icon,
+                    name: editingProject.name,
+                    latest_version: editingProject.latest_version,
+                    latest_update_time: editingProject.latest_update_time,
+                    describe: editingProject.describe,
+                    summar: editingProject.summar,
+                    author: editingProject.author,
+                    type: editingProject.type,
+                }),
+            });
+
+            console.log('Update response status:', response.status);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Update response data:', data);
+                await fetchProjects(currentPage);
+                setEditingProject(null);
+                setShowAddForm(false);
+            } else {
+                const errorData = await response.json();
+                console.error('Update failed:', errorData);
+            }
+        } catch (error) {
+            console.error('更新项目失败:', error);
+        }
+    };
+
     const handleDeleteProject = async (projectId: number) => {
         if (confirm('确定要删除这个项目吗？')) {
             try {
-                const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+                const response = await apiFetch(`/projects/${projectId}`, {
                     method: 'DELETE',
                 });
 
                 if (response.ok) {
-                    await fetchProjects();
+                    await fetchProjects(currentPage);
                 }
             } catch (error) {
                 console.error('删除项目失败:', error);
@@ -102,132 +276,292 @@ export default function ProjectAdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8" data-oid="hkd9bwt">
-            <div className="max-w-7xl mx-auto" data-oid="i700y8a">
-                <div className="mb-8" data-oid="5x7vo48">
-                    <div className="flex justify-between items-center" data-oid="cp8_:h1">
-                        <h1 className="text-3xl font-bold text-gray-900" data-oid="vzi:c9v">
-                            项目管理
-                        </h1>
+        <div>
+            <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
                         <button
-                            onClick={() => setShowAddForm(!showAddForm)}
+                            onClick={() => {
+                                if (showAddForm) {
+                                    setShowAddForm(false);
+                                    setEditingProject(null);
+                                } else {
+                                    setShowAddForm(true);
+                                }
+                            }}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            data-oid="ygi_nsw"
                         >
                             {showAddForm ? '取消' : '添加项目'}
                         </button>
                     </div>
                 </div>
 
-                {/* 添加项目表单 */}
+                {/* 添加/编辑项目表单 */}
                 {showAddForm && (
-                    <div className="bg-white rounded-lg shadow p-6 mb-8" data-oid="qx8.7m8">
-                        <h2 className="text-lg font-semibold mb-4" data-oid="tpw1if_">
-                            添加新项目
+                    <div className="rounded-lg shadow p-6 mb-8">
+                        <h2 className="text-lg font-semibold mb-4">
+                            {editingProject ? '编辑项目' : '添加新项目'}
                         </h2>
-                        <form onSubmit={handleAddProject} className="space-y-4" data-oid="e5p.rfr">
-                            <div className="grid grid-cols-2 gap-4" data-oid="i2cxn_6">
-                                <div data-oid="lkaqigy">
-                                    <label
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                        data-oid=".1574rx"
-                                    >
+                        <form
+                            onSubmit={editingProject ? handleUpdateProject : handleAddProject}
+                            className="space-y-4"
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        简介
+                                    </label>
+                                    <textarea
+                                        value={
+                                            editingProject
+                                                ? editingProject.describe || ''
+                                                : newProject.describe
+                                        }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, describe: e.target.value }
+                                                        : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    describe: e.target.value,
+                                                }));
+                                            }
+                                        }}
+                                        placeholder="项目详细描述"
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                        rows={3}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        一句话简述
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            editingProject
+                                                ? editingProject.summar || ''
+                                                : newProject.summar
+                                        }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, summar: e.target.value }
+                                                        : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    summar: e.target.value,
+                                                }));
+                                            }
+                                        }}
+                                        placeholder="简短描述"
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        作者
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            editingProject
+                                                ? editingProject.author || ''
+                                                : newProject.author
+                                        }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? { ...prev, author: e.target.value }
+                                                        : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    author: e.target.value,
+                                                }));
+                                            }
+                                        }}
+                                        placeholder="项目作者"
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        项目类型
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            editingProject
+                                                ? editingProject.type || ''
+                                                : newProject.type
+                                        }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev ? { ...prev, type: e.target.value } : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    type: e.target.value,
+                                                }));
+                                            }
+                                        }}
+                                        placeholder="工具、框架、服务等"
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         图标
                                     </label>
                                     <input
                                         type="text"
-                                        value={newProject.icon}
-                                        onChange={(e) =>
-                                            setNewProject((prev) => ({
-                                                ...prev,
-                                                icon: e.target.value,
-                                            }))
+                                        value={
+                                            editingProject ? editingProject.icon : newProject.icon
                                         }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev ? { ...prev, icon: e.target.value } : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    icon: e.target.value,
+                                                }));
+                                            }
+                                        }}
                                         placeholder="🚀"
                                         className="w-full border border-gray-300 rounded-md px-3 py-2"
                                         required
-                                        data-oid="6utvbyi"
                                     />
                                 </div>
-                                <div data-oid="zicikn_">
-                                    <label
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                        data-oid="hgz:l79"
-                                    >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         项目名称
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={newProject.name}
-                                        onChange={(e) =>
-                                            setNewProject((prev) => ({
-                                                ...prev,
-                                                name: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="项目名称"
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
-                                        required
-                                        data-oid="7t85tug"
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={editingProject ? editingProject.name : newProject.name}
+                                            onChange={(e) => {
+                                                if (editingProject) {
+                                                    setEditingProject((prev) =>
+                                                        prev ? { ...prev, name: e.target.value } : null
+                                                    );
+                                                } else {
+                                                    setNewProject((prev) => ({
+                                                        ...prev,
+                                                        name: e.target.value,
+                                                    }));
+                                                }
+                                            }}
+                                            placeholder="GitHub 仓库地址或 owner/repo"
+                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={fetchGithubRepoInfo}
+                                            disabled={githubLoading}
+                                            className="px-3 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-60 whitespace-nowrap"
+                                        >
+                                            {githubLoading ? '爬取中...' : '爬取 GitHub 信息'}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div data-oid="jvb0rii">
-                                    <label
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                        data-oid="pkv19vk"
-                                    >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         最新版本
                                     </label>
                                     <input
                                         type="text"
-                                        value={newProject.latest_version}
-                                        onChange={(e) =>
-                                            setNewProject((prev) => ({
-                                                ...prev,
-                                                latest_version: e.target.value,
-                                            }))
+                                        value={
+                                            editingProject
+                                                ? editingProject.latest_version
+                                                : newProject.latest_version
                                         }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              latest_version: e.target.value,
+                                                          }
+                                                        : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    latest_version: e.target.value,
+                                                }));
+                                            }
+                                        }}
                                         placeholder="v1.0.0"
                                         className="w-full border border-gray-300 rounded-md px-3 py-2"
                                         required
-                                        data-oid=":c4lrb3"
                                     />
                                 </div>
-                                <div data-oid="f6l6crm">
-                                    <label
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                        data-oid=".3rowbn"
-                                    >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         更新时间
                                     </label>
                                     <input
                                         type="date"
-                                        value={newProject.latest_update_time}
-                                        onChange={(e) =>
-                                            setNewProject((prev) => ({
-                                                ...prev,
-                                                latest_update_time: e.target.value,
-                                            }))
+                                        value={
+                                            editingProject
+                                                ? editingProject.latest_update_time
+                                                : newProject.latest_update_time
                                         }
+                                        onChange={(e) => {
+                                            if (editingProject) {
+                                                setEditingProject((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              latest_update_time: e.target.value,
+                                                          }
+                                                        : null,
+                                                );
+                                            } else {
+                                                setNewProject((prev) => ({
+                                                    ...prev,
+                                                    latest_update_time: e.target.value,
+                                                }));
+                                            }
+                                        }}
                                         className="w-full border border-gray-300 rounded-md px-3 py-2"
                                         required
-                                        data-oid="y2gw33b"
                                     />
                                 </div>
                             </div>
-                            <div className="flex space-x-4" data-oid="r99ah8l">
+                            <div className="flex space-x-4">
                                 <button
                                     type="submit"
                                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                                    data-oid="2a7k4ne"
                                 >
-                                    添加项目
+                                    {editingProject ? '更新项目' : '添加项目'}
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddForm(false)}
+                                    onClick={() => {
+                                        setShowAddForm(false);
+                                        setEditingProject(null);
+                                    }}
                                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                                    data-oid="y2ngnyg"
                                 >
                                     取消
                                 </button>
@@ -237,149 +571,23 @@ export default function ProjectAdminPage() {
                 )}
 
                 {/* 项目列表 */}
-                <div className="bg-white rounded-lg shadow overflow-hidden" data-oid="om3_g8q">
-                    <div className="px-6 py-4 border-b border-gray-200" data-oid=":mvj33b">
-                        <h2 className="text-lg font-semibold text-gray-900" data-oid="19aa7px">
-                            项目列表
-                        </h2>
-                    </div>
-
-                    {loading ? (
-                        <div className="p-8 text-center" data-oid="0ggt_pz">
-                            <div
-                                className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"
-                                data-oid="xyd7.hz"
-                            ></div>
-                            <p className="text-gray-600" data-oid="6m545_r">
-                                加载中...
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto" data-oid="sngmesc">
-                            <table
-                                className="min-w-full divide-y divide-gray-200"
-                                data-oid="9iqb4ts"
-                            >
-                                <thead className="bg-gray-50" data-oid="xg_n28t">
-                                    <tr data-oid="q1jtq7c">
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="-8di4lc"
-                                        >
-                                            项目
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="stcvuc8"
-                                        >
-                                            最新版本
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="n07:j_m"
-                                        >
-                                            更新时间
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="_g_032b"
-                                        >
-                                            版本数量
-                                        </th>
-                                        <th
-                                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            data-oid="6bj_108"
-                                        >
-                                            操作
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody
-                                    className="bg-white divide-y divide-gray-200"
-                                    data-oid="ervf9wl"
-                                >
-                                    {projects.map((project) => (
-                                        <tr
-                                            key={project.id}
-                                            className="hover:bg-gray-50"
-                                            data-oid="30ynmk3"
-                                        >
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap"
-                                                data-oid="8kd8o5t"
-                                            >
-                                                <div
-                                                    className="flex items-center"
-                                                    data-oid="o261m0_"
-                                                >
-                                                    <span
-                                                        className="text-2xl mr-3"
-                                                        data-oid="gm8gllj"
-                                                    >
-                                                        {project.icon}
-                                                    </span>
-                                                    <div
-                                                        className="text-sm font-medium text-gray-900"
-                                                        data-oid="vhv1zrr"
-                                                    >
-                                                        {project.name}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap"
-                                                data-oid="nd-pukd"
-                                            >
-                                                <span
-                                                    className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                                                    data-oid="npmdz:w"
-                                                >
-                                                    {project.latest_version}
-                                                </span>
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                                                data-oid="329r-r7"
-                                            >
-                                                {project.latest_update_time}
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                                                data-oid="7wbang6"
-                                            >
-                                                {project.versions.length} 个版本
-                                            </td>
-                                            <td
-                                                className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
-                                                data-oid="cl8l755"
-                                            >
-                                                <button
-                                                    onClick={() =>
-                                                        window.open(
-                                                            `/?project=${project.id}`,
-                                                            '_blank',
-                                                        )
-                                                    }
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    data-oid="p6ay_j0"
-                                                >
-                                                    查看
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteProject(project.id)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                    data-oid="le50ay8"
-                                                >
-                                                    删除
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                <AdminProjectList
+                    loading={loading}
+                    progress={progress}
+                    table={table}
+                    projects={projects}
+                    handleDeleteProject={handleDeleteProject}
+                    handleEditProject={handleEditProject}
+                />
+                
+                {/* Pagination Controls */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalProjects}
+                    itemsPerPage={perPage}
+                    onPageChange={fetchProjects}
+                />
             </div>
         </div>
     );

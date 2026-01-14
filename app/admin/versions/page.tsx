@@ -1,0 +1,597 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
+import { RenderIcon } from '@/components/utils/renderIcon';
+import { Button } from '@/components/ui/button';
+
+interface Version {
+    id?: number;
+    project_id?: number;
+    version: string;
+    update_time: string;
+    content: string;
+    download_url: string;
+}
+
+interface Project {
+    id: number;
+    icon: string;
+    name: string;
+    latest_version: string;
+    latest_update_time: string;
+    versions?: Version[]; // 变为可选，用于按需加载
+}
+
+export default function VersionAdminPage() {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [versions, setVersions] = useState<Version[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [versionsLoading, setVersionsLoading] = useState(false);
+    const [scrapeLoading, setScrapeLoading] = useState(false);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [editingVersion, setEditingVersion] = useState<Version | null>(null);
+    const [newVersion, setNewVersion] = useState<Omit<Version, 'id'>>({
+        project_id: 0,
+        version: '',
+        update_time: new Date().toISOString().split('T')[0],
+        content: '',
+        download_url: '',
+    });
+
+    useEffect(() => {
+        fetchProjects();
+    }, []);
+
+    useEffect(() => {
+        if (selectedProject) {
+            fetchVersions(selectedProject.id);
+        } else {
+            setVersions([]);
+        }
+    }, [selectedProject]);
+
+    const fetchProjects = async () => {
+        try {
+            setLoading(true);
+            const response = await apiFetch(`/projects`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Projects API Response:', data); // Debug log
+
+                // Handle different data structures - 不包含版本数据
+                const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+                // 过滤掉版本数据，只保留基本信息
+                const projectsBasic = projectsData.map((project: any) => ({
+                    id: project.id,
+                    icon: project.icon,
+                    name: project.name,
+                    latest_version: project.latest_version || '',
+                    latest_update_time: project.latest_update_time || '',
+                    versions: undefined // 不预加载版本数据
+                }));
+
+                setProjects(projectsBasic);
+                if (projectsBasic.length > 0 && !selectedProject) {
+                    setSelectedProject(projectsBasic[0]);
+                }
+            }
+        } catch (error) {
+            console.error('获取项目失败:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchVersions = async (projectId: number) => {
+        try {
+            setVersionsLoading(true);
+            const response = await apiFetch(`/projects/${projectId}/versions`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Versions for project ${projectId}:`, data); // Debug log
+
+                // Handle different data structures for versions
+                const versionsData = Array.isArray(data) ? data : (data.data || data.versions || []);
+                setVersions(versionsData);
+            }
+        } catch (error) {
+            console.error('获取版本失败:', error);
+            setVersions([]);
+        } finally {
+            setVersionsLoading(false);
+        }
+    };
+
+    const handleScrapeVersions = async () => {
+        if (!selectedProject) return;
+        try {
+            setScrapeLoading(true);
+            await apiFetch(`/scrape/github`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repos: [selectedProject.name],
+                    include_prerelease: false,
+                    limit_per_repo: 20,
+                }),
+            });
+            await fetchVersions(selectedProject.id);
+        } finally {
+            setScrapeLoading(false);
+        }
+    };
+
+    const handleAddVersion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedProject) return;
+
+        try {
+            const versionData = {
+                ...newVersion,
+                project_id: selectedProject.id,
+            };
+
+            const response = await apiFetch(`/versions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(versionData),
+            });
+
+            if (response.ok) {
+                await fetchVersions(selectedProject.id); // Only refresh versions, not projects
+                setNewVersion({
+                    project_id: selectedProject.id,
+                    version: '',
+                    update_time: new Date().toISOString().split('T')[0],
+                    content: '',
+                    download_url: '',
+                });
+                setShowAddForm(false);
+            }
+        } catch (error) {
+            console.error('添加版本失败:', error);
+        }
+    };
+
+    const handleUpdateVersion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingVersion || !selectedProject) return;
+
+        try {
+            // Create VersionCreate object without id
+            const versionData = {
+                project_id: editingVersion.project_id,
+                version: editingVersion.version,
+                update_time: editingVersion.update_time,
+                content: editingVersion.content,
+                download_url: editingVersion.download_url,
+            };
+
+            const response = await apiFetch(`/versions/${editingVersion.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(versionData),
+            });
+
+            if (response.ok) {
+                await fetchVersions(selectedProject.id); // Only refresh versions, not projects
+                setEditingVersion(null);
+            }
+        } catch (error) {
+            console.error('更新版本失败:', error);
+        }
+    };
+
+    const handleDeleteVersion = async (versionId: number) => {
+        if (confirm('确定要删除这个版本吗？')) {
+            try {
+                const response = await apiFetch(`/versions/${versionId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    await fetchVersions(selectedProject.id); // Only refresh versions, not projects
+                }
+            } catch (error) {
+                console.error('删除版本失败:', error);
+            }
+        }
+    };
+
+    if (loading) {
+        return (
+            <div>
+                <div className="max-w-7xl mx-auto">
+                    <div className="p-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-3xl font-bold text-gray-900">版本管理</h1>
+                        {selectedProject && (
+                            <div className="flex gap-2">
+                                <Button onClick={() => setShowAddForm(!showAddForm)}>
+                                    {showAddForm ? '取消' : '添加版本'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleScrapeVersions}
+                                    disabled={scrapeLoading}
+                                >
+                                    {scrapeLoading ? '爬取中...' : '爬取版本更新'}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 项目选择器 */}
+                <div className=" rounded-lg shadow p-6 mb-8">
+                    <h2 className="text-lg font-semibold mb-4">选择项目</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {projects.map((project) => (
+                            <div
+                                key={project.id}
+                                onClick={() => setSelectedProject(project)}
+                                className={`p-4 border rounded-md cursor-pointer ${selectedProject?.id === project.id
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <div className="flex items-center">
+                                    <span className="text-2xl mr-3">
+                                        <RenderIcon icon={project.icon} />
+                                    </span>
+                                    <div>
+                                        <h3 className="font-medium text-gray-900">
+                                            {project.name}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                            点击查看版本
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {selectedProject && (
+                    <>
+                        {/* 添加版本表单 */}
+                        {showAddForm && (
+                            <div className=" rounded-lg shadow p-6 mb-8">
+                                <h2 className="text-lg font-semibold mb-4">添加新版本</h2>
+                                <form onSubmit={handleAddVersion} className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                项目
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={selectedProject.name}
+                                                disabled
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                版本号
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newVersion.version}
+                                                onChange={(e) =>
+                                                    setNewVersion((prev) => ({
+                                                        ...prev,
+                                                        version: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="v1.0.0"
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                更新时间
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={newVersion.update_time}
+                                                onChange={(e) =>
+                                                    setNewVersion((prev) => ({
+                                                        ...prev,
+                                                        update_time: e.target.value,
+                                                    }))
+                                                }
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                下载链接
+                                            </label>
+                                            <input
+                                                type="url"
+                                                value={newVersion.download_url}
+                                                onChange={(e) =>
+                                                    setNewVersion((prev) => ({
+                                                        ...prev,
+                                                        download_url: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="https://example.com/download"
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            更新内容
+                                        </label>
+                                        <textarea
+                                            value={newVersion.content}
+                                            onChange={(e) =>
+                                                setNewVersion((prev) => ({
+                                                    ...prev,
+                                                    content: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="版本更新内容..."
+                                            rows={6}
+                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex space-x-4">
+                                        <Button
+                                            type="submit"
+                                        >
+                                            添加版本
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setShowAddForm(false)}
+                                        >
+                                            取消
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* 编辑版本表单 */}
+                        {editingVersion && (
+                            <div className=" rounded-lg shadow p-6 mb-8">
+                                <h2 className="text-lg font-semibold mb-4">编辑版本</h2>
+                                <form onSubmit={handleUpdateVersion} className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                项目
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={selectedProject.name}
+                                                disabled
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                版本号
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editingVersion.version}
+                                                onChange={(e) =>
+                                                    setEditingVersion((prev) =>
+                                                        prev
+                                                            ? { ...prev, version: e.target.value }
+                                                            : null,
+                                                    )
+                                                }
+                                                placeholder="v1.0.0"
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                更新时间
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={editingVersion.update_time}
+                                                onChange={(e) =>
+                                                    setEditingVersion((prev) =>
+                                                        prev
+                                                            ? {
+                                                                ...prev,
+                                                                update_time: e.target.value,
+                                                            }
+                                                            : null,
+                                                    )
+                                                }
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                下载链接
+                                            </label>
+                                            <input
+                                                type="url"
+                                                value={editingVersion.download_url}
+                                                onChange={(e) =>
+                                                    setEditingVersion((prev) =>
+                                                        prev
+                                                            ? {
+                                                                ...prev,
+                                                                download_url: e.target.value,
+                                                            }
+                                                            : null,
+                                                    )
+                                                }
+                                                placeholder="https://example.com/download"
+                                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            更新内容
+                                        </label>
+                                        <textarea
+                                            value={editingVersion.content}
+                                            onChange={(e) =>
+                                                setEditingVersion((prev) =>
+                                                    prev
+                                                        ? { ...prev, content: e.target.value }
+                                                        : null,
+                                                )
+                                            }
+                                            placeholder="版本更新内容..."
+                                            rows={6}
+                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex space-x-4">
+                                        <Button
+                                            type="submit"
+                                        >
+                                            更新版本
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setEditingVersion(null)}
+                                        >
+                                            取消
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* 版本列表 */}
+                        <div className=" rounded-lg shadow overflow-hidden">
+                            <div className="px-6 py-4 border border-gray-200">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    {selectedProject.name} - 版本列表
+                                </h2>
+                            </div>
+
+                            {versionsLoading ? (
+                                <div className="p-8 text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 mx-auto mb-4"></div>
+                                    <p className="text-gray-600">加载版本信息中...</p>
+                                </div>
+                            ) : versions.length === 0 ? (
+                                <div className="p-8 text-center">
+                                    <p className="text-gray-600">该项目还没有版本信息</p>
+                                    <Button
+                                        onClick={() => setShowAddForm(true)}
+                                        className="mt-4"
+                                    >
+                                        添加第一个版本
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <div className="min-w-full divide-y divide-gray-200">
+                                        <div className="bg-gray-50">
+                                            <div className="flex">
+                                                <p>版本</p>
+                                                <p>更新时间</p>
+                                                <p>内容预览</p>
+                                                <p>操作</p>
+                                            </div>
+                                        </div>
+                                        <div className=" divide-y divide-gray-200">
+                                            {versions.map((version) => (
+                                                <div
+                                                    key={version.id}
+                                                    className="hover:bg-gray-50 flex justify-between"
+                                                >
+                                                    <p className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                                            {version.version}
+                                                        </span>
+                                                    </p>
+                                                    <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {version.update_time}
+                                                    </p>
+                                                    <div className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                                                        <p className="truncate max-w-xs">
+                                                            {version.content.substring(0, 100)}
+                                                            {version.content.length > 100
+                                                                ? '...'
+                                                                : ''}
+                                                        </p>
+                                                    </div>
+                                                    <p className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                        <button
+                                                            onClick={() =>
+                                                                setEditingVersion(version)
+                                                            }
+                                                            className="text-blue-600 hover:text-blue-900"
+                                                        >
+                                                            编辑
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                handleDeleteVersion(version.id!)
+                                                            }
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            删除
+                                                        </button>
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {!selectedProject && projects.length === 0 && (
+                    <div className=" rounded-lg shadow p-8 text-center">
+                        <p className="text-gray-600 mb-4">暂无项目数据</p>
+                        <Link
+                            href="/admin/projects"
+                            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                            去创建项目
+                        </Link>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
