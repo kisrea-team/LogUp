@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 // GET /api/projects/[id] - Get a single project with versions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const idOrSlug = params.id;
 
@@ -60,8 +61,9 @@ export async function GET(
 // PUT /api/projects/[id] - Update a project
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const id = parseInt(params.id, 10);
     const body = await request.json();
@@ -117,8 +119,9 @@ export async function PUT(
 // DELETE /api/projects/[id] - Delete a project
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const id = parseInt(params.id, 10);
 

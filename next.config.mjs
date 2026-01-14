@@ -8,7 +8,17 @@
 import path from 'path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    
+    serverExternalPackages: [
+        'ssh2',
+        'crawlee',
+        'puppeteer',
+        'puppeteer-core',
+        '@crawlee/cheerio',
+        'cheerio',
+        'browserslist',
+        'turndown',
+        'mysql2', // Often needed for Prisma/DB clients
+    ],
     output: 'standalone',
     async rewrites() {
         return [

@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 // GET /api/projects/[id]/versions - Get versions for a specific project
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectId = parseInt(params.id, 10);
 
