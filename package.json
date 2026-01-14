@@ -5,7 +5,8 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-        "start": "next start",
+        "start": "node start-production.js",
+        "start:next": "next start",
         "lint": "eslint .",
         "format": "prettier --write .",
         "db:generate": "prisma generate",
