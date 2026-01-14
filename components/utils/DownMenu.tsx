@@ -36,19 +36,20 @@ const Menudata = [
 ];
 
 export function DownMenu() {
+    const triggerRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
     return (
         <div className="flex gap-3 transition-transform duration-1000">
-            {Menudata.map((item: any) => {
-                // ❗ 每个菜单单独创建自己的 ref
-                const triggerRef = useRef<HTMLButtonElement | null>(null);
-
+            {Menudata.map((item: any, index: number) => {
                 return (
                     <Menubar key={item.id} className="flex group">
                         <MenubarMenu>
                             <MenubarTrigger
-                                ref={triggerRef}
+                                ref={(el) => {
+                                    triggerRefs.current[index] = el;
+                                }}
                                 onMouseEnter={() => {
-                                    triggerRef.current?.click();
+                                    triggerRefs.current[index]?.click();
                                 }}
                             >
                                 {item.name}

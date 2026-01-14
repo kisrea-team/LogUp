@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { Button } from '@/components/ui/button';
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
@@ -32,6 +30,7 @@ export default function VersionAdminPage() {
     const [versions, setVersions] = useState<Version[]>([]);
     const [loading, setLoading] = useState(true);
     const [versionsLoading, setVersionsLoading] = useState(false);
+    const [scrapeLoading, setScrapeLoading] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingVersion, setEditingVersion] = useState<Version | null>(null);
     const [newVersion, setNewVersion] = useState<Omit<Version, 'id'>>({
@@ -103,6 +102,25 @@ export default function VersionAdminPage() {
             setVersions([]);
         } finally {
             setVersionsLoading(false);
+        }
+    };
+
+    const handleScrapeVersions = async () => {
+        if (!selectedProject) return;
+        try {
+            setScrapeLoading(true);
+            await apiFetch(`/scrape/github`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repos: [selectedProject.name],
+                    include_prerelease: false,
+                    limit_per_repo: 20,
+                }),
+            });
+            await fetchVersions(selectedProject.id);
+        } finally {
+            setScrapeLoading(false);
         }
     };
 
@@ -207,11 +225,18 @@ export default function VersionAdminPage() {
                     <div className="flex justify-between items-center">
                         <h1 className="text-3xl font-bold text-gray-900">版本管理</h1>
                         {selectedProject && (
-                            <Button
-                                onClick={() => setShowAddForm(!showAddForm)}
-                            >
-                                {showAddForm ? '取消' : '添加版本'}
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button onClick={() => setShowAddForm(!showAddForm)}>
+                                    {showAddForm ? '取消' : '添加版本'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleScrapeVersions}
+                                    disabled={scrapeLoading}
+                                >
+                                    {scrapeLoading ? '爬取中...' : '爬取版本更新'}
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -224,11 +249,10 @@ export default function VersionAdminPage() {
                             <div
                                 key={project.id}
                                 onClick={() => setSelectedProject(project)}
-                                className={`p-4 border rounded-md cursor-pointer ${
-                                    selectedProject?.id === project.id
+                                className={`p-4 border rounded-md cursor-pointer ${selectedProject?.id === project.id
                                         ? 'border-blue-500 bg-blue-50'
                                         : 'border-gray-200 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 <div className="flex items-center">
                                     <span className="text-2xl mr-3">
@@ -403,9 +427,9 @@ export default function VersionAdminPage() {
                                                     setEditingVersion((prev) =>
                                                         prev
                                                             ? {
-                                                                  ...prev,
-                                                                  update_time: e.target.value,
-                                                              }
+                                                                ...prev,
+                                                                update_time: e.target.value,
+                                                            }
                                                             : null,
                                                     )
                                                 }
@@ -424,9 +448,9 @@ export default function VersionAdminPage() {
                                                     setEditingVersion((prev) =>
                                                         prev
                                                             ? {
-                                                                  ...prev,
-                                                                  download_url: e.target.value,
-                                                              }
+                                                                ...prev,
+                                                                download_url: e.target.value,
+                                                            }
                                                             : null,
                                                     )
                                                 }

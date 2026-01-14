@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark' | 'auto';
 
@@ -13,57 +13,34 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('auto');
-  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'auto';
+    const savedTheme = window.localStorage.getItem('theme') as Theme | null;
+    return savedTheme || 'auto';
+  });
 
-  useEffect(() => {
-    setMounted(true);
-    // Load saved theme from localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Apply theme based on current setting
-    const applyTheme = () => {
-      const html = document.documentElement;
-
-      // Remove all manual classes first
-      html.classList.remove('manual-light', 'manual-dark');
-
-      if (theme === 'auto') {
-        // Auto mode - let media queries handle it, no manual classes
-        setCurrentTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      } else {
-        // Manual mode - add specific class
-        html.classList.add(`manual-${theme}`);
-        setCurrentTheme(theme);
-      }
-    };
-
-    applyTheme();
-
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
-
-    // Listen for system theme changes if in auto mode
-    if (theme === 'auto') {
+  const systemTheme = useSyncExternalStore(
+    (callback) => {
+      if (typeof window === 'undefined') return () => { };
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => {
-        setCurrentTheme(mediaQuery.matches ? 'dark' : 'light');
-      };
-      mediaQuery.addEventListener('change', handleChange);
+      mediaQuery.addEventListener('change', callback);
+      return () => mediaQuery.removeEventListener('change', callback);
+    },
+    () => {
+      if (typeof window === 'undefined') return 'light' as const;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    },
+    () => 'light' as const
+  );
 
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
+  const currentTheme: 'light' | 'dark' = theme === 'auto' ? systemTheme : theme;
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.remove('manual-light', 'manual-dark');
+    if (theme !== 'auto') html.classList.add(`manual-${theme}`);
+    window.localStorage.setItem('theme', theme);
   }, [theme]);
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, currentTheme }}>

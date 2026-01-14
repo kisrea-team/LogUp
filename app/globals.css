@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
 @plugin "tailwindcss-animate";
+
 /* 上面坚决不要动！ */
 @theme {
     /* 颜色变量 */
@@ -13,6 +14,7 @@
     --text-default: 1rem;
     --text-title: 1.35rem;
 }
+
 @layer base {
     :root {
         /* 颜色 */
@@ -31,6 +33,7 @@
         /* 不常用尺寸 */
         --version-tag: #fafafa;
     }
+
     /* 媒体查询自动模式（默认） */
     @media (prefers-color-scheme: dark) {
         :root:not(.manual-light):not(.manual-dark) {
@@ -62,12 +65,15 @@
         --datail-background: oklch(0.708 0 0);
         --version-tag: #0a0a0a;
     }
+
     .manual-dark .bg-popover {
         background-color: var(--card);
     }
+
     .manual-dark .border-border {
         border-color: var(--border-style);
     }
+
     .manual-light {
         --color-black: oklch(0.97 0 0);
         --background: #ffffff;
@@ -79,15 +85,19 @@
         --datail-background: oklch(0.556 0 0);
         --version-tag: #fafafa;
     }
+
     .manual-light .bg-popover {
         background-color: var(--card);
     }
+
     .manual-light .border-border {
         border-color: var(--border-style);
     }
+
     .manual-dark * {
         border-color: oklch(0.44 0 0);
     }
+
     .manual-light * {
         border-color: oklch(0.92 0 0);
     }
@@ -95,15 +105,18 @@
     * {
         @apply border-gray-200;
     }
+
     body {
         background-color: var(--background);
         color: var(--text);
     }
+
     .card {
         border-radius: var(--radius);
         border: 1px solid var(--border-style);
         background-color: var(--card);
     }
+
     .text-datail {
         color: var(--datail-background);
     }
@@ -113,49 +126,66 @@
     .bg-auto {
         background: var(--color-red-400);
     }
+
     .max-w-md-1k {
         max-width: 1111px;
     }
+
     .text-balance {
         text-wrap: balance;
     }
+
     /* Test styles for theme */
     .theme-test-bg {
         @apply bg-white dark:bg-gray-800;
     }
+
     .theme-test-text {
         @apply text-gray-900 dark:text-white;
     }
+
     /* 响应式下拉菜单宽度 */
     .select-trigger-full {
         @apply w-full;
     }
+
     @media (min-width: 640px) {
         .select-trigger-full {
             max-width: 300px;
         }
     }
+
     .flex-col {
         display: flex;
         flex-direction: column;
     }
+
     .bg-background {
         background-color: var(--background);
     }
+
     .bg-card {
         background-color: var(--card);
     }
+
     .border-radius {
         border-radius: var(--radius);
     }
+
     .border {
         border-color: var(--border);
     }
+
     .grid-cols-main {
         grid-template-columns: 15% auto 15%;
     }
+
     .text-content {
         color: var(--text-content);
+    }
+
+    .max-w-layout {
+        max-width: var(--spacing-layout);
     }
 }
 
@@ -163,6 +193,7 @@
     .normal-table--p {
         font-size: 18px;
     }
+
     .projectlist {
         display: flex;
         /* display: grid; */
@@ -173,6 +204,14 @@
         padding: 1.5rem 0 0 2rem;
         align-items: start;
     }
+
+    @media (max-width: 768px) {
+        .projectlist {
+            flex-direction: column;
+            padding: 1rem;
+        }
+    }
+
     .projectlist-content {
         display: flex;
         flex-wrap: nowrap;
@@ -181,6 +220,14 @@
         border-radius: var(--radius);
         min-width: 66%;
     }
+
+    @media (max-width: 768px) {
+        .projectlist-content {
+            width: 100%;
+            min-width: 100%;
+        }
+    }
+
     .projectlist-content #card {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -192,12 +239,19 @@
         transition: all 0.2s ease-in-out;
         /* border: 1px solid var(--border-style); */
     }
+
     .projectlist-aside {
         display: flex;
         flex-direction: column;
         /* position: sticky; */
         top: 4rem;
         gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .projectlist-aside {
+            display: none;
+        }
     }
 
     /* 移动端卡片优化 */
@@ -221,13 +275,16 @@
             padding: 0.05rem 0.3rem;
         }
     }
+
     #card:hover {
         border: 1px solid var(--border-style);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+
     .projectlist-nav {
         flex-wrap: wrap;
     }
+
     .projectlist-nav p {
         padding: 1.5rem 1rem;
         text-align: left;
@@ -240,6 +297,7 @@
         position: sticky;
         top: 4rem;
     }
+
     .projectlist-about {
         width: 100%;
         padding: 10px;
@@ -253,6 +311,7 @@
             display: none;
         }
     }
+
     .projectlist-version-tag {
         font-size: 12px;
         color: var(--version-tag);
@@ -260,32 +319,38 @@
         padding: 0.1rem 0.4rem;
         border-radius: 6px;
     }
+
     .classify--items {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
         align-items: flex-start;
     }
-    .classify--items > div {
+
+    .classify--items>div {
         display: flex;
         gap: 0.5rem;
         padding: 0.2rem 0.4rem;
         min-width: 50%;
         align-items: center;
     }
+
     .classify--items div:hover {
         background-color: var(--border);
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s ease-in-out;
     }
-    .classify--items > div:hover p svg path,
-    .classify--items > div:hover span {
+
+    .classify--items>div:hover p svg path,
+    .classify--items>div:hover span {
         color: oklch(0.52 0.09 223);
         fill: oklch(0.52 0.09 223);
     }
-    .classify--items > div p svg path {
-        fill: #afafaf; /* 默认灰色 */
+
+    .classify--items>div p svg path {
+        fill: #afafaf;
+        /* 默认灰色 */
         transition: fill 0.3s;
     }
 
@@ -293,11 +358,13 @@
     .sidebar-list {
         padding: 1rem;
     }
+
     .sidebar-list--item {
         padding: 0.5rem 0.75rem;
         border-radius: 8px;
         cursor: pointer;
     }
+
     .sidebar-list--item:hover {
         background-color: var(--border);
         transition: all 0.2s ease-in-out;

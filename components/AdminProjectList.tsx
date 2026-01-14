@@ -18,7 +18,7 @@ interface Project {
     summar?: string;
     author?: string;
     type?: string;
-    versions: any[];
+    versions?: any[];
 }
 
 interface TableColumn {
@@ -106,7 +106,7 @@ export default function AdminProjectList({
                                         {project.summar || '暂无简介'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {project.versions.length} 个版本
+                                        {(project.versions?.length ?? 0)} 个版本
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         <Button

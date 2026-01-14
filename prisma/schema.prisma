@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                  Int      @id @default(autoincrement())
+  icon                String
+  name                String
+  slug                String?  @unique
+  latest_version      String
+  latest_update_time  DateTime
+  describe            String?  @db.Text
+  summar              String?  @db.Text
+  author              String?
+  type                String?
+  versions            Version[]
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("projects")
+}
+
+model Version {
+  id           Int      @id @default(autoincrement())
+  project_id   Int
+  version      String
+  update_time  DateTime
+  content      String   @db.Text
+  download_url String
+  project      Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("versions")
+}

@@ -9,6 +9,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { RenderIcon } from '@/components/utils/renderIcon';
+import { ContentTranslator } from '@/components/ContentTranslator';
 import {
     Select,
     SelectContent,
@@ -51,8 +52,8 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
     selectedVersion,
     setSelectedVersion,
 }) => {
-    // 移动端版本选择器
-    const MobileVersionSelector = () => (
+    // Mobile Version Selector JSX
+    const renderMobileVersionSelector = () => (
         <div className="md:hidden mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                 选择版本
@@ -88,24 +89,23 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
     );
 
     return (
-        <div className="max-w-7xl mx-auto flex">
-            {/* Sidebar */}
-            <div className="w-64 fixed min-h-screen border-r border-gray-200">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row relative">
+            {/* Sidebar - Desktop Only */}
+            <div className="hidden md:block w-64 fixed h-screen overflow-y-auto border-r border-gray-200 top-[65px] bg-background z-20 pb-20">
                 <div className="p-4">
-                    <h2 className="text-sm font-medium text-gray-900 mb-4">版本历史</h2>
+                    <h2 className="text-sm font-medium text-gray-900 mb-4 dark:text-gray-100">版本历史</h2>
                     <nav className="space-y-1">
                         {selectedProject.versions.map((version) => (
                             <button
                                 key={version.version}
                                 onClick={() => setSelectedVersion(version)}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                    selectedVersion?.version === version.version
-                                        ? 'bg-blue-100 text-blue-700 font-medium'
-                                        : 'text-gray-700 hover:bg-gray-100'
-                                }`}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedVersion?.version === version.version
+                                    ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-900 dark:text-blue-100'
+                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                                    }`}
                             >
                                 {version.version}
-                                <div className="text-xs text-gray-500 mt-1">
+                                <div className="text-xs text-gray-500 mt-1 dark:text-gray-500">
                                     {version.update_time}
                                 </div>
                             </button>
@@ -115,7 +115,10 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
             </div>
 
             {/* Main content */}
-            <main className="flex-1 p-8 ">
+            <main className="flex-1 p-4 md:p-8 md:ml-64 min-w-0">
+                {/* Mobile Version Selector */}
+                {renderMobileVersionSelector()}
+
                 {/* Project Info */}
                 <div className="">
                     <div className="max-w-4xl mb-8">
@@ -173,72 +176,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                             </div>
 
                             <div className=" border border-gray-200 rounded-lg p-6 mb-6">
-                                <h3 className="text-lg font-semibold  mb-4">更新内容</h3>
-                                <div className="prose prose-sm max-w-none">
-                                    <ReactMarkdown
-                                        components={{
-                                            h1: ({ node, ...props }) => (
-                                                <h1
-                                                    className="text-2xl font-bold mt-6 mb-4 dark:text-white"
-                                                    {...props}
-                                                />
-                                            ),
-                                            h2: ({ node, ...props }) => (
-                                                <h2
-                                                    className="text-xl font-semibold mt-5 mb-3 dark:text-white"
-                                                    {...props}
-                                                />
-                                            ),
-                                            h3: ({ node, ...props }) => (
-                                                <h3
-                                                    className="text-lg font-medium mt-4 mb-2 dark:text-white"
-                                                    {...props}
-                                                />
-                                            ),
-                                            p: ({ node, ...props }) => (
-                                                <p className="text-content mb-3" {...props} />
-                                            ),
-                                            ul: ({ node, ...props }) => (
-                                                <ul
-                                                    className="list-disc pl-5 mb-4 dark:text-gray-300"
-                                                    {...props}
-                                                />
-                                            ),
-                                            ol: ({ node, ...props }) => (
-                                                <ol
-                                                    className="list-decimal pl-5 mb-4 dark:text-gray-300"
-                                                    {...props}
-                                                />
-                                            ),
-                                            li: ({ node, ...props }) => (
-                                                <li
-                                                    className="mb-1 dark:text-gray-300"
-                                                    {...props}
-                                                />
-                                            ),
-                                            a: ({ node, ...props }) => (
-                                                <a
-                                                    className="text-blue-600 hover:underline dark:text-blue-400"
-                                                    {...props}
-                                                />
-                                            ),
-                                            strong: ({ node, ...props }) => (
-                                                <strong
-                                                    className="font-semibold dark:text-white"
-                                                    {...props}
-                                                />
-                                            ),
-                                            em: ({ node, ...props }) => (
-                                                <em
-                                                    className="italic dark:text-gray-300"
-                                                    {...props}
-                                                />
-                                            ),
-                                        }}
-                                    >
-                                        {selectedVersion.content}
-                                    </ReactMarkdown>
-                                </div>
+                                <ContentTranslator content={selectedVersion.content} />
                             </div>
 
                             {/* 下载 */}

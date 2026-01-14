@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import { projectTable } from '@/components/utils/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
 import Pagination from '@/components/Pagination';
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
@@ -60,6 +58,7 @@ export default function ProjectAdminPage() {
     const [progress, setProgress] = useState(10);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [githubLoading, setGithubLoading] = useState(false);
     const [newProject, setNewProject] = useState<ProjectCreate>({
         icon: '',
         name: '',
@@ -74,6 +73,66 @@ export default function ProjectAdminPage() {
     useEffect(() => {
         fetchProjects();
     }, []);
+
+    const fetchGithubRepoInfo = async () => {
+        const repoUrl = (editingProject ? editingProject.name : newProject.name).trim();
+        if (!repoUrl) return;
+
+        try {
+            setGithubLoading(true);
+            const response = await apiFetch(`/scrape/github/repo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repoUrl }),
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.success || !payload?.data) return;
+
+            const info = payload.data as {
+                icon?: string;
+                name?: string;
+                latest_version?: string;
+                latest_update_time?: string;
+                describe?: string;
+                summar?: string;
+                author?: string;
+                type?: string;
+            };
+
+            if (editingProject) {
+                setEditingProject((prev) =>
+                    prev
+                        ? {
+                              ...prev,
+                              icon: info.icon ?? prev.icon,
+                              name: info.name ?? prev.name,
+                              latest_version: info.latest_version ?? prev.latest_version,
+                              latest_update_time: info.latest_update_time ?? prev.latest_update_time,
+                              describe: info.describe ?? prev.describe,
+                              summar: info.summar ?? prev.summar,
+                              author: info.author ?? prev.author,
+                              type: info.type ?? prev.type,
+                          }
+                        : null
+                );
+            } else {
+                setNewProject((prev) => ({
+                    ...prev,
+                    icon: info.icon ?? prev.icon,
+                    name: info.name ?? prev.name,
+                    latest_version: info.latest_version ?? prev.latest_version,
+                    latest_update_time: info.latest_update_time ?? prev.latest_update_time,
+                    describe: info.describe ?? prev.describe,
+                    summar: info.summar ?? prev.summar,
+                    author: info.author ?? prev.author,
+                    type: info.type ?? prev.type,
+                }));
+            }
+        } finally {
+            setGithubLoading(false);
+        }
+    };
 
     const fetchProjects = async (page: number = currentPage) => {
         // Validate page number
@@ -393,27 +452,35 @@ export default function ProjectAdminPage() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         项目名称
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={
-                                            editingProject ? editingProject.name : newProject.name
-                                        }
-                                        onChange={(e) => {
-                                            if (editingProject) {
-                                                setEditingProject((prev) =>
-                                                    prev ? { ...prev, name: e.target.value } : null,
-                                                );
-                                            } else {
-                                                setNewProject((prev) => ({
-                                                    ...prev,
-                                                    name: e.target.value,
-                                                }));
-                                            }
-                                        }}
-                                        placeholder="项目名称"
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2"
-                                        required
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={editingProject ? editingProject.name : newProject.name}
+                                            onChange={(e) => {
+                                                if (editingProject) {
+                                                    setEditingProject((prev) =>
+                                                        prev ? { ...prev, name: e.target.value } : null
+                                                    );
+                                                } else {
+                                                    setNewProject((prev) => ({
+                                                        ...prev,
+                                                        name: e.target.value,
+                                                    }));
+                                                }
+                                            }}
+                                            placeholder="GitHub 仓库地址或 owner/repo"
+                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={fetchGithubRepoInfo}
+                                            disabled={githubLoading}
+                                            className="px-3 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-60 whitespace-nowrap"
+                                        >
+                                            {githubLoading ? '爬取中...' : '爬取 GitHub 信息'}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
