@@ -8,18 +8,19 @@
 // import Loading from '@/components/Loading';
 import { Button } from './ui/button';
 import { RenderIcon } from '@/components/utils/renderIcon';
-interface Project {
-    id: number;
-    icon: string;
-    name: string;
-    latest_version: string;
-    latest_update_time: string;
-    describe?: string;
-    summar?: string;
-    author?: string;
-    type?: string;
-    versions?: any[];
-}
+import { Project } from '@/types/index';
+// interface Project {
+//     id: number;
+//     icon: string;
+//     name: string;
+//     latest_version: string;
+//     latest_update_time: string;
+//     describe?: string;
+//     summar?: string;
+//     author?: string;
+//     type?: string;
+//     versions?: any[];
+// }
 
 interface TableColumn {
     key: string;

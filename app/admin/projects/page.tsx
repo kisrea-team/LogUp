@@ -6,27 +6,28 @@ import { projectTable } from '@/components/utils/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
 import Pagination from '@/components/Pagination';
 
-interface Version {
-    id?: number;
-    project_id?: number;
-    version: string;
-    update_time: string;
-    content: string;
-    download_url: string;
-}
+import { Project, Version } from '@/types/index';
+// interface Version {
+//     id?: number;
+//     project_id?: number;
+//     version: string;
+//     update_time: string;
+//     content: string;
+//     download_url: string;
+// }
 
-interface Project {
-    id: number;
-    icon: string;
-    name: string;
-    latest_version: string;
-    latest_update_time: string;
-    describe?: string;
-    summar?: string;
-    author?: string;
-    type?: string;
-    versions: Version[];
-}
+// interface Project {
+//     id: number;
+//     icon: string;
+//     name: string;
+//     latest_version: string;
+//     latest_update_time: string;
+//     describe?: string;
+//     summar?: string;
+//     author?: string;
+//     type?: string;
+//     versions: Version[];
+// }
 
 interface PaginatedResponse {
     data: Project[];
