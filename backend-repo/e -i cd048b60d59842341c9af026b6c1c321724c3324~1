@@ -1,0 +1,130 @@
+[33mcommit a5f377a166923c1f670607b8629d81b1d9560e6b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: zitons <zitons@outlook.com>
+Date:   Sun Sep 14 16:06:32 2025 +0800
+
+    移除敏感信息
+
+[33mcommit cd048b60d59842341c9af026b6c1c321724c3324[m
+Author: zitons <zitons@outlook.com>
+Date:   Sun Sep 14 16:00:59 2025 +0800
+
+    分页支持
+
+[33mcommit 5311cd55f7be20d4f8aa34c45bb009a003ba2fa8[m[33m ([m[1;31morigin/master[m[33m)[m
+Author: zitons <zitons@outlook.com>
+Date:   Sun Aug 31 19:14:21 2025 +0800
+
+    支持项目slug字段，API可同时通过ID或slug获取项目
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit 946e66d252e5706e73a55bcb614efc450fdc1f94[m
+Author: zitons <zitons@outlook.com>
+Date:   Thu Aug 21 17:02:01 2025 +0800
+
+    修复SQL语法错误：为describe关键字添加反引号
+    
+    - 在所有SQL查询中为describe列名添加反引号
+    - 修复SELECT、INSERT和UPDATE语句中的语法错误
+    - 确保数据库操作正常工作
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit b9a98cf94bb2f7f52d23689db22a1d799f768d22[m
+Author: zitons <zitons@outlook.com>
+Date:   Thu Aug 21 16:48:59 2025 +0800
+
+    修复数据库迁移脚本中的列名不匹配问题
+    
+    - 将 'description' 改为 'describe' 以匹配后端代码
+    - 更新所有迁移脚本文件以使用正确的列名
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit 370fdfb1d118c589271cada33cb1b7e1445a6298[m
+Author: zitons <zitons@outlook.com>
+Date:   Thu Aug 21 16:38:30 2025 +0800
+
+    开发了一些问题
+
+[33mcommit c9f65adc461a8fc8965a057ead0e7fd324e03c84[m
+Author: zitons <zitons@outlook.com>
+Date:   Tue Aug 19 19:37:53 2025 +0800
+
+    修复数据库操作中的ID获取问题
+    
+    1. 在create_project函数中使用SELECT LAST_INSERT_ID()显式获取插入记录的ID
+    2. 在create_version函数中使用SELECT LAST_INSERT_ID()显式获取插入记录的ID
+    3. 这些修复解决了'project not found'和'version not found'的错误
+
+[33mcommit 6bd6bdb87ead1fe43575afc6358a39a0db70707d[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 14:12:02 2025 +0800
+
+    Update CORS to allow correct frontend domain
+    
+    Changed from https://log-9uvsuizai-zitons-projects.vercel.app to https://log-up-wine.vercel.app
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit 8fd8a3b67d7b751e465a31fa550cd914110f4d2d[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 14:02:24 2025 +0800
+
+    Add Vercel frontend domain to CORS allow_origins
+
+[33mcommit a744fe2faf6a1596ea521a665f2628feb87ba0c1[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 12:26:15 2025 +0800
+
+    Improve start.py with better module path handling and debugging
+
+[33mcommit d7dacd3ec361f7359d70378d2baceaef819b86d4[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 12:25:18 2025 +0800
+
+    Remove src directory to avoid confusion with Appwrite functions format
+
+[33mcommit 41992541326540639abf490d2a4c3ee26ca721ab[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 11:58:25 2025 +0800
+
+    Update requirements.txt
+
+[33mcommit ddbf1881ef6c7977aa816e0a8307bc4655b41bfd[m
+Author: Appwrite <team@appwrite.io>
+Date:   Sat Aug 16 03:39:31 2025 +0000
+
+    Create 'Starter function' function
+
+[33mcommit 3c08362edf9b13278c01b17608107840b3f78f36[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 11:24:59 2025 +0800
+
+    Remove unnecessary test files to reduce deployment size
+
+[33mcommit ee93adb1c1a4d3d8e97081d743f9585277b2b26c[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 11:19:16 2025 +0800
+
+    Fix vercel.json paths for correct deployment
+
+[33mcommit cd4c2b0842f1a7d5cc7ab7cdad042692927eb873[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 11:14:25 2025 +0800
+
+    Add all backend files
+
+[33mcommit fb64bba488aa093840eab5b1b8c51f87c977113b[m
+Author: zitons <zitons@outlook.com>
+Date:   Sat Aug 16 11:08:08 2025 +0800
+
+    Initial commit: Project Updates Backend API

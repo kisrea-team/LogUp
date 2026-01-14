@@ -1,0 +1,6 @@
+ALTER TABLE projects ADD COLUMN `describe` TEXT;
+ALTER TABLE projects ADD COLUMN `summar` VARCHAR(255);
+ALTER TABLE projects ADD COLUMN `author` VARCHAR(100);
+ALTER TABLE projects ADD COLUMN `type` VARCHAR(50);
+
+DESCRIBE projects;
