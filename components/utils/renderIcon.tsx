@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 type RenderIconProps = {
     icon: string;
@@ -58,7 +57,15 @@ export function RenderIcon({ icon, size = 55 }: RenderIconProps) {
 
     // 3. 其他图片链接
     if (icon.startsWith('http://') || icon.startsWith('https://')) {
-        return <Image src={icon} alt="icon" width={size} height={size} />;
+        return (
+            <img
+                src={icon}
+                alt="icon"
+                width={size}
+                height={size}
+                style={{ width: size, height: size, objectFit: 'contain' }}
+            />
+        );
     }
 
     // 4. 默认文本
