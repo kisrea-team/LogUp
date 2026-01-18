@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+function isDatabaseUnavailableError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { name?: unknown; message?: unknown };
+  const name = typeof e.name === 'string' ? e.name : '';
+  const message = typeof e.message === 'string' ? e.message : '';
+  return name === 'PrismaClientInitializationError' || message.includes("Can't reach database server");
+}
+
 // PUT /api/versions/[id] - Update a version
 export async function PUT(
   request: NextRequest,
@@ -65,6 +73,9 @@ export async function PUT(
     return NextResponse.json(updatedVersion);
   } catch (error) {
     console.error('Error in PUT /api/versions/[id]:', error);
+    if (isDatabaseUnavailableError(error)) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
+    }
     return NextResponse.json(
       { error: 'Failed to update version' },
       { status: 500 }
@@ -102,6 +113,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Version deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /api/versions/[id]:', error);
+    if (isDatabaseUnavailableError(error)) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
+    }
     return NextResponse.json(
       { error: 'Failed to delete version' },
       { status: 500 }

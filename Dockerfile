@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=7860
 ENV BACKEND_NODE_PORT=8000
-ENV DISABLE_SSH_TUNNEL=true
+ENV DISABLE_SSH_TUNNEL=false
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/next.config.mjs ./
