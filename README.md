@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hello This is LogUp！
 ```bash
 npm run dev
@@ -146,3 +147,15 @@ For detailed deployment instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DE
 The backend has been separated into its own repository at [zitons/LogUp---Backend](https://github.com/zitons/LogUp---Backend). The backend API is built with FastAPI and Python, and can be deployed to platforms that support Python applications such as Railway, Render, or Heroku.
 
 **Note**: The backend application is started through `start.py` and is now maintained in a separate repository.
+=======
+---
+title: Logup
+emoji: 🔥
+colorFrom: red
+colorTo: pink
+sdk: docker
+pinned: false
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+>>>>>>> 230e893a5692cea7a2e4e0a7fc9ff3a667568234
