@@ -24,6 +24,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "openai": [
+        "./lib/openai"
       ]
     },
     "target": "ES2017"

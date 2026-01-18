@@ -197,7 +197,9 @@ export default function VersionAdminPage() {
                 });
 
                 if (response.ok) {
-                    await fetchVersions(selectedProject.id); // Only refresh versions, not projects
+                    if (selectedProject) {
+                        await fetchVersions(selectedProject.id); // Only refresh versions, not projects
+                    }
                 }
             } catch (error) {
                 console.error('删除版本失败:', error);

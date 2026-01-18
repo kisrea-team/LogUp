@@ -1,9 +1,9 @@
 import path from 'path';
 
-export default ({ env }) => {
-  const client = env('DATABASE_CLIENT', 'mysql');
+export default ({ env }: { env: any }) => {
+  const client: string = env('DATABASE_CLIENT', 'mysql');
 
-  const connections = {
+  const connections: Record<string, any> = {
     mysql: {
       connection: {
         host: env('DATABASE_HOST', '192.3.164.131'),

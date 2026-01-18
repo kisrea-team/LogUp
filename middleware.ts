@@ -6,27 +6,36 @@ const protectedPaths = ['/admin'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Check if the path requires authentication
+
   const isProtectedPath = protectedPaths.some(path => 
     pathname.startsWith(path) && pathname !== '/admin/login'
   );
   
   if (isProtectedPath) {
-    // Check for admin login status - check cookie first (for SSR compatibility)
     const adminLoggedIn = request.cookies.get('adminLoggedIn')?.value === 'true';
     
     if (!adminLoggedIn) {
-      // Redirect to login page
       const loginUrl = new URL('/admin/login', request.url);
       return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/rsshub/')) {
+    const method = request.method.toUpperCase();
+    if (method === 'GET' || method === 'HEAD') {
+      const excluded = ['/api/projects', '/api/versions', '/api/scrape', '/api/translate'];
+      const isExcluded = excluded.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+      if (!isExcluded) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/api/rsshub${pathname.slice('/api'.length)}`;
+        return NextResponse.rewrite(url);
+      }
     }
   }
   
   return NextResponse.next();
 }
 
-// Configure which paths the middleware should run on
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/:path*'],
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Loader2, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,37 +12,157 @@ export const ContentTranslator: React.FC<ContentTranslatorProps> = ({ content })
     const [translatedContent, setTranslatedContent] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslated, setShowTranslated] = useState(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+    const prevContentRef = useRef<string>(content);
+    const jobIdRef = useRef(0);
+
+    const stopActiveStream = useCallback(() => {
+        try {
+            abortControllerRef.current?.abort();
+        } catch { }
+        abortControllerRef.current = null;
+
+        try {
+            void readerRef.current?.cancel();
+        } catch { }
+        readerRef.current = null;
+    }, []);
+
+    const startTranslation = useCallback(
+        async (nextContent: string) => {
+            const jobId = ++jobIdRef.current;
+            stopActiveStream();
+
+            setIsTranslating(true);
+            setTranslatedContent('');
+            setShowTranslated(true);
+
+            try {
+                const controller = new AbortController();
+                abortControllerRef.current = controller;
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'text/event-stream',
+                    },
+                    body: JSON.stringify({ content: nextContent, stream: true }),
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Translation failed');
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('text/event-stream') && response.body) {
+                    const reader = response.body.getReader();
+                    readerRef.current = reader;
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        if (jobIdRef.current !== jobId) return;
+                        buffer += decoder.decode(value, { stream: true });
+
+                        while (true) {
+                            const boundaryIndex = buffer.indexOf('\n\n');
+                            if (boundaryIndex === -1) break;
+
+                            const rawEvent = buffer.slice(0, boundaryIndex);
+                            buffer = buffer.slice(boundaryIndex + 2);
+
+                            for (const line of rawEvent.split('\n')) {
+                                const trimmed = line.trimEnd();
+                                if (!trimmed.startsWith('data:')) continue;
+                                const dataText = trimmed.slice('data:'.length).trim();
+                                if (!dataText) continue;
+                                if (dataText === '[DONE]') {
+                                    try {
+                                        await reader.cancel();
+                                    } catch { }
+                                    return;
+                                }
+
+                                if (jobIdRef.current !== jobId) return;
+
+                                try {
+                                    const payload = JSON.parse(dataText);
+                                    const delta =
+                                        payload?.choices?.[0]?.delta?.content ??
+                                        payload?.choices?.[0]?.message?.content ??
+                                        '';
+                                    if (delta) {
+                                        setTranslatedContent((prev) => {
+                                            if (jobIdRef.current !== jobId) return prev;
+                                            return `${prev ?? ''}${delta}`;
+                                        });
+                                    }
+                                } catch {
+                                    setTranslatedContent((prev) => {
+                                        if (jobIdRef.current !== jobId) return prev;
+                                        return `${prev ?? ''}${dataText}`;
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    return;
+                }
+
+                const data = await response.json().catch(() => null);
+                if (jobIdRef.current !== jobId) return;
+                setTranslatedContent(data?.translatedContent || '');
+            } finally {
+                if (jobIdRef.current === jobId) {
+                    abortControllerRef.current = null;
+                    readerRef.current = null;
+                    setIsTranslating(false);
+                }
+            }
+        },
+        [stopActiveStream]
+    );
+
+    useEffect(() => {
+        const prev = prevContentRef.current;
+        if (prev === content) return;
+        prevContentRef.current = content;
+
+        const wasShowingTranslated = showTranslated;
+        stopActiveStream();
+        setIsTranslating(false);
+        setTranslatedContent(null);
+
+        if (wasShowingTranslated) {
+            void startTranslation(content);
+        } else {
+            setShowTranslated(false);
+        }
+    }, [content, showTranslated, startTranslation, stopActiveStream]);
 
     const handleTranslate = async () => {
-        if (translatedContent) {
+        if (translatedContent && translatedContent.length > 0) {
             setShowTranslated(true);
             return;
         }
 
-        setIsTranslating(true);
         try {
-            const response = await fetch('/api/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ content }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Translation failed');
-            }
-
-            const data = await response.json();
-            setTranslatedContent(data.translatedContent);
-            setShowTranslated(true);
+            await startTranslation(content);
         } catch (error) {
             console.error('Translation error:', error);
-            // You might want to show a toast or error message here
-        } finally {
-            setIsTranslating(false);
         }
     };
+
+    useEffect(() => {
+        return () => {
+            stopActiveStream();
+        };
+    }, [stopActiveStream]);
 
     const toggleView = () => {
         setShowTranslated(!showTranslated);

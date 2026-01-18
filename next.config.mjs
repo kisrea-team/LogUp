@@ -21,10 +21,17 @@ const nextConfig = {
     ],
     output: 'standalone',
     async rewrites() {
+        const backendPort = process.env.BACKEND_NODE_PORT || '8000';
+        const defaultApiBaseUrl = `http://127.0.0.1:${backendPort}`;
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || defaultApiBaseUrl;
         return [
             {
+                source: '/api/rsshub/:path*',
+                destination: '/rsshub/:path*',
+            },
+            {
                 source: '/api/:path*',
-                destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.3.164.131:8000'}/:path*`,
+                destination: `${apiBaseUrl}/:path*`,
             },
         ];
     },

@@ -4,6 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
+        "dev:all": "node start-dev.js",
+        "rsshub": "node node_modules/rsshub/lib/index.js",
         "build": "next build",
         "start": "node start-production.js",
         "start:next": "next start",
@@ -11,7 +13,8 @@
         "format": "prettier --write .",
         "db:generate": "prisma generate",
         "db:push": "prisma db push",
-        "db:studio": "prisma studio"
+        "db:studio": "prisma studio",
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@prisma/client": "^6.2.1",
@@ -28,13 +31,16 @@
         "clsx": "^2.1.1",
         "crawlee": "^3.12.3",
         "framer-motion": "^12.23.24",
+        "got": "^11.8.6",
         "lucide-react": "^0.542.0",
+        "mysql2": "^3.16.1",
         "next": "^16.0.1",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "react-markdown": "^10.1.0",
         "recharts": "2.15.4",
         "rss-parser": "^3.13.0",
+        "rsshub": "github:DIYgod/RSSHub",
         "ssh2": "^1.16.0",
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
