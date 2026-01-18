@@ -487,66 +487,48 @@ async function scrapeGithubReleasesToDb({ repos, includePrerelease, limitPerRepo
 
         let repoCreated = 0;
         let repoUpdated = 0;
+        for (const release of selected) {
+            if (!release || !release.tag_name) continue;
 
-        const crawler = new CheerioCrawler({
-            maxRequestsPerCrawl: selected.length,
-            maxConcurrency: 3,
-            requestHandler: async ({ request, $ }) => {
-                const { release } = request.userData || {};
-                if (!release || !release.tag_name) return;
+            const version = normalizeVersion(release.tag_name);
+            const updateTime = release.published_at ? new Date(release.published_at) : new Date();
 
-                const version = normalizeVersion(release.tag_name);
-                const updateTime = release.published_at ? new Date(release.published_at) : new Date();
+            let content = String(release.body || '').trim();
+            if (!content) content = `Release ${release.tag_name}`;
 
-                let content = String(release.body || '').trim();
-                if (!content) {
-                    const main = $('.markdown-body').first();
-                    if (main.length > 0) content = cleanHtmlContent(main.html() || '');
+            const downloadUrl =
+                release.zipball_url || `https://github.com/${owner}/${repo}/archive/refs/tags/${release.tag_name}.zip`;
+
+            const isNew = !existingVersionSet.has(version);
+            if (isNew) {
+                await prisma.version.create({
+                    data: {
+                        project_id: project.id,
+                        version,
+                        update_time: updateTime,
+                        content,
+                        download_url: downloadUrl,
+                    },
+                    select: { id: true },
+                });
+                existingVersionSet.add(version);
+                repoCreated += 1;
+                summary.created += 1;
+            } else {
+                const r = await prisma.version.updateMany({
+                    where: { project_id: project.id, version },
+                    data: {
+                        update_time: updateTime,
+                        content,
+                        download_url: downloadUrl,
+                    },
+                });
+                if (r.count) {
+                    repoUpdated += 1;
+                    summary.updated += 1;
                 }
-                if (!content) content = `Release ${release.tag_name}`;
-
-                const downloadUrl =
-                    release.zipball_url || `https://github.com/${owner}/${repo}/archive/refs/tags/${release.tag_name}.zip`;
-
-                const isNew = !existingVersionSet.has(version);
-                if (isNew) {
-                    await prisma.version.create({
-                        data: {
-                            project_id: project.id,
-                            version,
-                            update_time: updateTime,
-                            content,
-                            download_url: downloadUrl,
-                        },
-                        select: { id: true },
-                    });
-                    existingVersionSet.add(version);
-                    repoCreated += 1;
-                    summary.created += 1;
-                } else {
-                    const r = await prisma.version.updateMany({
-                        where: { project_id: project.id, version },
-                        data: {
-                            update_time: updateTime,
-                            content,
-                            download_url: downloadUrl,
-                        },
-                    });
-                    if (r.count) {
-                        repoUpdated += 1;
-                        summary.updated += 1;
-                    }
-                }
-            },
-        });
-
-        await crawler.addRequests(
-            selected.map((release) => ({
-                url: release.html_url,
-                userData: { release },
-            }))
-        );
-        await crawler.run();
+            }
+        }
 
         const latest = selected[0];
         const latestVersion = normalizeVersion(latest.tag_name);

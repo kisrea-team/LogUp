@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { ContentTranslator } from '@/components/ContentTranslator';
+import { formatRelativeTime } from '@/lib/utils';
 import {
     Select,
     SelectContent,
@@ -78,7 +79,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                             <div className="flex justify-between items-center w-full">
                                 <span>{version.version}</span>
                                 <span className="text-xs text-gray-500 ml-2 dark:text-gray-400">
-                                    {version.update_time}
+                                    {formatRelativeTime(version.update_time)}
                                 </span>
                             </div>
                         </SelectItem>
@@ -106,7 +107,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                             >
                                 {version.version}
                                 <div className="text-xs text-gray-500 mt-1 dark:text-gray-500">
-                                    {version.update_time}
+                                    {formatRelativeTime(version.update_time)}
                                 </div>
                             </button>
                         ))}
@@ -137,7 +138,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                         <span>作者: {selectedProject.author || '未知'}</span>
                                         <span>类型: {selectedProject.type || '未分类'}</span>
-                                        <span>更新时间: {selectedProject.latest_update_time}</span>
+                                        <span>更新时间: {formatRelativeTime(selectedProject.latest_update_time)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -171,7 +172,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                     </span>
                                 </div>
                                 <p className="text-gray-600 dark:text-gray-400">
-                                    发布时间: {selectedVersion.update_time}
+                                    发布时间: {formatRelativeTime(selectedVersion.update_time)}
                                 </p>
                             </div>
 

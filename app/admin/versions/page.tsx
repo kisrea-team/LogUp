@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { Button } from '@/components/ui/button';
+import { formatRelativeTime } from '@/lib/utils';
 
 interface Version {
     id?: number;
@@ -56,28 +57,53 @@ export default function VersionAdminPage() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-            const response = await apiFetch(`/projects`);
-            if (response.ok) {
+            const perPage = 100;
+            let page = 1;
+            let totalPages: number | null = null;
+            const allProjects: any[] = [];
+
+            while (true) {
+                const response = await apiFetch(`/projects?page=${page}&per_page=${perPage}`);
+                if (!response.ok) break;
                 const data = await response.json();
-                console.log('Projects API Response:', data); // Debug log
 
-                // Handle different data structures - 不包含版本数据
                 const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
-                // 过滤掉版本数据，只保留基本信息
-                const projectsBasic = projectsData.map((project: any) => ({
-                    id: project.id,
-                    icon: project.icon,
-                    name: project.name,
-                    latest_version: project.latest_version || '',
-                    latest_update_time: project.latest_update_time || '',
-                    versions: undefined // 不预加载版本数据
-                }));
+                allProjects.push(...projectsData);
 
-                setProjects(projectsBasic);
-                if (projectsBasic.length > 0 && !selectedProject) {
-                    setSelectedProject(projectsBasic[0]);
+                if (Array.isArray(data)) break;
+
+                const upstreamTotalPages = data.total_pages ?? data.totalPages ?? null;
+                if (typeof upstreamTotalPages === 'number' && upstreamTotalPages > 0) {
+                    totalPages = upstreamTotalPages;
                 }
+
+                if (projectsData.length === 0) break;
+                if (totalPages !== null && page >= totalPages) break;
+                if (totalPages === null && projectsData.length < perPage) break;
+
+                page += 1;
+                if (page > 200) break;
             }
+
+            const projectsBasic = allProjects.map((project: any) => ({
+                id: project.id,
+                icon: project.icon,
+                name: project.name,
+                latest_version: project.latest_version || '',
+                latest_update_time: project.latest_update_time || '',
+                versions: undefined,
+            }));
+
+            const byId = new Map<number, Project>();
+            for (const p of projectsBasic) byId.set(p.id, p);
+            const projectsUnique = Array.from(byId.values());
+
+            setProjects(projectsUnique);
+            setSelectedProject((prev) => {
+                if (projectsUnique.length === 0) return null;
+                if (!prev) return projectsUnique[0];
+                return projectsUnique.find((p) => p.id === prev.id) ?? projectsUnique[0];
+            });
         } catch (error) {
             console.error('获取项目失败:', error);
         } finally {
@@ -252,8 +278,8 @@ export default function VersionAdminPage() {
                                 key={project.id}
                                 onClick={() => setSelectedProject(project)}
                                 className={`p-4 border rounded-md cursor-pointer ${selectedProject?.id === project.id
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200 hover:bg-gray-50'
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:bg-gray-50'
                                     }`}
                             >
                                 <div className="flex items-center">
@@ -544,7 +570,7 @@ export default function VersionAdminPage() {
                                                         </span>
                                                     </p>
                                                     <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {version.update_time}
+                                                        {formatRelativeTime(version.update_time)}
                                                     </p>
                                                     <div className="px-6 py-4 text-sm text-gray-500 max-w-md">
                                                         <p className="truncate max-w-xs">

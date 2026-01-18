@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RenderIcon } from './utils/renderIcon';
 import { ThumbsUp, MessageCircle } from 'lucide-react';
+import { formatRelativeTime } from '@/lib/utils';
 
 interface Version {
     id?: number;
@@ -108,7 +109,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                                                 <span>{project.type || '未分类'}</span>
                                             </div>
                                             <div className="sm:ml-auto">
-                                                {project.latest_update_time}
+                                                {formatRelativeTime(project.latest_update_time)}
                                             </div>
                                         </div>
                                     </div>

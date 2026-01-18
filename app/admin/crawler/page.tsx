@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { formatRelativeTime } from '@/lib/utils';
 
 type RsshubSource = {
   id: number;
@@ -282,7 +283,7 @@ export default function CrawlerAdminPage() {
           {status && (
             <div className="mt-4 text-sm text-gray-600">
               <p>计划状态：{status.enabled ? '已启用' : '未启用'}</p>
-              <p>上次运行：{status.last_run_at || '—'}</p>
+              <p>上次运行：{status.last_run_at ? formatRelativeTime(status.last_run_at) : '—'}</p>
               <p>运行中：{status.running ? '是' : '否'}</p>
               {status.last_error && <p className="text-red-600">错误：{status.last_error}</p>}
             </div>
@@ -317,7 +318,7 @@ export default function CrawlerAdminPage() {
             {rsshubStatus && (
               <div className="text-sm text-gray-600">
                 <p>计划状态：{rsshubStatus.enabled ? '已启用' : '未启用'}</p>
-                <p>上次运行：{rsshubStatus.last_run_at || '—'}</p>
+                <p>上次运行：{rsshubStatus.last_run_at ? formatRelativeTime(rsshubStatus.last_run_at) : '—'}</p>
                 <p>运行中：{rsshubStatus.running ? '是' : '否'}</p>
                 {rsshubStatus.last_error && <p className="text-red-600">错误：{rsshubStatus.last_error}</p>}
               </div>
@@ -507,7 +508,7 @@ export default function CrawlerAdminPage() {
                         className="w-24 border border-gray-300 rounded-md px-2 py-1"
                       />
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{s.last_run_at || '—'}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{s.last_run_at ? formatRelativeTime(s.last_run_at) : '—'}</td>
                     <td className="px-4 py-2 text-right flex justify-end gap-2">
                       <Button variant="outline" onClick={() => handleRunRsshubSource(s.id)} disabled={rsshubLoading}>
                         运行

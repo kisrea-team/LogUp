@@ -9,6 +9,7 @@
 import { Button } from './ui/button';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { Project } from '@/types/index';
+import { formatRelativeTime } from '@/lib/utils';
 // interface Project {
 //     id: number;
 //     icon: string;
@@ -95,7 +96,7 @@ export default function AdminProjectList({
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {project.latest_update_time}
+                                        {formatRelativeTime(project.latest_update_time)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {project.author || '未知'}
