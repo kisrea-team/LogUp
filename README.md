@@ -4,7 +4,15 @@ emoji: 🔥
 colorFrom: red
 colorTo: pink
 sdk: docker
+sdk_version: "latest"
 app_port: 7860
+suggested_hardware: cpu-basic
+suggested_storage: small
+tags:
+  - nextjs
+  - prisma
+  - mysql
+  - docker
 pinned: false
 ---
 
