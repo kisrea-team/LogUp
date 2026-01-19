@@ -9,18 +9,20 @@ load_dotenv()
 class Database:
     def __init__(self):
         # Database connection settings
-        self.db_host = os.getenv('DB_HOST', '192.3.164.131')
+        self.db_host = os.getenv('DB_HOST')
         self.db_port = int(os.getenv('DB_PORT', 3306))
-        self.db_user = os.getenv('DB_USER', 'root')
-        self.db_password = os.getenv('DB_PASSWORD', 'mysql_Ki48fA')
-        self.db_name = os.getenv('DB_NAME', 'logup')
+        self.db_user = os.getenv('DB_USER')
+        self.db_password = os.getenv('DB_PASSWORD')
+        self.db_name = os.getenv('DB_NAME')
         
         # SSH tunnel settings
-        self.ssh_host = os.getenv('SSH_HOST', self.db_host)
+        self.ssh_host = os.getenv('SSH_HOST')
         self.ssh_port = int(os.getenv('SSH_PORT', 22))
-        self.ssh_user = os.getenv('SSH_USER', 'root')
-        # The user provided this password.
-        self.ssh_password = os.getenv('SSH_PASSWORD', 'Rdw4nForZT7J565Aa7')
+        self.ssh_user = os.getenv('SSH_USER')
+        self.ssh_password = os.getenv('SSH_PASSWORD')
+
+        if not all([self.db_host, self.db_user, self.db_password, self.db_name]):
+             print("Warning: Missing required database environment variables.")
 
         self.tunnel = None
         self.connection = None
