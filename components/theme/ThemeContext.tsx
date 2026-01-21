@@ -1,3 +1,10 @@
+/*
+ * @Date: 2026-01-16
+ * @LastEditors: vhko
+ * @LastEditTime: 2026-01-21
+ * @FilePath: /LogUp/components/theme/ThemeContext.tsx
+ * Helllllloo!
+ */
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';

@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-31
+ * @LastEditTime: 2026-01-21
  * @FilePath: /LogUp/app/layout.tsx
  * Helllllloo
  */
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
-        <html>
+        <html className='dark'>
             <body>
                 <ThemeProvider>
                     {children}
