@@ -1,65 +1,62 @@
-/*
- * @Date: 2026-01-16
- * @LastEditors: vhko
- * @LastEditTime: 2026-01-21
- * @FilePath: /LogUp/components/theme/ThemeContext.tsx
- * Helllllloo!
- */
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 
-type Theme = 'light' | 'dark' | 'auto';
+export type Theme = 'light' | 'dark' | 'auto';
 
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  currentTheme: 'light' | 'dark';
+    theme: Theme;
+    setTheme: (theme: Theme) => void;
+    currentTheme: 'light' | 'dark';
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'auto';
-    const savedTheme = window.localStorage.getItem('theme') as Theme | null;
-    return savedTheme || 'auto';
-  });
+    const [theme, setTheme] = useState<Theme>(() => {
+        if (typeof window === 'undefined') return 'auto';
+        return (localStorage.getItem('theme') as Theme) || 'auto';
+    });
 
-  const systemTheme = useSyncExternalStore(
-    (callback) => {
-      if (typeof window === 'undefined') return () => { };
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      mediaQuery.addEventListener('change', callback);
-      return () => mediaQuery.removeEventListener('change', callback);
-    },
-    () => {
-      if (typeof window === 'undefined') return 'light' as const;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    },
-    () => 'light' as const
-  );
+    const systemTheme = useSyncExternalStore<'light' | 'dark'>(
+        (callback) => {
+            if (typeof window === 'undefined') return () => {};
+            const media = window.matchMedia('(prefers-color-scheme: dark)');
+            media.addEventListener('change', callback);
+            return () => media.removeEventListener('change', callback);
+        },
+        () => (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+        () => 'light',
+    );
 
-  const currentTheme: 'light' | 'dark' = theme === 'auto' ? systemTheme : theme;
+    const currentTheme: 'light' | 'dark' = theme === 'auto' ? systemTheme : theme;
 
-  useEffect(() => {
-    const html = document.documentElement;
-    html.classList.remove('manual-light', 'manual-dark');
-    if (theme !== 'auto') html.classList.add(`manual-${theme}`);
-    window.localStorage.setItem('theme', theme);
-  }, [theme]);
+    /**
+     * 唯一职责：控制 .dark
+     */
+    useEffect(() => {
+        const html = document.documentElement;
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, currentTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+        html.classList.remove('dark');
+
+        if (currentTheme === 'dark') {
+            html.classList.add('dark');
+        }
+
+        localStorage.setItem('theme', theme);
+    }, [theme, currentTheme]);
+
+    return (
+        <ThemeContext.Provider value={{ theme, setTheme, currentTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+    const ctx = useContext(ThemeContext);
+    if (!ctx) {
+        throw new Error('useTheme must be used within ThemeProvider');
+    }
+    return ctx;
 }

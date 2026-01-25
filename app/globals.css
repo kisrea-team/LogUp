@@ -9,7 +9,7 @@
     --color-trans: oklch(0.97 0 0);
     --color-background: var(--background);
     /* 布局尺寸 */
-    --spacing-layout: 1300px;
+    --spacing-layout: 1400px;
     /* 字体尺寸 */
     --text-small: 0.85rem;
     --text-default: 1rem;
@@ -38,71 +38,19 @@
     }
 
     /* 媒体查询自动模式（默认） */
-    @media (prefers-color-scheme: dark) {
-        :root:not(.manual-light):not(.manual-dark) {
-            /* 颜色 */
-            --color-black: oklch(0.145 0 0);
-            --bg-bottom: #00000000;
-            --background: oklch(0.145 0 0);
-            --text: oklch(1 0 0);
-            --text-content: oklch(0.8 0 0);
-            --card: oklch(0.205 0 0);
-            --tw-border-style: oklch(0.44 0 0);
-            --border: oklch(0.44 0 0);
-            --border-style: oklch(0.44 0 0);
-            --datail-background: oklch(0.708 0 0);
-            --version-tag: #0a0a0a;
-        }
-    }
-
-    /* 手动模式class支持 */
-    .manual-dark {
+    .dark {
+        /* 颜色 */
         --color-black: oklch(0.145 0 0);
         --bg-bottom: #00000000;
         --background: oklch(0.145 0 0);
         --text: oklch(1 0 0);
+        --text-content: oklch(0.8 0 0);
         --card: oklch(0.205 0 0);
         --tw-border-style: oklch(0.44 0 0);
         --border: oklch(0.44 0 0);
         --border-style: oklch(0.44 0 0);
         --datail-background: oklch(0.708 0 0);
         --version-tag: #0a0a0a;
-    }
-
-    .manual-dark .bg-popover {
-        background-color: var(--card);
-    }
-
-    .manual-dark .border-border {
-        border-color: var(--border-style);
-    }
-
-    .manual-light {
-        --color-black: oklch(0.97 0 0);
-        --background: #ffffff;
-        --text: oklch(0.14 0 0);
-        --card: #f9fafb;
-        --tw-border-style: oklch(0.92 0 0);
-        --border: oklch(0.92 0 0);
-        --border-style: oklch(0.92 0 0);
-        --datail-background: oklch(0.556 0 0);
-        --version-tag: #fafafa;
-    }
-
-    .manual-light .bg-popover {
-        background-color: var(--card);
-    }
-
-    .manual-light .border-border {
-        border-color: var(--border-style);
-    }
-
-    .manual-dark * {
-        border-color: oklch(0.44 0 0);
-    }
-
-    .manual-light * {
-        border-color: oklch(0.92 0 0);
     }
 
     * {
