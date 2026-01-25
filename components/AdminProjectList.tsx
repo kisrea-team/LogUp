@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-18
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-19
+ * @LastEditTime: 2026-01-24
  * @FilePath: /LogUp/components/AdminProjectList.tsx
  * Helllllloo!
  */
@@ -10,19 +10,18 @@ import { Button } from './ui/button';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { Project } from '@/types/index';
 import { formatRelativeTime } from '@/lib/utils';
-// interface Project {
-//     id: number;
-//     icon: string;
-//     name: string;
-//     latest_version: string;
-//     latest_update_time: string;
-//     describe?: string;
-//     summar?: string;
-//     author?: string;
-//     type?: string;
-//     versions?: any[];
-// }
+import { motion } from 'framer-motion';
 
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+const MotionTableRow = motion(TableRow);
 interface TableColumn {
     key: string;
     label: string;
@@ -57,90 +56,93 @@ export default function AdminProjectList({
                     <p className="text-gray-600 mt-4">加载中...</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="">
-                            <tr>
+                <div>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
                                 {table.map((column) => (
-                                    <th
-                                        key={column.key}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
+                                    <TableHead key={column.key} className=" items-center">
                                         {column.label}
-                                    </th>
+                                    </TableHead>
                                 ))}
-                            </tr>
-                        </thead>
-                        <tbody className=" divide-y divide-gray-200">
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody className=" divide-y divide-gray-200">
                             {(projects || []).length === 0 ? (
-                                <tr>
-                                    <td colSpan={table.length + 1} className="px-6 py-8 text-center">
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={table.length + 1}
+                                        className="px-6 py-8 text-center"
+                                    >
                                         <p className="text-gray-500">暂无项目数据</p>
-                                    </td>
-                                </tr>
-                            ) : (projects || []).map((project) => (
-                                <tr key={project.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <span className="text-2xl mr-3">
-                                                <RenderIcon icon={project.icon} />
-                                            </span>
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {project.name}
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                (projects || []).map((project) => (
+                                    <MotionTableRow
+                                        key={project.id}
+                                        className="hover:bg-gray-100"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onHoverStart={() => console.log('hover started!')}
+                                    >
+                                        <TableCell className="whitespace-normal">
+                                            <div className="flex items-center w-50">
+                                                <span className="text-2xl mr-3">
+                                                    <RenderIcon icon={project.icon} />
+                                                </span>
+                                                <div className="text-sm whitespace-normal truncate">{project.name}</div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                            {project.latest_version}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatRelativeTime(project.latest_update_time)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {project.author || '未知'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {project.type || '未分类'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {project.summar || '暂无简介'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {(project.versions?.length ?? 0)} 个版本
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() =>
-                                                window.open(`/?project=${project.id}`, '_blank')
-                                            }
-                                            className="text-blue-600 hover:text-blue-900"
-                                        >
-                                            查看
-                                        </Button>
-                                        {handleEditProject && (
+                                        </TableCell>
+                                        <TableCell className="whitespace-nowrap">
+                                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                                {project.latest_version}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="">
+                                            {formatRelativeTime(project.latest_update_time)}
+                                        </TableCell>
+                                        <TableCell className="">
+                                            {project.author || '未知'}
+                                        </TableCell>
+                                        <TableCell className="">
+                                            {project.type || '未分类'}
+                                        </TableCell>
+                                        <TableCell className="">
+                                            {project.versions?.length ?? 0} 个版本
+                                        </TableCell>
+                                        <TableCell className="whitespace-nowrap text-sm font-medium space-x-2">
                                             <Button
                                                 variant="ghost"
-                                                onClick={() => handleEditProject(project)}
-                                                className="text-green-600 hover:text-green-900"
+                                                onClick={() =>
+                                                    window.open(`/?project=${project.id}`, '_blank')
+                                                }
+                                                className="text-blue-600 hover:text-blue-900"
                                             >
-                                                编辑
+                                                查看
                                             </Button>
-                                        )}
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => handleDeleteProject(project.id)}
-                                            className="text-red-600 hover:text-red-900"
-                                        >
-                                            删除
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                            {handleEditProject && (
+                                                <Button
+                                                    variant="ghost"
+                                                    onClick={() => handleEditProject(project)}
+                                                    className="text-green-600 hover:text-green-900"
+                                                >
+                                                    编辑
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => handleDeleteProject(project.id)}
+                                                className="text-red-600 hover:text-red-900"
+                                            >
+                                                删除
+                                            </Button>
+                                        </TableCell>
+                                    </MotionTableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
         </div>

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
+/* 上面这个的意思是定义一个 custom variant，叫做 dark ，它会匹配所有带有 .dark 类的元素及其子元素。这样做的目的是为了方便在 Tailwind CSS 中使用 dark 模式的样式。 */
 @plugin "tailwindcss-animate";
 
 /* 上面坚决不要动！ */
@@ -8,11 +9,13 @@
     --color-trans: oklch(0.97 0 0);
     --color-background: var(--background);
     /* 布局尺寸 */
-    --spacing-layout: 1200px;
+    --spacing-layout: 1400px;
     /* 字体尺寸 */
     --text-small: 0.85rem;
     --text-default: 1rem;
     --text-title: 1.35rem;
+    --text-l: 1rem;
+    --text-l--line-height: calc(var(--text-l) / 1.2);
 }
 
 @layer base {
@@ -35,71 +38,19 @@
     }
 
     /* 媒体查询自动模式（默认） */
-    @media (prefers-color-scheme: dark) {
-        :root:not(.manual-light):not(.manual-dark) {
-            /* 颜色 */
-            --color-black: oklch(0.145 0 0);
-            --bg-bottom: #00000000;
-            --background: oklch(0.145 0 0);
-            --text: oklch(1 0 0);
-            --text-content: oklch(0.8 0 0);
-            --card: oklch(0.205 0 0);
-            --tw-border-style: oklch(0.44 0 0);
-            --border: oklch(0.44 0 0);
-            --border-style: oklch(0.44 0 0);
-            --datail-background: oklch(0.708 0 0);
-            --version-tag: #0a0a0a;
-        }
-    }
-
-    /* 手动模式class支持 */
-    .manual-dark {
+    .dark {
+        /* 颜色 */
         --color-black: oklch(0.145 0 0);
         --bg-bottom: #00000000;
         --background: oklch(0.145 0 0);
         --text: oklch(1 0 0);
+        --text-content: oklch(0.8 0 0);
         --card: oklch(0.205 0 0);
         --tw-border-style: oklch(0.44 0 0);
         --border: oklch(0.44 0 0);
         --border-style: oklch(0.44 0 0);
         --datail-background: oklch(0.708 0 0);
         --version-tag: #0a0a0a;
-    }
-
-    .manual-dark .bg-popover {
-        background-color: var(--card);
-    }
-
-    .manual-dark .border-border {
-        border-color: var(--border-style);
-    }
-
-    .manual-light {
-        --color-black: oklch(0.97 0 0);
-        --background: #ffffff;
-        --text: oklch(0.14 0 0);
-        --card: #f9fafb;
-        --tw-border-style: oklch(0.92 0 0);
-        --border: oklch(0.92 0 0);
-        --border-style: oklch(0.92 0 0);
-        --datail-background: oklch(0.556 0 0);
-        --version-tag: #fafafa;
-    }
-
-    .manual-light .bg-popover {
-        background-color: var(--card);
-    }
-
-    .manual-light .border-border {
-        border-color: var(--border-style);
-    }
-
-    .manual-dark * {
-        border-color: oklch(0.44 0 0);
-    }
-
-    .manual-light * {
-        border-color: oklch(0.92 0 0);
     }
 
     * {
@@ -201,7 +152,6 @@
         gap: 2rem;
         margin: auto;
         padding-top: 1.5rem;
-        padding: 1.5rem 0 0 2rem;
         align-items: start;
     }
 
@@ -218,7 +168,9 @@
         flex-direction: column;
         gap: 0.5rem;
         border-radius: var(--radius);
-        min-width: 66%;
+        /* min-width: 60%;
+        max-width: 80%; */
+        width: 70%;
     }
 
     @media (max-width: 768px) {
@@ -277,7 +229,7 @@
     }
 
     #card:hover {
-        border: 1px solid var(--border-style);
+        /* border: 1px solid var(--border-style); */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
@@ -327,7 +279,7 @@
         align-items: flex-start;
     }
 
-    .classify--items>div {
+    .classify--items > div {
         display: flex;
         gap: 0.5rem;
         padding: 0.2rem 0.4rem;
@@ -342,13 +294,13 @@
         transition: all 0.2s ease-in-out;
     }
 
-    .classify--items>div:hover p svg path,
-    .classify--items>div:hover span {
+    .classify--items > div:hover p svg path,
+    .classify--items > div:hover span {
         color: oklch(0.52 0.09 223);
         fill: oklch(0.52 0.09 223);
     }
 
-    .classify--items>div p svg path {
+    .classify--items > div p svg path {
         fill: #afafaf;
         /* 默认灰色 */
         transition: fill 0.3s;

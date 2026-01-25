@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-11-24
+ * @LastEditTime: 2026-01-21
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
@@ -74,23 +74,21 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                         >
                             <div
                                 id="card"
-                                className=" hover:bg-blue-200 "
+                                className="hover:bg-gray-50 hover:dark:bg-zinc-800 "
                                 onClick={() => handleProjectClick(project)}
                             >
-                                <div className="text-3xl">
+                                <div className="">
                                     <RenderIcon icon={project.icon} />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex flex-col gap-5">
                                     <div className="flex items-start gap-2">
-                                        <div className="flex-1">
+                                        <div className="">
                                             <div className="flex items-center">
                                                 <p className="font-medium">{project.name}</p>
-                                                <span className="text-detail px-0.5">——</span>
-                                                <p className="text-detail">
-                                                    {project.summar || '暂无简介'}
-                                                </p>
+                                                <span className=" px-0.5">——</span>
+                                                <p className="">{project.summar || '暂无简介'}</p>
                                             </div>
-                                            <p className="text-sm text-detail">
+                                            <p className="text-sm ">
                                                 {project.describe || '暂无详细描述'}
                                             </p>
                                         </div>
@@ -101,8 +99,8 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                                             {project.latest_version}
                                         </Badge>
                                     </div>
-                                    <div className="mt-2 space-y-1">
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
+                                    <div className="space-y-1">
+                                        <div className="flex gap-2 text-l text-gray-500">
                                             <div>
                                                 <span>{project.author || 'vhko'}</span>
                                                 <span className="mx-1">|</span>

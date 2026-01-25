@@ -569,7 +569,7 @@ export default function VersionAdminPage() {
                                                             {version.version}
                                                         </span>
                                                     </p>
-                                                    <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <p className="px-6 py-4 ">
                                                         {formatRelativeTime(version.update_time)}
                                                     </p>
                                                     <div className="px-6 py-4 text-sm text-gray-500 max-w-md">

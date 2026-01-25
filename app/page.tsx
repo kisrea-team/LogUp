@@ -50,7 +50,7 @@ export default function Page() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProjects, setTotalProjects] = useState(0);
-    const [perPage, setPerPage] = useState(5);
+    const [perPage, setPerPage] = useState(10);//分页项目数
 
     // 从API获取项目数据
     useEffect(() => {
@@ -119,7 +119,7 @@ export default function Page() {
     const showErrorBanner = errorMessage && projects.length > 0;
 
     return (
-        <div className="min-h-screen bg-background">
+        <div  className="min-h-screen bg-background">
             <Header />
             {/* Error Banner */}
             {showErrorBanner && (

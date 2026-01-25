@@ -133,7 +133,7 @@ export default function AdAdminPage() {
                                             <p className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {ad.adId}
                                             </p>
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <p className="px-6 py-4 ">
                                                 <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                                                     {ad.adType}
                                                 </span>

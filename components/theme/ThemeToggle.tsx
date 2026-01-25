@@ -1,18 +1,22 @@
 /*
  * @Date: 2025-09-15
  * @LastEditors: vhko
- * @LastEditTime: 2025-09-16
+ * @LastEditTime: 2026-01-22
  * @FilePath: /LogUp/components/theme/ThemeToggle.tsx
  * Helllllloo!
  */
 'use client';
-
+import { useState } from 'react';
 import { useTheme } from './ThemeContext';
 import { Button } from '../ui/button';
 import { Sun, Moon, Baseline } from 'lucide-react';
 
 export default function ThemeToggle() {
     const { theme, setTheme, currentTheme } = useTheme();
+    // const [mounted, setMounted] = useState(false);
+    // if (!mounted) {
+    //     return null;
+    // }
     // 自动模式按钮
     const toggleAutoMode = () => {
         if (theme === 'auto') {
@@ -48,19 +52,21 @@ export default function ThemeToggle() {
     // 获取主题切换按钮的图标和状态
     const getThemeButtonContent = () => {
         const actualTheme = theme === 'auto' ? currentTheme : theme;
-
         let icon;
         let title;
 
         if (theme === 'auto') {
             icon = <Baseline className="size-6" />;
             title = `自动模式: ${actualTheme === 'light' ? '浅色' : '深色'}`;
+            // document.documentElement.classList.remove('dark');
         } else if (theme === 'light') {
             icon = <Sun className="size-6" />;
             title = '手动模式: 浅色';
+            // document.documentElement.classList.remove('dark');
         } else {
             icon = <Moon className="size-6" />;
             title = '手动模式: 深色';
+            // document.documentElement.classList.add('dark');
         }
 
         return {
@@ -83,7 +89,7 @@ export default function ThemeToggle() {
                     themeButton.isActive ? 'dark:bg-gray-700' : ''
                 }`}
                 style={{
-                    backgroundColor: 'transparent'
+                    backgroundColor: 'transparent',
                 }}
                 title={themeButton.title}
             >

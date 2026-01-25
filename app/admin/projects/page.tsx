@@ -109,13 +109,14 @@ export default function ProjectAdminPage() {
                               icon: info.icon ?? prev.icon,
                               name: info.name ?? prev.name,
                               latest_version: info.latest_version ?? prev.latest_version,
-                              latest_update_time: info.latest_update_time ?? prev.latest_update_time,
+                              latest_update_time:
+                                  info.latest_update_time ?? prev.latest_update_time,
                               describe: info.describe ?? prev.describe,
                               summar: info.summar ?? prev.summar,
                               author: info.author ?? prev.author,
                               type: info.type ?? prev.type,
                           }
-                        : null
+                        : null,
                 );
             } else {
                 setNewProject((prev) => ({
@@ -139,7 +140,7 @@ export default function ProjectAdminPage() {
         // Validate page number
         if (page < 1) page = 1;
         if (page > totalPages && totalPages > 0) page = totalPages;
-        
+
         try {
             setLoading(true);
             setProgress(10);
@@ -151,9 +152,9 @@ export default function ProjectAdminPage() {
                 const data = await response.json();
                 setProgress(90);
                 console.log('Admin API Response:', data); // 添加调试日志
-                
+
                 // 处理不同的数据结构
-                const projectsData = Array.isArray(data) ? data : (data.data || data.projects || []);
+                const projectsData = Array.isArray(data) ? data : data.data || data.projects || [];
                 let totalPagesData = data.total_pages || data.totalPages;
                 let totalItemsData = data.total || data.totalItems;
                 let currentPageData = data.page || data.currentPage || page;
@@ -291,7 +292,7 @@ export default function ProjectAdminPage() {
                                     setShowAddForm(true);
                                 }
                             }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-300 text-white rounded-md hover:bg-blue-400"
                         >
                             {showAddForm ? '取消' : '添加项目'}
                         </button>
@@ -456,11 +457,17 @@ export default function ProjectAdminPage() {
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
-                                            value={editingProject ? editingProject.name : newProject.name}
+                                            value={
+                                                editingProject
+                                                    ? editingProject.name
+                                                    : newProject.name
+                                            }
                                             onChange={(e) => {
                                                 if (editingProject) {
                                                     setEditingProject((prev) =>
-                                                        prev ? { ...prev, name: e.target.value } : null
+                                                        prev
+                                                            ? { ...prev, name: e.target.value }
+                                                            : null,
                                                     );
                                                 } else {
                                                     setNewProject((prev) => ({
@@ -580,7 +587,7 @@ export default function ProjectAdminPage() {
                     handleDeleteProject={handleDeleteProject}
                     handleEditProject={handleEditProject}
                 />
-                
+
                 {/* Pagination Controls */}
                 <Pagination
                     currentPage={currentPage}

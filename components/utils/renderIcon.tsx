@@ -1,4 +1,12 @@
+/*
+ * @Date: 2026-01-16
+ * @LastEditors: vhko
+ * @LastEditTime: 2026-01-21
+ * @FilePath: /LogUp/components/utils/renderIcon.tsx
+ * Helllllloo!
+ */
 import React from 'react';
+import Image from 'next/image';
 
 type RenderIconProps = {
     icon: string;
@@ -58,7 +66,7 @@ export function RenderIcon({ icon, size = 55 }: RenderIconProps) {
     // 3. 其他图片链接
     if (icon.startsWith('http://') || icon.startsWith('https://')) {
         return (
-            <img
+            <Image
                 src={icon}
                 alt="icon"
                 width={size}

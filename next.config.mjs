@@ -1,13 +1,23 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2025-08-31
+ * @LastEditTime: 2026-01-21
  * @FilePath: /LogUp/next.config.mjs
  * Helllllloo!
  */
 import path from 'path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'avatars.githubusercontent.com',
+                port: '',
+                // pathname: '/**',
+            },
+        ],
+    },
     serverExternalPackages: [
         'ssh2',
         'crawlee',
@@ -38,19 +48,19 @@ const nextConfig = {
     async headers() {
         return [
             {
-                source: "/:path*",
+                source: '/:path*',
                 headers: [
                     {
-                        key: "Access-Control-Allow-Origin",
-                        value: "*",
+                        key: 'Access-Control-Allow-Origin',
+                        value: '*',
                     },
                     {
-                        key: "Access-Control-Allow-Methods",
-                        value: "GET, POST, PUT, DELETE, OPTIONS",
+                        key: 'Access-Control-Allow-Methods',
+                        value: 'GET, POST, PUT, DELETE, OPTIONS',
                     },
                     {
-                        key: "Access-Control-Allow-Headers",
-                        value: "Content-Type, Authorization",
+                        key: 'Access-Control-Allow-Headers',
+                        value: 'Content-Type, Authorization',
                     },
                 ],
             },
