@@ -9,4 +9,3 @@ requests==2.32.3
 markdownify==0.11.6
 tencentcloud-sdk-python==3.0.1155
 sshtunnel==0.4.0
-paramiko==2.11.0
