@@ -5,5 +5,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.env
+.env.local
+.env.*.local
+logs/
+tmpclaude*
 
 .trae

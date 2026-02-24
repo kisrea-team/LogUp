@@ -41,12 +41,14 @@ const backend = spawn('node', ['backend-repo/server.js'], {
 backend.on('error', (err) => console.error('Backend failed to start:', err));
 
 // 2. Start Frontend (Next.js)
-// Next.js uses PORT environment variable automatically (set by Azure).
-const frontend = spawn('npm', ['run', 'start:next'], {
-  env: { ...process.env },
-  stdio: 'inherit',
-  shell: true
-});
+// In Docker standalone mode, server.js is present in the same directory.
+// Otherwise fall back to `npm run start:next`.
+const isStandalone = fs.existsSync(path.join(__dirname, 'server.js'));
+const frontendArgs = isStandalone
+  ? { cmd: 'node', args: ['server.js'], opts: { env: { ...process.env, HOSTNAME: '0.0.0.0' }, stdio: 'inherit', shell: false } }
+  : { cmd: 'npm', args: ['run', 'start:next'], opts: { env: { ...process.env }, stdio: 'inherit', shell: true } };
+
+const frontend = spawn(frontendArgs.cmd, frontendArgs.args, frontendArgs.opts);
 
 frontend.on('error', (err) => console.error('Frontend failed to start:', err));
 

@@ -38,6 +38,12 @@ const nextConfig = {
     },
     serverExternalPackages: [
         'turndown',
+        '@crawlee/cheerio',
+        '@crawlee/http',
+        '@crawlee/basic',
+        'got-scraping',
+        'header-generator',
+        'browserslist',
     ],
     output: 'standalone',
     async rewrites() {

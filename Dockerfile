@@ -38,4 +38,5 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/start-production.js ./start-production.js
 
 EXPOSE 7860
+EXPOSE 8000
 CMD ["node", "start-production.js"]
