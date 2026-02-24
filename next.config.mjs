@@ -13,8 +13,26 @@ const nextConfig = {
             {
                 protocol: 'https',
                 hostname: 'avatars.githubusercontent.com',
-                port: '',
-                // pathname: '/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'user-images.githubusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'raw.githubusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'camo.githubusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.githubusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.githubassets.com',
             },
         ],
     },
@@ -27,7 +45,6 @@ const nextConfig = {
         'cheerio',
         'browserslist',
         'turndown',
-        'mysql2', // Often needed for Prisma/DB clients
     ],
     output: 'standalone',
     async rewrites() {

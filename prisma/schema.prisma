@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -35,10 +35,27 @@ model Version {
   version      String
   update_time  DateTime
   content      String   @db.Text
+  translation  String?  @db.Text
   download_url String
   project      Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("versions")
+}
+
+model RsshubSource {
+  id               Int       @id @default(autoincrement())
+  name             String
+  project_ref      String
+  base_url         String
+  route_prefix     String
+  suffix           String?   @db.Text
+  enabled          Boolean   @default(true)
+  interval_minutes Int?
+  last_run_at      DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("rsshub_sources")
 }

@@ -1,4 +1,3 @@
-import '@/lib/ensure-ssh-tunnel';
 import { PrismaClient } from '@prisma/client';
 
 function ensureDatabaseUrl() {
@@ -9,13 +8,15 @@ function ensureDatabaseUrl() {
   const username = process.env.DB_USER || process.env.DATABASE_USERNAME;
   const password = process.env.DB_PASSWORD || process.env.DATABASE_PASSWORD;
   const database = process.env.DB_NAME || process.env.DATABASE_NAME;
+  const schema = process.env.DB_SCHEMA || process.env.DATABASE_SCHEMA;
 
   if (!host || !port || !username || password === undefined || !database) return;
 
   const u = encodeURIComponent(username);
   const p = encodeURIComponent(password);
   const d = encodeURIComponent(database);
-  process.env.DATABASE_URL = `mysql://${u}:${p}@${host}:${port}/${d}`;
+  const s = schema ? `?schema=${encodeURIComponent(schema)}` : '';
+  process.env.DATABASE_URL = `postgresql://${u}:${p}@${host}:${port}/${d}${s}`;
 }
 
 ensureDatabaseUrl();

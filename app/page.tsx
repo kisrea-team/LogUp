@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// import ReactMarkdown from 'react-markdown';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
 import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
 import Pagination from '@/components/Pagination';
 
-const API_BASE_URL = getApiBaseUrl(); // Use relative path for Next.js rewrites
+const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
@@ -34,13 +33,13 @@ interface Project {
     versions: Version[];
 }
 
-interface PaginatedResponse {
-    data: Project[];
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-}
+const SORT_OPTIONS = [
+    { value: 'updated_desc', label: '最新更新' },
+    { value: 'updated_asc', label: '最早更新' },
+    { value: 'name_asc', label: '名称 A-Z' },
+    { value: 'name_desc', label: '名称 Z-A' },
+    { value: 'created_desc', label: '最新添加' },
+];
 
 export default function Page() {
     const [projects, setProjects] = useState<Project[]>([]);
@@ -50,41 +49,58 @@ export default function Page() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalProjects, setTotalProjects] = useState(0);
-    const [perPage, setPerPage] = useState(10);//分页项目数
+    const [perPage] = useState(10);
 
-    // 从API获取项目数据
+    // Filter & sort state
+    const [search, setSearch] = useState('');
+    const [sortBy, setSortBy] = useState('updated_desc');
+    const [filterType, setFilterType] = useState('');
+    const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Fetch available types once on mount
     useEffect(() => {
-        fetchProjects();
+        apiFetch('/projects/types')
+            .then((r) => r.json())
+            .then((d) => { if (Array.isArray(d?.types)) setAvailableTypes(d.types); })
+            .catch(() => { });
     }, []);
 
-    const fetchProjects = async (page: number = currentPage) => {
-        // Validate page number
+    const fetchProjects = useCallback(async (
+        page: number,
+        searchVal: string,
+        sortVal: string,
+        typeVal: string,
+    ) => {
         if (page < 1) page = 1;
-        if (page > totalPages && totalPages > 0) page = totalPages;
 
         try {
             setLoading(true);
-            setProgress(10); // 开始加载
+            setProgress(10);
             setErrorMessage(null);
-            // 模拟网络延迟
-            await new Promise((res) => setTimeout(res, 0));
-            setProgress(40); // 请求已发出
-            const response = await apiFetch(`/projects?page=${page}&per_page=${perPage}`);
-            setProgress(60); // 已收到响应
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            setProgress(90); // 数据已解析
-            console.log('API Response:', data); // 添加调试日志
 
-            // 处理不同的数据结构
+            const params = new URLSearchParams({
+                page: String(page),
+                per_page: String(perPage),
+            });
+            if (searchVal) params.set('search', searchVal);
+            if (sortVal) params.set('sort', sortVal);
+            if (typeVal) params.set('type', typeVal);
+
+            setProgress(40);
+            const response = await apiFetch(`/projects?${params}`);
+            setProgress(60);
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            setProgress(90);
+
             const projectsData = Array.isArray(data) ? data : data.data || data.projects || [];
             let totalPagesData = data.total_pages || data.totalPages;
             let totalItemsData = data.total || data.totalItems;
             let currentPageData = data.page || data.currentPage || page;
 
-            // 如果后端没有返回分页信息，则在前端做兜底分页
             if (!totalPagesData || !totalItemsData) {
                 const total = projectsData.length;
                 const pages = Math.max(1, Math.ceil(total / perPage));
@@ -92,8 +108,7 @@ export default function Page() {
                 totalPagesData = pages;
                 currentPageData = Math.min(Math.max(1, currentPageData), pages);
                 const start = (currentPageData - 1) * perPage;
-                const end = start + perPage;
-                setProjects(projectsData.slice(start, end));
+                setProjects(projectsData.slice(start, start + perPage));
             } else {
                 setProjects(projectsData);
             }
@@ -107,33 +122,59 @@ export default function Page() {
             setProjects([]);
         } finally {
             setProgress(100);
-            setTimeout(() => setLoading(false), 200); // 延迟关闭 loading，保证进度条动画
+            setTimeout(() => setLoading(false), 200);
         }
+    }, [perPage]);
+
+    // Initial load
+    useEffect(() => {
+        fetchProjects(1, '', 'updated_desc', '');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Search with debounce
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setSearch(val);
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            setCurrentPage(1);
+            fetchProjects(1, val, sortBy, filterType);
+        }, 350);
     };
 
-    // if (loading) {
-    //     return <Loading progress={progress} />;
-    // }
+    const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        setSortBy(val);
+        setCurrentPage(1);
+        fetchProjects(1, search, val, filterType);
+    };
 
-    // 如果有错误消息但仍有数据，显示警告横幅
+    const handleTypeChange = (val: string) => {
+        setFilterType(val);
+        setCurrentPage(1);
+        fetchProjects(1, search, sortBy, val);
+    };
+
+    const handlePageChange = (page: number) => {
+        fetchProjects(page, search, sortBy, filterType);
+    };
+
     const showErrorBanner = errorMessage && projects.length > 0;
 
     return (
-        <div  className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background">
             <Header />
+
             {/* Error Banner */}
             {showErrorBanner && (
-                <div className="bg-yellow-50  border-yellow-200">
+                <div className="bg-yellow-50 border-yellow-200">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                         <div className="flex items-center">
                             <div className="text-yellow-600 mr-3">⚠️</div>
-                            <div className="flex-1">
-                                <p className="text-sm text-yellow-800">
-                                    无法连接到后端服务，正在显示示例数据
-                                </p>
-                            </div>
+                            <p className="flex-1 text-sm text-yellow-800">无法连接到后端服务，正在显示示例数据</p>
                             <button
-                                onClick={() => fetchProjects()}
+                                onClick={() => fetchProjects(currentPage, search, sortBy, filterType)}
                                 className="text-sm text-yellow-800 hover:text-yellow-900 underline"
                             >
                                 重试连接
@@ -143,7 +184,78 @@ export default function Page() {
                 </div>
             )}
 
-            {/* Main content with animation */}
+            {/* Filter bar */}
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+                <div className="flex flex-wrap gap-2 items-center">
+                    {/* Search input */}
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={handleSearchChange}
+                        placeholder="搜索项目、作者..."
+                        className="flex-1 min-w-[180px] max-w-xs px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+                    />
+
+                    {/* Type filter chips */}
+                    {availableTypes.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                            <button
+                                onClick={() => handleTypeChange('')}
+                                className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${filterType === ''
+                                        ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
+                                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-500'
+                                    }`}
+                            >
+                                全部
+                            </button>
+                            {availableTypes.slice(0, 12).map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => handleTypeChange(filterType === t ? '' : t)}
+                                    className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${filterType === t
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600'
+                                        }`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Sort select */}
+                    <select
+                        value={sortBy}
+                        onChange={handleSortChange}
+                        className="ml-auto px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                        {SORT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Active filter hint */}
+                {(search || filterType) && !loading && (
+                    <p className="mt-1.5 text-xs text-gray-400">
+                        共 {totalProjects} 个结果
+                        {search && <span>，关键词「{search}」</span>}
+                        {filterType && <span>，类型「{filterType}」</span>}
+                        <button
+                            onClick={() => {
+                                setSearch('');
+                                setFilterType('');
+                                fetchProjects(1, '', sortBy, '');
+                            }}
+                            className="ml-2 text-blue-500 hover:underline"
+                        >
+                            清除筛选
+                        </button>
+                    </p>
+                )}
+            </div>
+
+            {/* Main content */}
             <AnimatePresence mode="wait">
                 {loading ? (
                     <motion.div
@@ -164,14 +276,12 @@ export default function Page() {
                         transition={{ duration: 0.3 }}
                     >
                         <ProjectList projects={projects} />
-
-                        {/* Pagination Controls */}
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
                             totalItems={totalProjects}
                             itemsPerPage={perPage}
-                            onPageChange={fetchProjects}
+                            onPageChange={handlePageChange}
                         />
                     </motion.div>
                 )}

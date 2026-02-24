@@ -219,3 +219,23 @@
 {"level":"error","message":"Error in /api/analytics: Error: wrong path\n    at module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\parameter.js:14:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\anti-hotlink.js:33:5)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\template.js:15:5)\n    at async C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\api-response-handler.js:143:9\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\api-template.js:2:5)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\utf8.js:4:5)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\debug.js:14:5)\n    at async grant (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\access-control.js:23:13)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\access-control.js:31:20)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\header.js:20:5)\n    at async module.exports (C:\\workspace\\project-1754923484572\\node_modules\\rsshub\\lib\\middleware\\onerror.js:20:9)"}
 {"level":"info","message":"Listening Port 1200"}
 {"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"/api/analytics?timeRange=24h, user IP: ::ffff:127.0.0.1"}
+{"level":"error","message":"Error in /api/analytics: Error: wrong path\n    at module.exports (/app/node_modules/rsshub/lib/middleware/parameter.js:14:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/anti-hotlink.js:33:5)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/template.js:15:5)\n    at async /app/node_modules/rsshub/lib/middleware/api-response-handler.js:143:9\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/api-template.js:2:5)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/utf8.js:4:5)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/debug.js:14:5)\n    at async grant (/app/node_modules/rsshub/lib/middleware/access-control.js:23:13)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/access-control.js:31:20)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/header.js:20:5)\n    at async module.exports (/app/node_modules/rsshub/lib/middleware/onerror.js:20:9)"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}
+{"level":"info","message":"Listening Port 1200"}
+{"level":"info","message":"🎉 RSSHub start! Cheers!"}

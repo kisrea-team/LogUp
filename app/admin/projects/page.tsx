@@ -60,6 +60,8 @@ export default function ProjectAdminPage() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [githubLoading, setGithubLoading] = useState(false);
+    const [fixIconsLoading, setFixIconsLoading] = useState(false);
+    const [fixIconsResult, setFixIconsResult] = useState<{ total: number; fixed: number; failed: number } | null>(null);
     const [newProject, setNewProject] = useState<ProjectCreate>({
         icon: '',
         name: '',
@@ -74,6 +76,23 @@ export default function ProjectAdminPage() {
     useEffect(() => {
         fetchProjects();
     }, []);
+
+    const handleFixIcons = async () => {
+        try {
+            setFixIconsLoading(true);
+            setFixIconsResult(null);
+            const response = await apiFetch(`/scrape/github/fix-icons`, { method: 'POST' });
+            const data = await response.json().catch(() => null);
+            if (data?.success) {
+                setFixIconsResult({ total: data.total, fixed: data.fixed, failed: data.failed });
+                await fetchProjects(currentPage);
+            }
+        } catch (error) {
+            console.error('修复图标失败:', error);
+        } finally {
+            setFixIconsLoading(false);
+        }
+    };
 
     const fetchGithubRepoInfo = async () => {
         const repoUrl = (editingProject ? editingProject.name : newProject.name).trim();
@@ -105,17 +124,17 @@ export default function ProjectAdminPage() {
                 setEditingProject((prev) =>
                     prev
                         ? {
-                              ...prev,
-                              icon: info.icon ?? prev.icon,
-                              name: info.name ?? prev.name,
-                              latest_version: info.latest_version ?? prev.latest_version,
-                              latest_update_time:
-                                  info.latest_update_time ?? prev.latest_update_time,
-                              describe: info.describe ?? prev.describe,
-                              summar: info.summar ?? prev.summar,
-                              author: info.author ?? prev.author,
-                              type: info.type ?? prev.type,
-                          }
+                            ...prev,
+                            icon: info.icon ?? prev.icon,
+                            name: info.name ?? prev.name,
+                            latest_version: info.latest_version ?? prev.latest_version,
+                            latest_update_time:
+                                info.latest_update_time ?? prev.latest_update_time,
+                            describe: info.describe ?? prev.describe,
+                            summar: info.summar ?? prev.summar,
+                            author: info.author ?? prev.author,
+                            type: info.type ?? prev.type,
+                        }
                         : null,
                 );
             } else {
@@ -283,19 +302,33 @@ export default function ProjectAdminPage() {
                 <div className="mb-8">
                     <div className="flex justify-between items-center">
                         <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
-                        <button
-                            onClick={() => {
-                                if (showAddForm) {
-                                    setShowAddForm(false);
-                                    setEditingProject(null);
-                                } else {
-                                    setShowAddForm(true);
-                                }
-                            }}
-                            className="px-4 py-2 bg-blue-300 text-white rounded-md hover:bg-blue-400"
-                        >
-                            {showAddForm ? '取消' : '添加项目'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                            {fixIconsResult && (
+                                <span className="text-sm text-gray-500">
+                                    修复完成：{fixIconsResult.fixed}/{fixIconsResult.total} 成功，{fixIconsResult.failed} 失败
+                                </span>
+                            )}
+                            <button
+                                onClick={handleFixIcons}
+                                disabled={fixIconsLoading}
+                                className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-60"
+                            >
+                                {fixIconsLoading ? '修复中...' : '修复图标'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (showAddForm) {
+                                        setShowAddForm(false);
+                                        setEditingProject(null);
+                                    } else {
+                                        setShowAddForm(true);
+                                    }
+                                }}
+                                className="px-4 py-2 bg-blue-300 text-white rounded-md hover:bg-blue-400"
+                            >
+                                {showAddForm ? '取消' : '添加项目'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -506,9 +539,9 @@ export default function ProjectAdminPage() {
                                                 setEditingProject((prev) =>
                                                     prev
                                                         ? {
-                                                              ...prev,
-                                                              latest_version: e.target.value,
-                                                          }
+                                                            ...prev,
+                                                            latest_version: e.target.value,
+                                                        }
                                                         : null,
                                                 );
                                             } else {
@@ -539,9 +572,9 @@ export default function ProjectAdminPage() {
                                                 setEditingProject((prev) =>
                                                     prev
                                                         ? {
-                                                              ...prev,
-                                                              latest_update_time: e.target.value,
-                                                          }
+                                                            ...prev,
+                                                            latest_update_time: e.target.value,
+                                                        }
                                                         : null,
                                                 );
                                             } else {

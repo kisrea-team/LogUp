@@ -1,10 +1,8 @@
 const http = require('http');
 const { URL } = require('url');
-require('../lib/ensure-ssh-tunnel');
 const { PrismaClient } = require('@prisma/client');
 const { CheerioCrawler } = require('@crawlee/cheerio');
 const TurndownService = require('turndown');
-const mysql = require('mysql2/promise');
 const Parser = require('rss-parser');
 
 const prisma = new PrismaClient({
@@ -127,38 +125,6 @@ function parseGithubRepoInput(input) {
     const shortMatch = trimmed.match(/^([^/]+)\/([^/#?]+)$/);
     if (shortMatch) return { owner: shortMatch[1], repo: shortMatch[2] };
     return null;
-}
-
-async function withMysqlConnection(fn) {
-    const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl) throw new Error('DATABASE_URL is not set');
-    const conn = await mysql.createConnection(dbUrl);
-    try {
-        return await fn(conn);
-    } finally {
-        try {
-            await conn.end();
-        } catch { }
-    }
-}
-
-async function ensureRsshubTables(conn) {
-    await conn.execute(`
-        CREATE TABLE IF NOT EXISTS rsshub_sources (
-            id INT NOT NULL AUTO_INCREMENT,
-            name VARCHAR(255) NOT NULL,
-            project_ref VARCHAR(255) NOT NULL,
-            base_url VARCHAR(512) NOT NULL,
-            route_prefix VARCHAR(512) NOT NULL,
-            suffix VARCHAR(1024) NULL,
-            enabled TINYINT(1) NOT NULL DEFAULT 1,
-            interval_minutes INT NULL,
-            last_run_at DATETIME NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
 }
 
 function normalizeRsshubPathParts({ routePrefix, suffix }) {
@@ -403,6 +369,64 @@ async function fetchGithubReleases(owner, repo, { includePrerelease, maxItems } 
     return releases;
 }
 
+// Extract first image URL from markdown/HTML text (README content)
+function isBadgeUrl(url) {
+    const badgeHosts = [
+        'shields.io', 'img.shields.io', 'badge.fury.io', 'badgen.net',
+        'travis-ci.org', 'travis-ci.com', 'circleci.com', 'codecov.io',
+        'coveralls.io', 'snyk.io', 'sonarcloud.io', 'app.fossa.com',
+        'david-dm.org', 'deps.rs', 'crates.io', 'actions.cherkashin.dev',
+    ];
+    try {
+        const u = new URL(url);
+        if (badgeHosts.some((h) => u.hostname === h || u.hostname.endsWith('.' + h))) return true;
+        // GitHub Actions badge URLs
+        if (u.hostname === 'github.com' && u.pathname.includes('/badge')) return true;
+        // Any URL with /badge or /shield in the path
+        if (/\/(badge|shield)s?[/._]/i.test(u.pathname) || u.pathname.toLowerCase().endsWith('/badge')) return true;
+        // SVG files named like badges
+        if (/badge|shield/i.test(u.pathname)) return true;
+    } catch {
+        return false;
+    }
+    return false;
+}
+
+function extractFirstImageFromReadme(content) {
+    if (!content) return null;
+    // Collect all markdown images: ![alt](url)
+    for (const m of content.matchAll(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) {
+        if (!isBadgeUrl(m[1])) return m[1];
+    }
+    // Collect all HTML img tags: <img src="url"
+    for (const m of content.matchAll(/<img[^>]+src=["'](https?:\/\/[^"'\s]+)["']/gi)) {
+        if (!isBadgeUrl(m[1])) return m[1];
+    }
+    return null;
+}
+
+// Fetch the first image from a repo's README as an icon URL
+async function fetchReadmeIcon(owner, repo) {
+    try {
+        const headers = {
+            Accept: 'application/vnd.github+json',
+            'User-Agent': 'logup-scraper',
+        };
+        if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+
+        const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (!data.content) return null;
+
+        const decoded = Buffer.from(data.content, 'base64').toString('utf-8');
+        const imageUrl = extractFirstImageFromReadme(decoded);
+        return imageUrl || null;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchGithubRepoInfo(repoUrlOrName) {
     const parsed = parseGithubRepoInput(repoUrlOrName);
     if (!parsed) return null;
@@ -419,8 +443,11 @@ async function fetchGithubRepoInfo(repoUrlOrName) {
         repoData?.updated_at ||
         new Date().toISOString();
 
+    const readmeIcon = await fetchReadmeIcon(owner, repo);
+    const icon = repoData?.owner?.avatar_url || readmeIcon || 'GH';
+
     return {
-        icon: repoData?.owner?.avatar_url || 'GH',
+        icon,
         name: `${owner}/${repo}`,
         latest_version: latestVersion,
         latest_update_time: toDateInputValue(latestTime),
@@ -430,6 +457,137 @@ async function fetchGithubRepoInfo(repoUrlOrName) {
         type: repoData?.language || '',
     };
 }
+
+// Fetch trending repos via GitHub Search API
+async function fetchGithubTrendingRepos({ language, since, perPage = 25 } = {}) {
+    const headers = {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'logup-scraper',
+    };
+    if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+
+    const sinceDate = new Date();
+    if (since === 'daily') sinceDate.setDate(sinceDate.getDate() - 1);
+    else if (since === 'monthly') sinceDate.setMonth(sinceDate.getMonth() - 1);
+    else sinceDate.setDate(sinceDate.getDate() - 7); // default: weekly
+    const dateStr = sinceDate.toISOString().split('T')[0];
+
+    let q = `stars:>100 pushed:>${dateStr}`;
+    if (language) q += ` language:${language}`;
+
+    const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=${perPage}`;
+    const resp = await fetch(url, { headers });
+    if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`GitHub Search API ${resp.status}: ${text}`);
+    }
+    const data = await resp.json();
+    return (data.items || []).map((item) => ({
+        full_name: item.full_name,
+        owner: item.owner && item.owner.login,
+        repo: item.name,
+        description: item.description || '',
+        stars: item.stargazers_count,
+        language: item.language || '',
+        topics: Array.isArray(item.topics) ? item.topics.slice(0, 3).join(', ') : '',
+    }));
+}
+
+async function scrapeGithubTrendingToDb({ language, since, perPage, limitPerRepo, includePrerelease } = {}) {
+    const trending = await fetchGithubTrendingRepos({ language, since, perPage: perPage || 25 });
+    if (!trending.length) return { trending: [], summary: { repos: [], created: 0, updated: 0, skipped: 0 } };
+
+    const repos = trending.map((r) => `${r.owner}/${r.repo}`);
+    const summary = await scrapeGithubReleasesToDb({
+        repos,
+        includePrerelease: Boolean(includePrerelease),
+        limitPerRepo: limitPerRepo || 10,
+    });
+
+    // Enrich project metadata from trending API response
+    for (const t of trending) {
+        if (!t.owner || !t.repo) continue;
+        const projectName = `${t.owner}/${t.repo}`;
+
+        // 优先使用作者头像，其次 README 首图
+        const repoData = await fetchGithubRepo(t.owner, t.repo).catch(() => null);
+        const readmeIcon = await fetchReadmeIcon(t.owner, t.repo).catch(() => null);
+        const icon = repoData?.owner?.avatar_url || readmeIcon || 'GH';
+
+        await prisma.project.updateMany({
+            where: { name: projectName },
+            data: {
+                ...(t.owner ? { author: t.owner } : {}),
+                ...(t.language ? { type: t.language } : {}),
+                icon,
+            },
+        }).catch(() => {});
+    }
+
+    return { trending, summary };
+}
+
+const trendingSchedule = {
+    language: '',
+    since: 'weekly',
+    perPage: 25,
+    limitPerRepo: 10,
+    intervalMs: 6 * 60 * 60 * 1000, // default 6h
+    timer: null,
+    running: false,
+    lastRunAt: null,
+    lastError: null,
+};
+
+function getTrendingScheduleStatus() {
+    return {
+        enabled: Boolean(trendingSchedule.timer) && trendingSchedule.intervalMs > 0,
+        language: trendingSchedule.language,
+        since: trendingSchedule.since,
+        per_page: trendingSchedule.perPage,
+        limit_per_repo: trendingSchedule.limitPerRepo,
+        interval_minutes: trendingSchedule.intervalMs ? Math.round(trendingSchedule.intervalMs / 60000) : 0,
+        last_run_at: trendingSchedule.lastRunAt ? trendingSchedule.lastRunAt.toISOString() : null,
+        last_error: trendingSchedule.lastError,
+        running: trendingSchedule.running,
+    };
+}
+
+function clearTrendingSchedule() {
+    if (trendingSchedule.timer) clearInterval(trendingSchedule.timer);
+    trendingSchedule.timer = null;
+}
+
+async function runTrendingScheduleOnce() {
+    if (trendingSchedule.running) return { skipped: true, reason: 'running' };
+    trendingSchedule.running = true;
+    try {
+        const result = await scrapeGithubTrendingToDb({
+            language: trendingSchedule.language,
+            since: trendingSchedule.since,
+            perPage: trendingSchedule.perPage,
+            limitPerRepo: trendingSchedule.limitPerRepo,
+        });
+        trendingSchedule.lastRunAt = new Date();
+        trendingSchedule.lastError = null;
+        return { success: true, result };
+    } catch (e) {
+        trendingSchedule.lastRunAt = new Date();
+        trendingSchedule.lastError = e && e.message ? e.message : String(e);
+        return { success: false, error: trendingSchedule.lastError };
+    } finally {
+        trendingSchedule.running = false;
+    }
+}
+
+// Auto-start: first run 60s after boot, then every 6h
+setTimeout(() => {
+    console.log('[trending] Auto-starting first trending scrape...');
+    runTrendingScheduleOnce().catch((e) => console.error('[trending] Auto run error:', e));
+    trendingSchedule.timer = setInterval(() => {
+        runTrendingScheduleOnce().catch((e) => console.error('[trending] Interval error:', e));
+    }, trendingSchedule.intervalMs);
+}, 60 * 1000);
 
 async function scrapeGithubReleasesToDb({ repos, includePrerelease, limitPerRepo }) {
     const summary = {
@@ -628,23 +786,20 @@ async function runRsshubScheduleOnce() {
     if (rsshubSchedule.running) return { skipped: true, reason: 'running' };
     rsshubSchedule.running = true;
     try {
-        const dueSources = await withMysqlConnection(async (conn) => {
-            await ensureRsshubTables(conn);
-            const [rows] = await conn.execute(
-                `
-                SELECT *
-                FROM rsshub_sources
-                WHERE enabled = 1
-                  AND interval_minutes IS NOT NULL
-                  AND interval_minutes > 0
-                  AND (
-                    last_run_at IS NULL
-                    OR last_run_at <= DATE_SUB(NOW(), INTERVAL interval_minutes MINUTE)
-                  )
-                ORDER BY id ASC
-                `
-            );
-            return Array.isArray(rows) ? rows : [];
+        const sources = await prisma.rsshubSource.findMany({
+            where: {
+                enabled: true,
+                interval_minutes: { gt: 0 },
+            },
+            orderBy: { id: 'asc' },
+        });
+
+        const now = Date.now();
+        const dueSources = sources.filter((s) => {
+            if (!s.interval_minutes || s.interval_minutes <= 0) return false;
+            if (!s.last_run_at) return true;
+            const intervalMs = s.interval_minutes * 60000;
+            return s.last_run_at.getTime() <= now - intervalMs;
         });
 
         const results = [];
@@ -652,16 +807,16 @@ async function runRsshubScheduleOnce() {
             try {
                 const runResult = await runRsshubSourceOnce(source, {});
                 results.push({ id: source.id, success: true, result: runResult });
-                await withMysqlConnection(async (conn) => {
-                    await ensureRsshubTables(conn);
-                    await conn.execute(`UPDATE rsshub_sources SET last_run_at = NOW() WHERE id = ?`, [source.id]);
+                await prisma.rsshubSource.update({
+                    where: { id: source.id },
+                    data: { last_run_at: new Date() },
                 });
             } catch (e) {
                 const message = e && e.message ? e.message : String(e);
                 results.push({ id: source.id, success: false, error: message });
-                await withMysqlConnection(async (conn) => {
-                    await ensureRsshubTables(conn);
-                    await conn.execute(`UPDATE rsshub_sources SET last_run_at = NOW() WHERE id = ?`, [source.id]);
+                await prisma.rsshubSource.update({
+                    where: { id: source.id },
+                    data: { last_run_at: new Date() },
                 });
             }
         }
@@ -1048,10 +1203,8 @@ const server = http.createServer(async (req, res) => {
 
             if (parts.length >= 3 && parts[2] === 'sources') {
                 if (req.method === 'GET' && parts.length === 3) {
-                    const sources = await withMysqlConnection(async (conn) => {
-                        await ensureRsshubTables(conn);
-                        const [rows] = await conn.execute(`SELECT * FROM rsshub_sources ORDER BY id DESC`);
-                        return Array.isArray(rows) ? rows : [];
+                    const sources = await prisma.rsshubSource.findMany({
+                        orderBy: { id: 'desc' },
                     });
                     return send(res, 200, { success: true, data: sources }, origin);
                 }
@@ -1063,7 +1216,7 @@ const server = http.createServer(async (req, res) => {
                     const base_url = String(body.base_url || '').trim();
                     const route_prefix = String(body.route_prefix || '').trim();
                     const suffix = coerceRsshubSuffixInput(body.suffix);
-                    const enabled = body.enabled === undefined ? 1 : body.enabled ? 1 : 0;
+                    const enabled = body.enabled === undefined ? true : Boolean(body.enabled);
                     const interval_minutes =
                         body.interval_minutes === undefined || body.interval_minutes === null || body.interval_minutes === ''
                             ? null
@@ -1073,18 +1226,16 @@ const server = http.createServer(async (req, res) => {
                         return send(res, 400, { error: 'name, project_ref, base_url, route_prefix are required' }, origin);
                     }
 
-                    const created = await withMysqlConnection(async (conn) => {
-                        await ensureRsshubTables(conn);
-                        const [result] = await conn.execute(
-                            `
-                            INSERT INTO rsshub_sources (name, project_ref, base_url, route_prefix, suffix, enabled, interval_minutes)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                            `,
-                            [name, project_ref, base_url, route_prefix, suffix, enabled, interval_minutes]
-                        );
-                        const id = result && result.insertId ? result.insertId : null;
-                        const [rows] = await conn.execute(`SELECT * FROM rsshub_sources WHERE id = ?`, [id]);
-                        return Array.isArray(rows) && rows[0] ? rows[0] : null;
+                    const created = await prisma.rsshubSource.create({
+                        data: {
+                            name,
+                            project_ref,
+                            base_url,
+                            route_prefix,
+                            suffix,
+                            enabled,
+                            interval_minutes: Number.isFinite(interval_minutes) ? Math.trunc(interval_minutes) : null,
+                        },
                     });
                     return send(res, 201, { success: true, data: created }, origin);
                 }
@@ -1100,7 +1251,7 @@ const server = http.createServer(async (req, res) => {
                     if (body.base_url !== undefined) patch.base_url = String(body.base_url || '').trim();
                     if (body.route_prefix !== undefined) patch.route_prefix = String(body.route_prefix || '').trim();
                     if (body.suffix !== undefined) patch.suffix = coerceRsshubSuffixInput(body.suffix);
-                    if (body.enabled !== undefined) patch.enabled = body.enabled ? 1 : 0;
+                    if (body.enabled !== undefined) patch.enabled = Boolean(body.enabled);
                     if (body.interval_minutes !== undefined) {
                         patch.interval_minutes =
                             body.interval_minutes === null || body.interval_minutes === '' ? null : Number(body.interval_minutes);
@@ -1109,24 +1260,32 @@ const server = http.createServer(async (req, res) => {
                     const keys = Object.keys(patch);
                     if (keys.length === 0) return send(res, 400, { error: 'No fields to update' }, origin);
 
-                    const updated = await withMysqlConnection(async (conn) => {
-                        await ensureRsshubTables(conn);
-                        const sets = keys.map((k) => `${k} = ?`).join(', ');
-                        const values = keys.map((k) => patch[k]);
-                        await conn.execute(`UPDATE rsshub_sources SET ${sets} WHERE id = ?`, [...values, sourceId]);
-                        const [rows] = await conn.execute(`SELECT * FROM rsshub_sources WHERE id = ?`, [sourceId]);
-                        return Array.isArray(rows) && rows[0] ? rows[0] : null;
-                    });
+                    if (patch.interval_minutes !== undefined) {
+                        patch.interval_minutes = Number.isFinite(patch.interval_minutes)
+                            ? Math.trunc(patch.interval_minutes)
+                            : patch.interval_minutes;
+                    }
+
+                    let updated = null;
+                    try {
+                        updated = await prisma.rsshubSource.update({
+                            where: { id: sourceId },
+                            data: patch,
+                        });
+                    } catch (e) {
+                        return send(res, 404, { error: 'Source not found' }, origin);
+                    }
                     return send(res, 200, { success: true, data: updated }, origin);
                 }
 
                 if (req.method === 'DELETE' && parts.length === 4) {
                     const sourceId = parseInt(parts[3], 10);
                     if (!sourceId) return send(res, 400, { error: 'Invalid source id' }, origin);
-                    await withMysqlConnection(async (conn) => {
-                        await ensureRsshubTables(conn);
-                        await conn.execute(`DELETE FROM rsshub_sources WHERE id = ?`, [sourceId]);
-                    });
+                    try {
+                        await prisma.rsshubSource.delete({ where: { id: sourceId } });
+                    } catch {
+                        return send(res, 404, { error: 'Source not found' }, origin);
+                    }
                     return send(res, 200, { success: true }, origin);
                 }
 
@@ -1137,25 +1296,21 @@ const server = http.createServer(async (req, res) => {
                     const body = await readJson(req);
                     const maxItems = body.max_items === undefined ? undefined : Number(body.max_items);
 
-                    const source = await withMysqlConnection(async (conn) => {
-                        await ensureRsshubTables(conn);
-                        const [rows] = await conn.execute(`SELECT * FROM rsshub_sources WHERE id = ?`, [sourceId]);
-                        return Array.isArray(rows) && rows[0] ? rows[0] : null;
-                    });
+                    const source = await prisma.rsshubSource.findUnique({ where: { id: sourceId } });
                     if (!source) return send(res, 404, { error: 'Source not found' }, origin);
 
                     try {
                         const result = await runRsshubSourceOnce(source, { maxItems: Number.isFinite(maxItems) ? maxItems : undefined });
-                        await withMysqlConnection(async (conn) => {
-                            await ensureRsshubTables(conn);
-                            await conn.execute(`UPDATE rsshub_sources SET last_run_at = NOW() WHERE id = ?`, [sourceId]);
+                        await prisma.rsshubSource.update({
+                            where: { id: sourceId },
+                            data: { last_run_at: new Date() },
                         });
                         return send(res, 200, { success: true, result }, origin);
                     } catch (e) {
                         const message = e && e.message ? e.message : String(e);
-                        await withMysqlConnection(async (conn) => {
-                            await ensureRsshubTables(conn);
-                            await conn.execute(`UPDATE rsshub_sources SET last_run_at = NOW() WHERE id = ?`, [sourceId]);
+                        await prisma.rsshubSource.update({
+                            where: { id: sourceId },
+                            data: { last_run_at: new Date() },
                         });
                         return send(res, 500, { success: false, error: message }, origin);
                     }
@@ -1213,6 +1368,59 @@ const server = http.createServer(async (req, res) => {
                     { success: true, schedule: getGithubScheduleStatus(), run_result: runResult },
                     origin
                 );
+            }
+
+            if (parts.length === 3 && parts[2] === 'trending') {
+                if (req.method === 'GET') {
+                    return send(res, 200, { success: true, schedule: getTrendingScheduleStatus() }, origin);
+                }
+                if (req.method !== 'POST') return send(res, 405, { error: 'Method Not Allowed' }, origin);
+
+                const tBody = await readJson(req);
+                if (tBody.set_schedule) {
+                    const intervalMinutes = tBody.interval_minutes === undefined ? 0 : Number(tBody.interval_minutes);
+                    trendingSchedule.language = tBody.language || '';
+                    trendingSchedule.since = tBody.since || 'weekly';
+                    trendingSchedule.perPage = Number(tBody.per_page) > 0 ? Number(tBody.per_page) : 25;
+                    trendingSchedule.limitPerRepo = Number(tBody.limit_per_repo) > 0 ? Number(tBody.limit_per_repo) : 10;
+                    clearTrendingSchedule();
+                    if (Number.isFinite(intervalMinutes) && intervalMinutes > 0) {
+                        trendingSchedule.intervalMs = Math.round(intervalMinutes * 60000);
+                        trendingSchedule.timer = setInterval(() => {
+                            runTrendingScheduleOnce().catch(() => {});
+                        }, trendingSchedule.intervalMs);
+                    }
+                }
+                const runNow = tBody.run_now !== false;
+                const tRunResult = runNow ? await runTrendingScheduleOnce() : null;
+                return send(res, 200, { success: true, schedule: getTrendingScheduleStatus(), run_result: tRunResult }, origin);
+            }
+
+            if (req.method === 'POST' && parts.length === 3 && parts[2] === 'fix-icons') {
+                const projects = await prisma.project.findMany({
+                    select: { id: true, name: true },
+                });
+                let fixed = 0;
+                let failed = 0;
+                for (const project of projects) {
+                    const parsed = parseGithubRepoInput(project.name);
+                    if (!parsed) { failed += 1; continue; }
+                    const { owner, repo } = parsed;
+                    try {
+                        const repoData = await fetchGithubRepo(owner, repo).catch(() => null);
+                        const readmeIcon = await fetchReadmeIcon(owner, repo).catch(() => null);
+                        const icon = repoData?.owner?.avatar_url || readmeIcon || null;
+                        if (icon) {
+                            await prisma.project.update({ where: { id: project.id }, data: { icon } });
+                            fixed += 1;
+                        } else {
+                            failed += 1;
+                        }
+                    } catch {
+                        failed += 1;
+                    }
+                }
+                return send(res, 200, { success: true, total: projects.length, fixed, failed }, origin);
             }
 
             if (req.method !== 'POST' || parts.length !== 2) return send(res, 405, { error: 'Method Not Allowed' }, origin);

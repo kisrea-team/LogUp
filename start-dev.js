@@ -1,5 +1,5 @@
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,6 +7,16 @@ const fs = require('fs');
 // require('./lib/ensure-ssh-tunnel'); // backend-repo/server.js does this internally
 
 console.log('Starting development environment...');
+
+// Sync Prisma schema to database (creates missing columns like `slug`)
+console.log('Syncing database schema via prisma db push...');
+const pushResult = spawnSync(
+  'npx', ['prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'],
+  { stdio: 'inherit', shell: true, env: process.env }
+);
+if (pushResult.status !== 0) {
+  console.warn('Warning: prisma db push failed (status ' + pushResult.status + '), continuing anyway...');
+}
 
 // Start RSSHub (local)
 const rsshubPort = process.env.RSSHUB_PORT || '1200';

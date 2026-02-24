@@ -1,5 +1,3 @@
-require('../lib/ensure-ssh-tunnel');
-
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();

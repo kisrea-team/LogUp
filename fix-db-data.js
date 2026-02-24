@@ -1,6 +1,4 @@
 
-// ensure-ssh-tunnel will load .env files automatically when required
-const { ensureSshTunnel } = require('./lib/ensure-ssh-tunnel');
 const { PrismaClient } = require('@prisma/client');
 
 async function fixData() {

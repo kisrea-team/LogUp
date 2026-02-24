@@ -25,6 +25,7 @@ interface Version {
     version: string;
     update_time: string;
     content: string;
+    translation?: string | null;
     download_url: string;
     downloadUrl?: string;
 }
@@ -177,7 +178,15 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                             </div>
 
                             <div className=" border border-gray-200 rounded-lg p-6 mb-6">
-                                <ContentTranslator content={selectedVersion.content} />
+                                <ContentTranslator
+                                    key={selectedVersion.id ?? selectedVersion.version}
+                                    content={selectedVersion.content}
+                                    versionId={selectedVersion.id}
+                                    cachedTranslation={selectedVersion.translation}
+                                    onTranslationSaved={(t) =>
+                                        setSelectedVersion({ ...selectedVersion, translation: t })
+                                    }
+                                />
                             </div>
 
                             {/* 下载 */}

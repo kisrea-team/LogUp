@@ -9,6 +9,38 @@ function isDatabaseUnavailableError(error: unknown) {
   return name === 'PrismaClientInitializationError' || message.includes("Can't reach database server");
 }
 
+// PATCH /api/versions/[id] - Save translation for a version
+export async function PATCH(
+  request: NextRequest,
+  props: { params: Promise<{ id: string }> }
+) {
+  const params = await props.params;
+  try {
+    const id = parseInt(params.id, 10);
+    const body = await request.json();
+    const { translation } = body;
+
+    if (typeof translation !== 'string') {
+      return NextResponse.json({ error: 'translation must be a string' }, { status: 400 });
+    }
+
+    const exists = await prisma.version.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) {
+      return NextResponse.json({ error: 'Version not found' }, { status: 404 });
+    }
+
+    await prisma.version.update({ where: { id }, data: { translation } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in PATCH /api/versions/[id]:', error);
+    if (isDatabaseUnavailableError(error)) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Failed to save translation' }, { status: 500 });
+  }
+}
+
 // PUT /api/versions/[id] - Update a version
 export async function PUT(
   request: NextRequest,

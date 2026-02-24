@@ -71,6 +71,7 @@ export function RenderIcon({ icon, size = 55 }: RenderIconProps) {
                 alt="icon"
                 width={size}
                 height={size}
+                unoptimized
                 style={{ width: size, height: size, objectFit: 'contain' }}
             />
         );

@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json().catch(() => ({}));
         const content = body?.content;
         const stream = Boolean(body?.stream) || request.headers.get('accept')?.includes('text/event-stream');
+        const mode: 'bilingual' | 'translation-only' = body?.mode === 'translation-only' ? 'translation-only' : 'bilingual';
 
         if (!content) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 });
@@ -28,16 +29,13 @@ export async function POST(request: NextRequest) {
             baseURL: BASE_URL,
         });
 
+        const systemPrompt = mode === 'translation-only'
+            ? 'You are a professional translator and document formatter. Translate the provided Markdown content into Chinese only. Do not keep the original English text. While translating, optimize the layout and readability: ensure proper paragraph spacing, convert run-on sentences into clear concise ones, use bullet points or numbered lists where appropriate to improve clarity, and ensure headings are properly leveled. Do NOT alter the meaning or omit any information. Preserve all Markdown formatting (headers, bullet points, links, code blocks, etc.) and keep all code snippets untranslated.'
+            : 'You are a professional translator and document formatter. Translate the provided Markdown content into Chinese, maintaining a bilingual format. For every paragraph, heading, or list item, keep the original English text and place the Chinese translation immediately after it on a new line. While translating, optimize the layout and readability of the Chinese portion: ensure proper paragraph spacing, convert run-on sentences into clear concise ones, and use bullet points or numbered lists where appropriate. Do NOT alter the meaning or omit any information. Preserve all Markdown formatting (headers, bullet points, etc.) and keep all code snippets untranslated.';
+
         const messages = [
-            {
-                role: 'system' as const,
-                content:
-                    'You are a helpful translator assistant. Your task is to translate the provided Markdown content into Chinese, but maintain a bilingual format. For every line, sentence, or list item of the original text, keep the original English text and append the Chinese translation immediately after it (e.g., on a new line or in parentheses if short). Preserve the original Markdown formatting (headers, bullet points, etc.).',
-            },
-            {
-                role: 'user' as const,
-                content: `Please translate the following Markdown content:\n\n${content}`,
-            },
+            { role: 'system' as const, content: systemPrompt },
+            { role: 'user' as const, content: `Please translate the following Markdown content:\n\n${content}` },
         ];
 
         if (stream) {

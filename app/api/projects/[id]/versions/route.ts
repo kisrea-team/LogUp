@@ -43,6 +43,7 @@ export async function GET(
         version: true,
         update_time: true,
         content: true,
+        translation: true,
         download_url: true,
       },
     });
