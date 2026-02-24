@@ -37,30 +37,11 @@ const nextConfig = {
         ],
     },
     serverExternalPackages: [
-        'ssh2',
-        'crawlee',
-        'puppeteer',
-        'puppeteer-core',
-        '@crawlee/cheerio',
-        'cheerio',
-        'browserslist',
         'turndown',
     ],
     output: 'standalone',
     async rewrites() {
-        const backendPort = process.env.BACKEND_NODE_PORT || '8000';
-        const defaultApiBaseUrl = `http://127.0.0.1:${backendPort}`;
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || defaultApiBaseUrl;
-        return [
-            {
-                source: '/api/rsshub/:path*',
-                destination: '/rsshub/:path*',
-            },
-            {
-                source: '/api/:path*',
-                destination: `${apiBaseUrl}/:path*`,
-            },
-        ];
+        return [];
     },
     async headers() {
         return [

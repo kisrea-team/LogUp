@@ -18,19 +18,6 @@ if (pushResult.status !== 0) {
   console.warn('Warning: prisma db push failed (status ' + pushResult.status + '), continuing anyway...');
 }
 
-// Start RSSHub (local)
-const rsshubPort = process.env.RSSHUB_PORT || '1200';
-console.log(`Starting RSSHub on port ${rsshubPort}...`);
-const rsshub = spawn('node', ['node_modules/rsshub/lib/index.js'], {
-  env: { ...process.env, PORT: rsshubPort, NODE_ENV: 'dev' },
-  stdio: 'inherit',
-  shell: true
-});
-
-rsshub.on('error', (err) => {
-  console.error('Failed to start RSSHub:', err);
-});
-
 // Start Backend
 const backendPort = process.env.BACKEND_NODE_PORT || '8000';
 console.log(`Starting backend on port ${backendPort}...`);
@@ -60,7 +47,6 @@ frontend.on('error', (err) => {
 // Handle exit
 process.on('SIGINT', () => {
   console.log('Stopping services...');
-  rsshub.kill();
   backend.kill();
   frontend.kill();
   process.exit();

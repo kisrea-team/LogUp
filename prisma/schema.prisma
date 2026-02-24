@@ -43,19 +43,3 @@ model Version {
 
   @@map("versions")
 }
-
-model RsshubSource {
-  id               Int       @id @default(autoincrement())
-  name             String
-  project_ref      String
-  base_url         String
-  route_prefix     String
-  suffix           String?   @db.Text
-  enabled          Boolean   @default(true)
-  interval_minutes Int?
-  last_run_at      DateTime?
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
-
-  @@map("rsshub_sources")
-}
