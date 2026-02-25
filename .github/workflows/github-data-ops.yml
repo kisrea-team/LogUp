@@ -41,6 +41,7 @@ jobs:
           cat > ~/.claude-code-router/config.json << EOF
           {
             "APIKEY": "${GEMINI_API_KEY}",
+            "NON_INTERACTIVE_MODE": true,
             "Providers": [
               {
                 "name": "custom",
@@ -71,7 +72,7 @@ jobs:
           cp -r skills/. ~/.claude/skills/
       - name: Run github-data-ops skill
         run: |
-          ccr code -p "/github-data-ops 立即调用触发热门项目抓取，等待响应后报告结果" \
+          ccr code -p "/github-data-ops 自主运营项目数据库：查询现有项目，自主决策并添加至少 5 个你认为有价值的开源项目（不限于 GitHub trending），自行撰写中文简介，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认" \
             --dangerously-skip-permissions \
             --model claude-3-5-sonnet-20241022 \
             --max-turns 20
