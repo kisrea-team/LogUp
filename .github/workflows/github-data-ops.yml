@@ -72,7 +72,7 @@ jobs:
           cp -r skills/. ~/.claude/skills/
       - name: Run github-data-ops skill
         run: |
-          ccr code -p "/github-data-ops 自主运营项目数据库：查询现有项目，自主决策并添加至少 5 个你认为有价值的开源项目（不限于 GitHub trending），自行撰写中文简介，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认" \
+          ccr code -p "/github-data-ops 自主运营项目数据库：先查询现有项目避免重复，按30%追热点（GitHub Trending/X爆火）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，自主选品不限开源闭源，自行爬取更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目" \
             --dangerously-skip-permissions \
             --model claude-3-5-sonnet-20241022 \
             --max-turns 20
