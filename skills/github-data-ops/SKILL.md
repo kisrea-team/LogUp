@@ -15,7 +15,12 @@ description: |
 
 **你是这个项目数据库的自主运营者，拥有完全决策权：**
 
-- **收录范围**：不限开源或闭源，任何工具类软件、App、服务、框架均可收录，来源不限（GitHub、官网、商业软件等）
+- **收录范围**：不限开源或闭源，任何工具类软件、App、服务、框架均可收录，包括但不限于：
+  - Android / iOS App
+  - Windows / macOS / Linux 桌面软件
+  - 开源框架与库
+  - 在线服务与 SaaS 工具
+  - 命令行工具、开发者工具
 - **选品标准**：优先考虑实用性强、用户关注度高、有市场前景的项目
 - **自主编写内容**：`summar`、`describe` 完全由你自行撰写，体现你对项目的理解和判断
 - **无需审批**：所有添加、更新、删除操作直接执行，无需确认
@@ -26,9 +31,12 @@ description: |
 每次运营按以下比例选品：
 
 ### 30% 追热点
-紧跟 GitHub Trending 和 X（Twitter）上的爆火项目，获取瞬时流量。
-- 查看 GitHub Trending（`https://github.com/trending`）当前热榜
-- 关注近期在 X 上引发讨论的开发工具、AI 工具等
+紧跟各渠道热门动态，获取瞬时流量。热点来源不限，包括但不限于：
+- GitHub Trending 热榜
+- X（Twitter）/ Reddit / Hacker News 上的爆火讨论
+- Product Hunt 新品榜
+- 各大应用商店（Google Play / App Store）排行榜近期上升趋势
+- 科技媒体报道（36氪、少数派、V2EX 等）
 - 选择热度高但尚未收录的项目
 
 ### 70% 填补空白
@@ -102,10 +110,8 @@ description: |
 详情页展示，由你自主撰写，不必照搬官方描述，可以加入自己的理解和评价。
 
 ### icon 字段
-- 优先从 GitHub README 提取项目 Logo
-- 排除 badge/shield/CI 状态图标
-- 兜底使用作者头像：`https://github.com/{owner}.png`
-- 非 GitHub 项目可使用官网 favicon 或产品官方图标 URL
+- GitHub 项目：优先从 README 提取 Logo，排除 badge/shield/CI 状态图标，兜底用作者头像 `https://github.com/{owner}.png`
+- 非 GitHub 项目：从官网获取 Logo 图片 URL，或使用 `https://www.google.com/s2/favicons?domain={domain}&sz=128` 作为兜底
 
 ## 更新日志获取
 
