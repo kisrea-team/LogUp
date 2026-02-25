@@ -47,13 +47,13 @@ jobs:
                 "name": "custom",
                 "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
                 "api_key": "${GEMINI_API_KEY}",
-                "models": ["gpt-5.2"]
+                "models": ["gpt-5.3-codex"]
               }
             ],
             "Router": {
-              "default": "custom,gpt-5.2",
-              "background": "custom,gpt-5.2",
-              "think": "custom,gpt-5.2"
+              "default": "custom,gpt-5.3-codex",
+              "background": "custom,gpt-5.3-codex",
+              "think": "custom,gpt-5.3-codex"
             }
           }
           EOF
