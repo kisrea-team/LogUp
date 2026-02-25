@@ -60,20 +60,26 @@ jobs:
           EOF
 
       - name: Start Claude Code Router
-        run: ccr start &
+        run: nohup ccr start > /tmp/ccr.log 2>&1 &
 
       - name: Wait for router to be ready
         run: |
-          for i in $(seq 1 10); do
-            curl -s http://localhost:3001 > /dev/null 2>&1 && echo "Router ready" && break
-            echo "Waiting... ($i)"
-            sleep 2
+          for i in $(seq 1 20); do
+            if curl -s http://localhost:3001 > /dev/null 2>&1; then
+              echo "Router ready after ${i} attempts"
+              exit 0
+            fi
+            echo "Waiting... ($i/20)"
+            sleep 3
           done
+          echo "Router failed to start. Logs:"
+          cat /tmp/ccr.log
+          exit 1
 
       - name: Install skills
         run: |
           mkdir -p ~/.claude/skills
-          cp -r skills/* ~/.claude/skills/
+          cp -r skills/. ~/.claude/skills/
 
       - name: Run github-data-ops skill
         run: |
