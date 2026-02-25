@@ -33,7 +33,7 @@ jobs:
       - name: Install Claude Code & Router
         run: npm install -g @anthropic-ai/claude-code @musistudio/claude-code-router
 
-      - name: Configure Claude Code Router (Gemini)
+      - name: Configure Claude Code Router
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -43,19 +43,16 @@ jobs:
             "APIKEY": "${GEMINI_API_KEY}",
             "Providers": [
               {
-                "name": "gemini",
-                "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+                "name": "custom",
+                "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
                 "api_key": "${GEMINI_API_KEY}",
-                "models": ["gemini-2.5-flash"],
-                "transformer": {
-                  "use": ["gemini"]
-                }
+                "models": ["gpt-5.2"]
               }
             ],
             "Router": {
-              "default": "gemini,gemini-2.5-flash",
-              "background": "gemini,gemini-2.5-flash",
-              "think": "gemini,gemini-2.5-flash"
+              "default": "custom,gpt-5.2",
+              "background": "custom,gpt-5.2",
+              "think": "custom,gpt-5.2"
             }
           }
           EOF
