@@ -86,10 +86,8 @@ jobs:
 
       - name: Run github-data-ops skill
         run: |
-          claude -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库" \
+          ccr code -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库" \
             --dangerously-skip-permissions
         env:
-          ANTHROPIC_BASE_URL: http://localhost:3001
-          ANTHROPIC_API_KEY: dummy
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
