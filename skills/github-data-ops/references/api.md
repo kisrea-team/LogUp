@@ -5,7 +5,7 @@
 ### 手动触发抓取
 
 ```bash
-POST http://localhost:3000/api/scrape/github/trending
+POST https://l.kisrea.com/api/scrape/github/trending
 Content-Type: application/json
 
 {
@@ -20,7 +20,7 @@ Content-Type: application/json
 ### 修改定时计划
 
 ```bash
-POST http://localhost:3000/api/scrape/github/trending
+POST https://l.kisrea.com/api/scrape/github/trending
 Content-Type: application/json
 
 {
@@ -33,7 +33,7 @@ Content-Type: application/json
 ### 查看计划状态
 
 ```bash
-GET http://localhost:3000/api/scrape/github/trending
+GET https://l.kisrea.com/api/scrape/github/trending
 ```
 
 返回示例：
@@ -56,7 +56,7 @@ GET http://localhost:3000/api/scrape/github/trending
 ### 抓取指定仓库
 
 ```bash
-POST http://localhost:3000/api/scrape/github
+POST https://l.kisrea.com/api/scrape/github
 Content-Type: application/json
 
 {
@@ -71,7 +71,7 @@ Content-Type: application/json
 ### 创建项目
 
 ```bash
-POST http://localhost:3000/api/projects
+POST https://l.kisrea.com/api/projects
 Content-Type: application/json
 
 {
@@ -97,17 +97,17 @@ Content-Type: application/json
 
 ```bash
 # 分页查询
-GET http://localhost:3000/api/projects?page=1&per_page=10
+GET https://l.kisrea.com/api/projects?page=1&per_page=10
 
 # 单个项目（id 或 slug）
-GET http://localhost:3000/api/projects/42
-GET http://localhost:3000/api/projects/vercel-nextjs
+GET https://l.kisrea.com/api/projects/42
+GET https://l.kisrea.com/api/projects/vercel-nextjs
 ```
 
 ### 更新项目
 
 ```bash
-PUT http://localhost:3000/api/projects/42
+PUT https://l.kisrea.com/api/projects/42
 Content-Type: application/json
 
 {
@@ -119,7 +119,7 @@ Content-Type: application/json
 ### 删除项目
 
 ```bash
-DELETE http://localhost:3000/api/projects/42
+DELETE https://l.kisrea.com/api/projects/42
 ```
 
 ## 版本操作
@@ -127,7 +127,7 @@ DELETE http://localhost:3000/api/projects/42
 ### 新增版本
 
 ```bash
-POST http://localhost:3000/api/versions
+POST https://l.kisrea.com/api/versions
 Content-Type: application/json
 
 {
@@ -142,7 +142,7 @@ Content-Type: application/json
 ### 更新版本
 
 ```bash
-PUT http://localhost:3000/api/versions/123
+PUT https://l.kisrea.com/api/versions/123
 Content-Type: application/json
 
 {
@@ -153,5 +153,5 @@ Content-Type: application/json
 ### 删除版本
 
 ```bash
-DELETE http://localhost:3000/api/versions/123
+DELETE https://l.kisrea.com/api/versions/123
 ```

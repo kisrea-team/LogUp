@@ -75,7 +75,7 @@ jobs:
 
       - name: Run github-data-ops skill
         run: |
-          ccr code -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库" \
+          ccr code -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库，API 地址为 https://l.kisrea.com" \
             --dangerously-skip-permissions \
             --model claude-3-5-sonnet-20241022
         env:
