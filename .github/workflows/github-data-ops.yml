@@ -54,7 +54,10 @@ jobs:
               }
             ],
             "Router": {
-              "default": "gemini,gemini-2.5-flash"
+              "default": "gemini,gemini-2.5-flash",
+              "claude-sonnet-4-6": "gemini,gemini-2.5-flash",
+              "claude-3-5-sonnet-20241022": "gemini,gemini-2.5-flash",
+              "claude-3-7-sonnet-20250219": "gemini,gemini-2.5-flash"
             }
           }
           EOF
