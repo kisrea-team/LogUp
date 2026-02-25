@@ -1,0 +1,71 @@
+name: Hourly GitHub Data Ops
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # 每小时整点运行
+  workflow_dispatch:        # 允许手动触发
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code & Router
+        run: npm install -g @anthropic-ai/claude-code @musistudio/claude-code-router
+
+      - name: Configure Claude Code Router (Gemini)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          mkdir -p ~/.config/claude-code-router
+          cat > ~/.config/claude-code-router/config.json << EOF
+          {
+            "PORT": 3001,
+            "Providers": [
+              {
+                "name": "gemini",
+                "type": "google-gemini",
+                "apiKey": "${GEMINI_API_KEY}",
+                "models": [
+                  {
+                    "name": "gemini-2.5-pro",
+                    "contextWindow": 1000000
+                  }
+                ]
+              }
+            ],
+            "Router": {
+              "default": "gemini,gemini-2.5-pro"
+            }
+          }
+          EOF
+
+      - name: Start Claude Code Router
+        run: ccr start &
+
+      - name: Wait for router to be ready
+        run: |
+          for i in $(seq 1 10); do
+            curl -s http://localhost:3001 > /dev/null 2>&1 && echo "Router ready" && break
+            echo "Waiting... ($i)"
+            sleep 2
+          done
+
+      - name: Run github-data-ops skill
+        run: |
+          claude -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库" \
+            --dangerously-skip-permissions
+        env:
+          ANTHROPIC_BASE_URL: http://localhost:3001
+          ANTHROPIC_API_KEY: dummy
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
