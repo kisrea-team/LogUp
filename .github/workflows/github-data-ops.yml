@@ -62,23 +62,6 @@ jobs:
           }
           EOF
 
-      - name: Start Claude Code Router
-        run: nohup ccr start > /tmp/ccr.log 2>&1 &
-
-      - name: Wait for router to be ready
-        run: |
-          for i in $(seq 1 20); do
-            if curl -s http://localhost:3001 > /dev/null 2>&1; then
-              echo "Router ready after ${i} attempts"
-              exit 0
-            fi
-            echo "Waiting... ($i/20)"
-            sleep 3
-          done
-          echo "Router failed to start. Logs:"
-          cat /tmp/ccr.log
-          exit 1
-
       - name: Install skills
         run: |
           mkdir -p ~/.claude/skills
@@ -87,7 +70,8 @@ jobs:
       - name: Run github-data-ops skill
         run: |
           ccr code -p "/github-data-ops 抓取 GitHub 热门项目数据写入数据库" \
-            --dangerously-skip-permissions
+            --dangerously-skip-permissions \
+            --model claude-3-5-sonnet-20241022
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
