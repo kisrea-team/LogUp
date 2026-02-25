@@ -47,14 +47,14 @@ jobs:
                 "apiKey": "${GEMINI_API_KEY}",
                 "models": [
                   {
-                    "name": "gemini-2.5-pro",
+                    "name": "gemini-2.5-flash",
                     "contextWindow": 1000000
                   }
                 ]
               }
             ],
             "Router": {
-              "default": "gemini,gemini-2.5-pro"
+              "default": "gemini,gemini-2.5-flash"
             }
           }
           EOF
@@ -69,6 +69,11 @@ jobs:
             echo "Waiting... ($i)"
             sleep 2
           done
+
+      - name: Install skills
+        run: |
+          mkdir -p ~/.claude/skills
+          cp -r skills/* ~/.claude/skills/
 
       - name: Run github-data-ops skill
         run: |
