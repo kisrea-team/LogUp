@@ -1,3 +1,4 @@
+
 name: Hourly GitHub Data Ops
 
 on:
@@ -40,7 +41,6 @@ jobs:
           cat > ~/.claude-code-router/config.json << EOF
           {
             "APIKEY": "${GEMINI_API_KEY}",
-            "PORT": 3001,
             "Providers": [
               {
                 "name": "gemini",
@@ -59,7 +59,6 @@ jobs:
             }
           }
           EOF
-
       - name: Debug - Print config
         run: |
           echo "=== config.json ==="
@@ -69,36 +68,16 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Start Claude Code Router
-        run: nohup ccr start > /tmp/ccr.log 2>&1 &
-
-      - name: Wait for router to be ready
-        run: |
-          for i in $(seq 1 20); do
-            if curl -s http://localhost:3001 > /dev/null 2>&1; then
-              echo "Router ready after ${i} attempts"
-              exit 0
-            fi
-            echo "Waiting... ($i/20)"
-            sleep 3
-          done
-          echo "Router failed to start. Logs:"
-          cat /tmp/ccr.log
-          exit 1
-
       - name: Install skills
         run: |
           mkdir -p ~/.claude/skills
           cp -r skills/. ~/.claude/skills/
-
       - name: Run github-data-ops skill
         run: |
-          claude -p "/github-data-ops 立即调用 POST https://zitons-logup-re.hf.space/api/scrape/github/trending 触发热门项目抓取，等待响应后报告结果" \
+          ccr code -p "/github-data-ops 立即调用触发热门项目抓取，等待响应后报告结果" \
             --dangerously-skip-permissions \
             --model claude-3-5-sonnet-20241022 \
             --max-turns 20
         env:
-          ANTHROPIC_BASE_URL: http://localhost:3001
-          ANTHROPIC_API_KEY: dummy
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
