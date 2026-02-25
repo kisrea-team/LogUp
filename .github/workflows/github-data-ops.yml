@@ -36,8 +36,8 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          mkdir -p ~/.config/claude-code-router
-          cat > ~/.config/claude-code-router/config.json << EOF
+          mkdir -p ~/.claude-code-router
+          cat > ~/.claude-code-router/config.json << EOF
           {
             "PORT": 3001,
             "Providers": [
