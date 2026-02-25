@@ -39,28 +39,34 @@ jobs:
           mkdir -p ~/.claude-code-router
           cat > ~/.claude-code-router/config.json << EOF
           {
-            "PORT": 3001,
+            "APIKEY": "${GEMINI_API_KEY}",
             "Providers": [
               {
                 "name": "gemini",
-                "type": "google-gemini",
-                "apiKey": "${GEMINI_API_KEY}",
-                "models": [
-                  {
-                    "name": "gemini-2.5-flash",
-                    "contextWindow": 1000000
-                  }
-                ]
+                "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+                "api_key": "${GEMINI_API_KEY}",
+                "models": ["gemini-2.5-flash"],
+                "transformer": {
+                  "use": ["gemini"]
+                }
               }
             ],
             "Router": {
               "default": "gemini,gemini-2.5-flash",
-              "claude-sonnet-4-6": "gemini,gemini-2.5-flash",
-              "claude-3-5-sonnet-20241022": "gemini,gemini-2.5-flash",
-              "claude-3-7-sonnet-20250219": "gemini,gemini-2.5-flash"
+              "background": "gemini,gemini-2.5-flash",
+              "think": "gemini,gemini-2.5-flash"
             }
           }
           EOF
+
+      - name: Debug - Print config
+        run: |
+          echo "=== config.json ==="
+          cat ~/.claude-code-router/config.json
+          echo "=== GEMINI_API_KEY set? ==="
+          [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Install skills
         run: |
