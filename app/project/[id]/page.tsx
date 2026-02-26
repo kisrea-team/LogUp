@@ -29,6 +29,7 @@ interface Project {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
     versions: Version[];
 }
 

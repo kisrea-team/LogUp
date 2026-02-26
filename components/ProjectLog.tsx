@@ -8,9 +8,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { useRouter } from 'next/navigation';
 import { RenderIcon } from '@/components/utils/renderIcon';
 import { ContentTranslator } from '@/components/ContentTranslator';
 import { formatRelativeTime } from '@/lib/utils';
+import { ProjectLink } from '@/types/index';
 import {
     Select,
     SelectContent,
@@ -40,6 +42,8 @@ interface Project {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
+    links?: ProjectLink[];
     versions: Version[];
 }
 
@@ -54,6 +58,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
     selectedVersion,
     setSelectedVersion,
 }) => {
+    const router = useRouter();
     // Mobile Version Selector JSX
     const renderMobileVersionSelector = () => (
         <div className="md:hidden mb-6">
@@ -141,6 +146,19 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                         <span>类型: {selectedProject.type || '未分类'}</span>
                                         <span>更新时间: {formatRelativeTime(selectedProject.latest_update_time)}</span>
                                     </div>
+                                    {selectedProject.tags && selectedProject.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-3">
+                                            {selectedProject.tags.map((tag) => (
+                                                <button
+                                                    key={tag}
+                                                    onClick={() => router.push(`/?tag=${encodeURIComponent(tag)}`)}
+                                                    className="px-2.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 transition-colors"
+                                                >
+                                                    #{tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {selectedProject.describe && (
@@ -148,7 +166,50 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                     <h3 className="text-sm font-medium text-gray-900 mb-2 dark:text-white">
                                         项目介绍
                                     </h3>
-                                    <p className="">{selectedProject.describe}</p>
+                                    <div className="prose prose-sm max-w-none dark:prose-invert text-gray-700 dark:text-gray-300">
+                                        <ReactMarkdown>{selectedProject.describe}</ReactMarkdown>
+                                    </div>
+                                </div>
+                            )}
+                            {selectedProject.links && selectedProject.links.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <h3 className="text-sm font-medium text-gray-900 mb-3 dark:text-white">
+                                        相关资源
+                                    </h3>
+                                    {(['tutorial', 'review', 'docs', 'video', 'blog', 'community'] as ProjectLink['type'][])
+                                        .map((type) => {
+                                            const typeLinks = selectedProject.links!.filter((l) => l.type === type);
+                                            if (typeLinks.length === 0) return null;
+                                            const typeLabel: Record<ProjectLink['type'], string> = {
+                                                tutorial: '教程',
+                                                review: '测评',
+                                                docs: '文档',
+                                                video: '视频',
+                                                blog: '博客',
+                                                community: '社区',
+                                            };
+                                            return (
+                                                <div key={type} className="mb-3">
+                                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                                        {typeLabel[type]}
+                                                    </span>
+                                                    <ul className="mt-1 space-y-1">
+                                                        {typeLinks.map((link, i) => (
+                                                            <li key={i}>
+                                                                <a
+                                                                    href={link.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                                                                >
+                                                                    {link.title} ↗
+                                                                </a>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>

@@ -11,6 +11,7 @@ export const projectTable = [
     { key: 'updateTime', label: '更新时间', sort: 'a' },
     { key: 'author', label: '作者', sort: 'a' },
     { key: 'type', label: '类型', sort: 'a' },
+    { key: 'tags', label: '标签', sort: 'a' },
     { key: 'versionCount', label: '版本数量', sort: 'a' },
     { key: 'actions', label: '操作', sort: 'a' },
 ];

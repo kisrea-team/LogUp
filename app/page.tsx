@@ -30,6 +30,7 @@ interface Project {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
     versions: Version[];
 }
 
@@ -55,6 +56,7 @@ export default function Page() {
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('updated_desc');
     const [filterType, setFilterType] = useState('');
+    const [filterTag, setFilterTag] = useState('');
     const [availableTypes, setAvailableTypes] = useState<string[]>([]);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -71,6 +73,7 @@ export default function Page() {
         searchVal: string,
         sortVal: string,
         typeVal: string,
+        tagVal: string = '',
     ) => {
         if (page < 1) page = 1;
 
@@ -86,6 +89,7 @@ export default function Page() {
             if (searchVal) params.set('search', searchVal);
             if (sortVal) params.set('sort', sortVal);
             if (typeVal) params.set('type', typeVal);
+            if (tagVal) params.set('tag', tagVal);
 
             setProgress(40);
             const response = await apiFetch(`/projects?${params}`);
@@ -126,9 +130,12 @@ export default function Page() {
         }
     }, [perPage]);
 
-    // Initial load
+    // Initial load - check URL for tag param
     useEffect(() => {
-        fetchProjects(1, '', 'updated_desc', '');
+        const urlParams = new URLSearchParams(window.location.search);
+        const tagParam = urlParams.get('tag') || '';
+        if (tagParam) setFilterTag(tagParam);
+        fetchProjects(1, '', 'updated_desc', '', tagParam);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -139,7 +146,7 @@ export default function Page() {
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
             setCurrentPage(1);
-            fetchProjects(1, val, sortBy, filterType);
+            fetchProjects(1, val, sortBy, filterType, filterTag);
         }, 350);
     };
 
@@ -147,17 +154,24 @@ export default function Page() {
         const val = e.target.value;
         setSortBy(val);
         setCurrentPage(1);
-        fetchProjects(1, search, val, filterType);
+        fetchProjects(1, search, val, filterType, filterTag);
     };
 
     const handleTypeChange = (val: string) => {
         setFilterType(val);
         setCurrentPage(1);
-        fetchProjects(1, search, sortBy, val);
+        fetchProjects(1, search, sortBy, val, filterTag);
+    };
+
+    const handleTagClick = (tag: string) => {
+        const newTag = filterTag === tag ? '' : tag;
+        setFilterTag(newTag);
+        setCurrentPage(1);
+        fetchProjects(1, search, sortBy, filterType, newTag);
     };
 
     const handlePageChange = (page: number) => {
-        fetchProjects(page, search, sortBy, filterType);
+        fetchProjects(page, search, sortBy, filterType, filterTag);
     };
 
     const showErrorBanner = errorMessage && projects.length > 0;
@@ -236,16 +250,18 @@ export default function Page() {
                 </div>
 
                 {/* Active filter hint */}
-                {(search || filterType) && !loading && (
+                {(search || filterType || filterTag) && !loading && (
                     <p className="mt-1.5 text-xs text-gray-400">
                         共 {totalProjects} 个结果
                         {search && <span>，关键词「{search}」</span>}
                         {filterType && <span>，类型「{filterType}」</span>}
+                        {filterTag && <span>，标签「#{filterTag}」</span>}
                         <button
                             onClick={() => {
                                 setSearch('');
                                 setFilterType('');
-                                fetchProjects(1, '', sortBy, '');
+                                setFilterTag('');
+                                fetchProjects(1, '', sortBy, '', '');
                             }}
                             className="ml-2 text-blue-500 hover:underline"
                         >
@@ -275,7 +291,7 @@ export default function Page() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <ProjectList projects={projects} />
+                        <ProjectList projects={projects} onTagClick={handleTagClick} />
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

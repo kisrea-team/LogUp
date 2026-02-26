@@ -6,7 +6,7 @@ import { projectTable } from '@/components/utils/projectTable';
 import AdminProjectList from '@/components/AdminProjectList';
 import Pagination from '@/components/Pagination';
 
-import { Project, Version } from '@/types/index';
+import { Project, Version, ProjectLink } from '@/types/index';
 // interface Version {
 //     id?: number;
 //     project_id?: number;
@@ -29,25 +29,6 @@ import { Project, Version } from '@/types/index';
 //     versions: Version[];
 // }
 
-interface PaginatedResponse {
-    data: Project[];
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-}
-
-interface ProjectCreate {
-    icon: string;
-    name: string;
-    latest_version: string;
-    latest_update_time: string;
-    describe?: string;
-    summar?: string;
-    author?: string;
-    type?: string;
-}
-
 export default function ProjectAdminPage() {
     const table = projectTable.filter((item) => item.sort === 'a');
     const [projects, setProjects] = useState<Project[]>([]);
@@ -62,7 +43,13 @@ export default function ProjectAdminPage() {
     const [githubLoading, setGithubLoading] = useState(false);
     const [fixIconsLoading, setFixIconsLoading] = useState(false);
     const [fixIconsResult, setFixIconsResult] = useState<{ total: number; fixed: number; failed: number } | null>(null);
-    const [newProject, setNewProject] = useState<ProjectCreate>({
+    const [tagInput, setTagInput] = useState('');
+    const [linkInput, setLinkInput] = useState<{ title: string; url: string; type: ProjectLink['type'] }>({
+        title: '',
+        url: '',
+        type: 'tutorial',
+    });
+    const [newProject, setNewProject] = useState({
         icon: '',
         name: '',
         latest_version: '',
@@ -71,6 +58,8 @@ export default function ProjectAdminPage() {
         summar: '',
         author: '',
         type: '',
+        tags: [] as string[],
+        links: [] as ProjectLink[],
     });
 
     useEffect(() => {
@@ -91,6 +80,57 @@ export default function ProjectAdminPage() {
             console.error('修复图标失败:', error);
         } finally {
             setFixIconsLoading(false);
+        }
+    };
+
+    const addTag = (tag: string, target: 'new' | 'edit') => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        if (target === 'edit') {
+            setEditingProject((prev) =>
+                prev && !(prev.tags || []).includes(trimmed)
+                    ? { ...prev, tags: [...(prev.tags || []), trimmed] }
+                    : prev
+            );
+        } else {
+            setNewProject((prev) =>
+                !prev.tags.includes(trimmed)
+                    ? { ...prev, tags: [...prev.tags, trimmed] }
+                    : prev
+            );
+        }
+        setTagInput('');
+    };
+
+    const removeTag = (tag: string, target: 'new' | 'edit') => {
+        if (target === 'edit') {
+            setEditingProject((prev) =>
+                prev ? { ...prev, tags: (prev.tags || []).filter((t) => t !== tag) } : prev
+            );
+        } else {
+            setNewProject((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+        }
+    };
+
+    const addLink = (link: ProjectLink, target: 'new' | 'edit') => {
+        if (!link.title.trim() || !link.url.trim()) return;
+        if (target === 'edit') {
+            setEditingProject((prev) =>
+                prev ? { ...prev, links: [...(prev.links || []), link] } : prev
+            );
+        } else {
+            setNewProject((prev) => ({ ...prev, links: [...prev.links, link] }));
+        }
+        setLinkInput({ title: '', url: '', type: 'tutorial' });
+    };
+
+    const removeLink = (index: number, target: 'new' | 'edit') => {
+        if (target === 'edit') {
+            setEditingProject((prev) =>
+                prev ? { ...prev, links: (prev.links || []).filter((_, i) => i !== index) } : prev
+            );
+        } else {
+            setNewProject((prev) => ({ ...prev, links: prev.links.filter((_, i) => i !== index) }));
         }
     };
 
@@ -226,6 +266,8 @@ export default function ProjectAdminPage() {
                     summar: '',
                     author: '',
                     type: '',
+                    tags: [],
+                    links: [],
                 });
                 setShowAddForm(false);
             }
@@ -236,6 +278,8 @@ export default function ProjectAdminPage() {
 
     const handleEditProject = (project: Project) => {
         setEditingProject(project);
+        setTagInput('');
+        setLinkInput({ title: '', url: '', type: 'tutorial' });
         setShowAddForm(true);
     };
 
@@ -247,8 +291,8 @@ export default function ProjectAdminPage() {
             console.log('Updating project with ID:', editingProject.id);
             console.log('Project data:', editingProject);
 
-            const response = await apiFetch(`/projects/${editingProject.id}/update`, {
-                method: 'POST',
+            const response = await apiFetch(`/projects/${editingProject.id}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -261,6 +305,8 @@ export default function ProjectAdminPage() {
                     summar: editingProject.summar,
                     author: editingProject.author,
                     type: editingProject.type,
+                    tags: editingProject.tags || [],
+                    links: editingProject.links || [],
                 }),
             });
 
@@ -270,6 +316,8 @@ export default function ProjectAdminPage() {
                 console.log('Update response data:', data);
                 await fetchProjects(currentPage);
                 setEditingProject(null);
+                setTagInput('');
+                setLinkInput({ title: '', url: '', type: 'tutorial' });
                 setShowAddForm(false);
             } else {
                 const errorData = await response.json();
@@ -320,6 +368,8 @@ export default function ProjectAdminPage() {
                                     if (showAddForm) {
                                         setShowAddForm(false);
                                         setEditingProject(null);
+                                        setTagInput('');
+                                        setLinkInput({ title: '', url: '', type: 'tutorial' });
                                     } else {
                                         setShowAddForm(true);
                                     }
@@ -457,6 +507,53 @@ export default function ProjectAdminPage() {
                                         className="w-full border border-gray-300 rounded-md px-3 py-2"
                                     />
                                 </div>
+                            </div>
+                            {/* Tags 输入 - 独占一行 */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    标签
+                                </label>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {(editingProject ? (editingProject.tags || []) : newProject.tags).map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800"
+                                        >
+                                            #{tag}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTag(tag, editingProject ? 'edit' : 'new')}
+                                                className="hover:text-red-600 font-bold leading-none"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ',') {
+                                                e.preventDefault();
+                                                addTag(tagInput, editingProject ? 'edit' : 'new');
+                                            }
+                                        }}
+                                        placeholder="输入标签后按 Enter 或逗号添加"
+                                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => addTag(tagInput, editingProject ? 'edit' : 'new')}
+                                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+                                    >
+                                        添加
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         图标
@@ -589,6 +686,65 @@ export default function ProjectAdminPage() {
                                     />
                                 </div>
                             </div>
+                            {/* 相关链接 */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    相关资源链接
+                                </label>
+                                <div className="space-y-1.5 mb-2">
+                                    {(editingProject ? (editingProject.links || []) : newProject.links).map((link, i) => (
+                                        <div key={i} className="flex items-center gap-2 text-sm">
+                                            <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500 shrink-0">
+                                                {{tutorial:'教程',review:'测评',docs:'文档',video:'视频',blog:'博客',community:'社区'}[link.type]}
+                                            </span>
+                                            <span className="flex-1 truncate text-gray-700">{link.title}</span>
+                                            <span className="text-xs text-gray-400 truncate max-w-[160px]">{link.url}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeLink(i, editingProject ? 'edit' : 'new')}
+                                                className="text-red-400 hover:text-red-600 font-bold leading-none shrink-0"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={linkInput.title}
+                                        onChange={(e) => setLinkInput((prev) => ({ ...prev, title: e.target.value }))}
+                                        placeholder="链接标题"
+                                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    />
+                                    <input
+                                        type="url"
+                                        value={linkInput.url}
+                                        onChange={(e) => setLinkInput((prev) => ({ ...prev, url: e.target.value }))}
+                                        placeholder="https://..."
+                                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    />
+                                    <select
+                                        value={linkInput.type}
+                                        onChange={(e) => setLinkInput((prev) => ({ ...prev, type: e.target.value as ProjectLink['type'] }))}
+                                        className="border border-gray-300 rounded-md px-2 py-2 text-sm"
+                                    >
+                                        <option value="tutorial">教程</option>
+                                        <option value="review">测评</option>
+                                        <option value="docs">文档</option>
+                                        <option value="video">视频</option>
+                                        <option value="blog">博客</option>
+                                        <option value="community">社区</option>
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => addLink(linkInput, editingProject ? 'edit' : 'new')}
+                                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm shrink-0"
+                                    >
+                                        添加
+                                    </button>
+                                </div>
+                            </div>
                             <div className="flex space-x-4">
                                 <button
                                     type="submit"
@@ -601,6 +757,8 @@ export default function ProjectAdminPage() {
                                     onClick={() => {
                                         setShowAddForm(false);
                                         setEditingProject(null);
+                                        setTagInput('');
+                                        setLinkInput({ title: '', url: '', type: 'tutorial' });
                                     }}
                                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                                 >

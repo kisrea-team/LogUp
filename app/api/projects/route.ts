@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const perPage = parseInt(searchParams.get('per_page') || '10', 10);
     const search = (searchParams.get('search') || '').trim();
     const type = (searchParams.get('type') || '').trim();
+    const tag = (searchParams.get('tag') || '').trim();
     const sort = searchParams.get('sort') || 'updated_desc';
 
     const validPage = Math.max(1, page);
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
     }
     if (type) {
       where.type = { equals: type, mode: 'insensitive' };
+    }
+    if (tag) {
+      where.tags = { has: tag };
     }
 
     const orderBy = ORDER_BY_MAP[sort] ?? ORDER_BY_MAP.updated_desc;
@@ -66,6 +70,8 @@ export async function GET(request: NextRequest) {
         summar: true,
         author: true,
         type: true,
+        tags: true,
+        links: true,
       },
     });
 

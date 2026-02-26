@@ -83,7 +83,12 @@ Content-Type: application/json
   "describe": "The React Framework for the Web",
   "summar": "The React Framework for the Web",
   "author": "vercel",
-  "type": "TypeScript"
+  "type": "TypeScript",
+  "tags": ["开发工具", "前端框架", "开源", "跨平台"],
+  "links": [
+    { "title": "Next.js 官方文档", "url": "https://nextjs.org/docs", "type": "docs" },
+    { "title": "少数派：Next.js 快速上手指南", "url": "https://sspai.com/...", "type": "tutorial" }
+  ]
 }
 ```
 
@@ -92,6 +97,8 @@ Content-Type: application/json
 - `name`：`owner/repo` 格式
 - `slug`：小写加连字符，留空自动生成
 - `latest_version`：以 `v` 开头
+- `tags`：中文标签数组，2-5 个，用于关联同类项目
+- `links`：相关资源链接数组，每条含 `title`（中文标题）、`url`、`type`（tutorial/review/docs/video/blog/community）
 
 ### 查询项目
 
@@ -99,10 +106,28 @@ Content-Type: application/json
 # 分页查询
 GET https://zitons-logup-re.hf.space/api/projects?page=1&per_page=10
 
+# 按标签筛选
+GET https://zitons-logup-re.hf.space/api/projects?tag=笔记工具
+
 # 单个项目（id 或 slug）
 GET https://zitons-logup-re.hf.space/api/projects/42
 GET https://zitons-logup-re.hf.space/api/projects/vercel-nextjs
 ```
+
+### 查询所有已有标签
+
+```bash
+GET https://zitons-logup-re.hf.space/api/projects/tags
+```
+
+返回示例：
+```json
+{
+  "tags": ["AI 助手", "代码编辑器", "开发工具", "笔记工具", "跨平台"]
+}
+```
+
+**建议在新增项目前调用此接口，复用已有标签保持一致性。**
 
 ### 更新项目
 
@@ -112,7 +137,12 @@ Content-Type: application/json
 
 {
   "latest_version": "v15.3.0",
-  "latest_update_time": "2026-02-24T12:00:00.000Z"
+  "latest_update_time": "2026-02-24T12:00:00.000Z",
+  "tags": ["开发工具", "前端框架", "开源", "跨平台"],
+  "links": [
+    { "title": "Next.js 官方文档", "url": "https://nextjs.org/docs", "type": "docs" },
+    { "title": "少数派：Next.js 快速上手指南", "url": "https://sspai.com/...", "type": "tutorial" }
+  ]
 }
 ```
 

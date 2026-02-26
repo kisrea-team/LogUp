@@ -109,6 +109,22 @@ export default function AdminProjectList({
                                             {project.type || '未分类'}
                                         </TableCell>
                                         <TableCell className="">
+                                            {project.tags && project.tags.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {project.tags.map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600"
+                                                        >
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">—</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="">
                                             {project.versions?.length ?? 0} 个版本
                                         </TableCell>
                                         <TableCell className="whitespace-nowrap text-sm font-medium space-x-2">

@@ -1,3 +1,10 @@
+// 项目相关链接类型
+export interface ProjectLink {
+    title: string;
+    url: string;
+    type: 'tutorial' | 'review' | 'docs' | 'video' | 'blog' | 'community';
+}
+
 // API相关类型定义
 export interface ApiVersion {
     id?: number;
@@ -18,12 +25,14 @@ export interface ApiProject {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
+    links?: ProjectLink[];
     versions: ApiVersion[];
 }
 
 // 前端使用的类型（保持向后兼容）
-export interface Version extends ApiVersion {}
-export interface Project extends ApiProject {}
+export interface Version extends ApiVersion { }
+export interface Project extends ApiProject { }
 
 // 项目创建类型
 export interface ProjectCreate {
@@ -35,6 +44,8 @@ export interface ProjectCreate {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
+    links?: ProjectLink[];
 }
 
 export interface VersionCreate {

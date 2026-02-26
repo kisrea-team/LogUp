@@ -36,14 +36,16 @@ interface Project {
     summar?: string;
     author?: string;
     type?: string;
+    tags?: string[];
     versions: Version[];
 }
 
 interface ProjectListProps {
     projects: Project[];
+    onTagClick?: (tag: string) => void;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) => {
     const router = useRouter();
 
     const handleProjectClick = (project: Project) => {
@@ -110,6 +112,19 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [] }) => {
                                                 {formatRelativeTime(project.latest_update_time)}
                                             </div>
                                         </div>
+                                        {project.tags && project.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
+                                                {project.tags.map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        onClick={() => onTagClick?.(tag)}
+                                                        className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 transition-colors"
+                                                    >
+                                                        #{tag}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
