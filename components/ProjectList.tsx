@@ -114,7 +114,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) 
                                             <p className="sm:hidden text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                                                 {project.summar || '暂无简介'}
                                             </p>
-                                            <p className="text-sm line-clamp-3 sm:line-clamp-none mt-0.5">
+                                            <p className="text-sm mt-0.5">
                                                 {project.describe || '暂无详细描述'}
                                             </p>
                                         </div>
