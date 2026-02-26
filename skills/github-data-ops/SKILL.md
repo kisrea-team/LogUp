@@ -155,17 +155,26 @@ description: |
 | `community` | 社区（Discord、Reddit、论坛帖子） |
 
 **收录规范：**
-- 每个项目目标收录 **2-5 条**不同类型链接，优先中文内容
-- 来源渠道参考：知乎、少数派、CSDN、B站、V2EX、GitHub Awesome 列表、官方文档
-- 链接标题使用中文（可翻译），简洁描述内容要点
+- 每个项目目标收录 **2-5 条**不同类型链接
+- **官方链接最多 1 条**（如官方文档/官网），其余必须为中文社区内容
+- **中文本地化链接优先**，目标是让中文用户不看官方文档就能上手或了解该项目
+- 中文来源渠道（重点搜索）：
+  - 少数派（sspai.com）：产品测评、使用体验
+  - 知乎：教程专栏、使用心得、横向对比
+  - B站（bilibili.com）：视频教程、功能演示
+  - CSDN / 掘金（juejin.cn）：技术教程、集成指南
+  - V2EX：开发者讨论、实际使用反馈
+  - 微信公众号文章（可通过搜狗搜索 `site:mp.weixin.qq.com` 查找）
+- 链接标题使用中文，简洁描述内容要点（可翻译英文标题）
 - 优先收录内容质量高、具有参考价值的链接，避免重复或低质
 
 **示例：**
 ```json
 [
-  { "title": "官方快速上手文档", "url": "https://...", "type": "docs" },
-  { "title": "少数派：一个让你爱不释手的笔记应用", "url": "https://...", "type": "review" },
-  { "title": "B站教程：从零开始使用 Obsidian", "url": "https://...", "type": "video" }
+  { "title": "官方文档", "url": "https://...", "type": "docs" },
+  { "title": "少数派：一个让你爱不释手的笔记应用", "url": "https://sspai.com/...", "type": "review" },
+  { "title": "B站教程：从零开始使用 Obsidian", "url": "https://bilibili.com/...", "type": "video" },
+  { "title": "知乎：Obsidian 与 Notion 深度对比", "url": "https://zhihu.com/...", "type": "blog" }
 ]
 ```
 
