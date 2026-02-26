@@ -80,7 +80,7 @@ export default function ProjectDetailPage() {
     };
 
     const handleBackToList = () => {
-        router.push('/');
+        router.back();
     };
 
     if (loading) {
