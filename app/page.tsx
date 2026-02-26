@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch, getApiBaseUrl } from '@/lib/api';
 import Loading from '@/components/Loading';
@@ -43,6 +44,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function Page() {
+    const router = useRouter();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(10);
@@ -130,12 +132,31 @@ export default function Page() {
         }
     }, [perPage]);
 
-    // Initial load - check URL for tag param
+    // Sync current filter state to URL (replaces history entry, no extra back-stack)
+    const syncUrl = useCallback((page: number, searchVal: string, sortVal: string, typeVal: string, tagVal: string) => {
+        const params = new URLSearchParams();
+        if (page > 1) params.set('page', String(page));
+        if (searchVal) params.set('search', searchVal);
+        if (sortVal && sortVal !== 'updated_desc') params.set('sort', sortVal);
+        if (typeVal) params.set('type', typeVal);
+        if (tagVal) params.set('tag', tagVal);
+        const qs = params.toString();
+        router.replace(qs ? `/?${qs}` : '/', { scroll: false });
+    }, [router]);
+
+    // Initial load - read all filter params from URL
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = Math.max(1, parseInt(urlParams.get('page') || '1', 10));
+        const searchParam = urlParams.get('search') || '';
+        const sortParam = urlParams.get('sort') || 'updated_desc';
+        const typeParam = urlParams.get('type') || '';
         const tagParam = urlParams.get('tag') || '';
+        if (searchParam) setSearch(searchParam);
+        if (sortParam !== 'updated_desc') setSortBy(sortParam);
+        if (typeParam) setFilterType(typeParam);
         if (tagParam) setFilterTag(tagParam);
-        fetchProjects(1, '', 'updated_desc', '', tagParam);
+        fetchProjects(pageParam, searchParam, sortParam, typeParam, tagParam);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -147,6 +168,7 @@ export default function Page() {
         searchDebounceRef.current = setTimeout(() => {
             setCurrentPage(1);
             fetchProjects(1, val, sortBy, filterType, filterTag);
+            syncUrl(1, val, sortBy, filterType, filterTag);
         }, 350);
     };
 
@@ -155,12 +177,14 @@ export default function Page() {
         setSortBy(val);
         setCurrentPage(1);
         fetchProjects(1, search, val, filterType, filterTag);
+        syncUrl(1, search, val, filterType, filterTag);
     };
 
     const handleTypeChange = (val: string) => {
         setFilterType(val);
         setCurrentPage(1);
         fetchProjects(1, search, sortBy, val, filterTag);
+        syncUrl(1, search, sortBy, val, filterTag);
     };
 
     const handleTagClick = (tag: string) => {
@@ -168,10 +192,12 @@ export default function Page() {
         setFilterTag(newTag);
         setCurrentPage(1);
         fetchProjects(1, search, sortBy, filterType, newTag);
+        syncUrl(1, search, sortBy, filterType, newTag);
     };
 
     const handlePageChange = (page: number) => {
         fetchProjects(page, search, sortBy, filterType, filterTag);
+        syncUrl(page, search, sortBy, filterType, filterTag);
     };
 
     const showErrorBanner = errorMessage && projects.length > 0;
