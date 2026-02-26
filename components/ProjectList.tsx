@@ -1,19 +1,17 @@
 /*
  * @Date: 2025-08-16
  * @LastEditors: vhko
- * @LastEditTime: 2026-01-21
+ * @LastEditTime: 2026-02-26
  * @FilePath: /LogUp/components/ProjectList.tsx
  * Helllllloo!
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { RenderIcon } from './utils/renderIcon';
-import { ThumbsUp, MessageCircle } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 interface Version {
     id?: number;
@@ -40,6 +38,18 @@ interface Project {
     versions: Version[];
 }
 
+interface RecentChange {
+    id: number;
+    version: string;
+    update_time: string;
+    project: {
+        id: number;
+        icon: string;
+        name: string;
+        slug?: string;
+    };
+}
+
 interface ProjectListProps {
     projects: Project[];
     onTagClick?: (tag: string) => void;
@@ -47,6 +57,16 @@ interface ProjectListProps {
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) => {
     const router = useRouter();
+    const [recentChanges, setRecentChanges] = useState<RecentChange[]>([]);
+
+    useEffect(() => {
+        apiFetch('/everything/changes?limit=8')
+            .then((r) => r.json())
+            .then((d) => {
+                if (Array.isArray(d?.data)) setRecentChanges(d.data);
+            })
+            .catch(() => {});
+    }, []);
 
     const handleProjectClick = (project: Project) => {
         router.push(`/project/${project.slug || project.id}`);
@@ -133,23 +153,41 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) 
                 )}
             </div>
             <aside className="projectlist-aside">
-                <h1 className="text-title font-bold">近日更新</h1>
-                <div className="text-small gap-2 flex-col">
-                    <a className="flex">
-                        {/* <Annoyed /> */}
-                        <span>项目名称</span>
-                    </a>
-                    <p className="text-default">更新了有关XXX的功能，</p>
-                    <div>
-                        <Button variant="ghost">
-                            <ThumbsUp />
-                            999+
-                        </Button>
-                        <Button>
-                            <MessageCircle />
-                            30
-                        </Button>
-                    </div>
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                    </span>
+                    <h2 className="text-sm font-semibold">近日更新</h2>
+                    <span className="text-xs text-green-500 font-medium">Live</span>
+                </div>
+                <div className="flex flex-col gap-3">
+                    {recentChanges.length === 0 ? (
+                        <p className="text-xs text-gray-400">暂无更新</p>
+                    ) : (
+                        recentChanges.map((change) => (
+                            <button
+                                key={change.id}
+                                onClick={() => router.push(`/project/${change.project.slug || change.project.id}`)}
+                                className="flex items-start gap-2 text-left hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md p-1.5 -mx-1.5 transition-colors w-full"
+                            >
+                                <span className="shrink-0 mt-0.5">
+                                    <RenderIcon icon={change.project.icon} size={20} />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-medium truncate">{change.project.name}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <Badge variant="blue" className="text-[10px] px-1.5 py-0">
+                                            {change.version}
+                                        </Badge>
+                                        <span className="text-[10px] text-gray-400">
+                                            {formatRelativeTime(change.update_time)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        ))
+                    )}
                 </div>
             </aside>
         </main>
