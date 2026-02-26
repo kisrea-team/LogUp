@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
         type: true,
         tags: true,
         links: true,
+        update_source_url: true,
       },
     });
 
