@@ -22,7 +22,7 @@ model Project {
   summar              String?  @db.Text
   author              String?
   type                String?
-  tags                String[]
+  tags                String[] @default([])
   links               Json     @default("[]")
   versions            Version[]
   createdAt           DateTime @default(now()) @map("created_at")

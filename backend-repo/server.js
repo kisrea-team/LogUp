@@ -666,7 +666,7 @@ const server = http.createServer(async (req, res) => {
 
             if (req.method === 'POST' && parts.length === 1) {
                 const body = await readJson(req);
-                let { icon, name, slug, latest_version, latest_update_time, describe, summar, author, type } = body;
+                let { icon, name, slug, latest_version, latest_update_time, describe, summar, author, type, tags, links } = body;
                 let finalSlug = slug;
                 if (!finalSlug && name) {
                     finalSlug = String(name)
@@ -688,6 +688,8 @@ const server = http.createServer(async (req, res) => {
                         summar,
                         author,
                         type,
+                        tags: Array.isArray(tags) ? tags : [],
+                        links: Array.isArray(links) ? links : [],
                     },
                     select: {
                         id: true,
@@ -700,6 +702,8 @@ const server = http.createServer(async (req, res) => {
                         summar: true,
                         author: true,
                         type: true,
+                        tags: true,
+                        links: true,
                     },
                 });
                 return send(res, 201, project, origin);
@@ -709,7 +713,7 @@ const server = http.createServer(async (req, res) => {
                 const projectId = parseInt(parts[1], 10);
                 if (!projectId) return send(res, 400, { error: 'Invalid project id' }, origin);
                 const body = await readJson(req);
-                const { icon, name, latest_version, latest_update_time, describe, summar, author, type } = body;
+                const { icon, name, latest_version, latest_update_time, describe, summar, author, type, tags, links } = body;
                 const exists = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
                 if (!exists) return send(res, 404, { error: 'Project not found' }, origin);
                 const updated = await prisma.project.updateMany({
@@ -723,6 +727,8 @@ const server = http.createServer(async (req, res) => {
                         summar,
                         author,
                         type,
+                        ...(Array.isArray(tags) ? { tags } : {}),
+                        ...(Array.isArray(links) ? { links } : {}),
                     },
                 });
                 if (!updated.count) return send(res, 404, { error: 'Project not found' }, origin);
@@ -739,6 +745,8 @@ const server = http.createServer(async (req, res) => {
                         summar: true,
                         author: true,
                         type: true,
+                        tags: true,
+                        links: true,
                         versions: {
                             orderBy: { update_time: 'desc' },
                             select: {
