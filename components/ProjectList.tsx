@@ -107,10 +107,14 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) 
                                         <div className="min-w-0">
                                             <div className="flex items-center min-w-0">
                                                 <p className="font-medium shrink-0">{project.name}</p>
-                                                <span className="px-0.5 shrink-0">——</span>
-                                                <p className="truncate text-gray-500 dark:text-gray-400">{project.summar || '暂无简介'}</p>
+                                                <span className="px-0.5 shrink-0 hidden sm:inline">——</span>
+                                                <p className="hidden sm:block truncate text-gray-500 dark:text-gray-400">{project.summar || '暂无简介'}</p>
                                             </div>
-                                            <p className="text-sm line-clamp-2">
+                                            {/* 移动端：summar 独立成行，完整展示 */}
+                                            <p className="sm:hidden text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                                {project.summar || '暂无简介'}
+                                            </p>
+                                            <p className="text-sm line-clamp-3 sm:line-clamp-none mt-0.5">
                                                 {project.describe || '暂无详细描述'}
                                             </p>
                                         </div>
