@@ -11,16 +11,16 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeContext';
 export const metadata: Metadata = {
     title: {
-        default: 'LogUp - 开源项目版本更新日志',
+        default: 'LogUp - 捕捉技术演进的每一个瞬间',
         template: '%s | LogUp',
     },
-    description: '追踪和浏览 GitHub 热门开源项目的版本更新日志，第一时间了解更新内容',
-    keywords: ['开源', '更新日志', 'changelog', 'release notes', 'GitHub', '版本更新', '热门项目'],
+    description: '追踪各类软件、App 与开源项目的版本更新动态，包括 GitHub 热门项目、iOS/Android App、桌面软件及 SaaS 工具',
+    keywords: ['更新日志', 'changelog', 'release notes', '版本更新', '开源项目', 'GitHub', 'App', '桌面软件', 'SaaS', '软件追踪'],
     openGraph: {
         type: 'website',
         siteName: 'LogUp',
-        title: 'LogUp - 开源项目版本更新日志',
-        description: '追踪和浏览 GitHub 热门开源项目的版本更新日志，第一时间了解更新内容',
+        title: 'LogUp - 软件版本更新日志',
+        description: '追踪各类软件、App 与开源项目的版本更新动态，包括 GitHub 热门项目、iOS/Android App、桌面软件及 SaaS 工具',
     },
     twitter: {
         card: 'summary_large_image',
