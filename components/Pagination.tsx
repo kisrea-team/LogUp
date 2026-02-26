@@ -73,12 +73,30 @@ const Paginations: React.FC<PaginationProps> = ({
 
     return (
         <div className="flex flex-col items-center my-8">
-            <div className="text-sm text-gray-600 mb-2">
-                共 {totalItems} 个项目，第 {Math.max(currentPage, 1)} 页，共
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                共 {totalItems} 个项目，第 {Math.max(currentPage, 1)} 页，共{' '}
                 {Math.max(totalPages, 1)} 页
             </div>
 
-            <Pagination>
+            {/* Mobile: compact prev / indicator / next */}
+            <div className="flex items-center gap-2 sm:hidden">
+                <PaginationPrevious
+                    href="#"
+                    onClick={(e) => !isFirstPage && handleClick(e, currentPage - 1)}
+                    className={isFirstPage ? 'pointer-events-none opacity-40' : ''}
+                />
+                <span className="text-sm font-medium tabular-nums px-2">
+                    {Math.max(currentPage, 1)} / {Math.max(totalPages, 1)}
+                </span>
+                <PaginationNext
+                    href="#"
+                    onClick={(e) => !isLastPage && handleClick(e, currentPage + 1)}
+                    className={isLastPage ? 'pointer-events-none opacity-40' : ''}
+                />
+            </div>
+
+            {/* Desktop: full page list */}
+            <Pagination className="hidden sm:flex">
                 <PaginationContent>
                     <PaginationItem>
                         <PaginationPrevious
@@ -95,7 +113,7 @@ const Paginations: React.FC<PaginationProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.2, delay: index * 0.05 }}
                         >
-                            <PaginationItem className=" hover:bg-gray-100 rounded-md transition-all dark:hover:bg-gray-800">
+                            <PaginationItem className="hover:bg-gray-100 rounded-md transition-all dark:hover:bg-gray-800">
                                 {page === 'ellipsis' ? (
                                     <PaginationEllipsis />
                                 ) : (

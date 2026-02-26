@@ -102,15 +102,15 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) 
                                 <div className="">
                                     <RenderIcon icon={project.icon} />
                                 </div>
-                                <div className="flex flex-col gap-5">
+                                <div className="flex flex-col gap-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="">
-                                            <div className="flex items-center">
-                                                <p className="font-medium">{project.name}</p>
-                                                <span className=" px-0.5">——</span>
-                                                <p className="">{project.summar || '暂无简介'}</p>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center min-w-0">
+                                                <p className="font-medium shrink-0">{project.name}</p>
+                                                <span className="px-0.5 shrink-0">——</span>
+                                                <p className="truncate text-gray-500 dark:text-gray-400">{project.summar || '暂无简介'}</p>
                                             </div>
-                                            <p className="text-sm ">
+                                            <p className="text-sm line-clamp-2">
                                                 {project.describe || '暂无详细描述'}
                                             </p>
                                         </div>
