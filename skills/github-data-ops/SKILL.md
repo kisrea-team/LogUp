@@ -226,7 +226,7 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 获取到更新日志后统一翻译为中文存入 `content` 字段。若无法获取真实日志，可根据版本号和项目特性自行撰写简要更新说明。
 
-> **`update_source_url` 字段维护**：收录或更新项目时，将本次使用的版本来源 URL 写入 `update_source_url` 字段。系统会在每次运营前对该 URL 发 HEAD 请求，ETag/Last-Modified 变化时自动提示优先检查该项目，从而减少每次全量扫描的工作量。若字段为空，该项目将不参与预检。
+> **`update_source_url` 字段维护**：收录或更新项目时，将本次实际访问的版本来源 URL 写入 `update_source_url` 字段——新建项目时在 POST body 中传入，更新已有项目时通过 `PUT /api/projects/{id}` 的 `update_source_url` 参数同步写入。系统会在每次运营前对该 URL 发 HEAD 请求，ETag/Last-Modified 变化时自动提示优先检查该项目，从而减少每次全量扫描的工作量。若字段为空，该项目将不参与预检。
 
 ## 内容质量要求
 
