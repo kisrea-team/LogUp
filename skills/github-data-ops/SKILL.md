@@ -167,6 +167,7 @@ description: |
   - 微信公众号文章（可通过搜狗搜索 `site:mp.weixin.qq.com` 查找）
 - 链接标题使用中文，简洁描述内容要点（可翻译英文标题）
 - 优先收录内容质量高、具有参考价值的链接，避免重复或低质
+- **禁止使用搜索结果页链接**（如 `zhihu.com/search?q=`、`sspai.com/search?q=`、`bilibili.com/search/`、`google.com/search?q=` 等）。链接必须是具体的文章、视频、帖子页面。如果搜索不到合适的具体链接，宁可少收录，不要填入搜索页。
 
 **示例：**
 ```json
