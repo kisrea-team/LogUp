@@ -19,6 +19,8 @@
 # misc
 .DS_Store
 *.pem
+# Google service account credentials
+*-[0-9a-f]*.json
 tmpclaude*
 logs/
 
