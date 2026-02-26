@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
 import { RenderIcon } from './utils/renderIcon';
 import { formatRelativeTime } from '@/lib/utils';
@@ -114,9 +115,9 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects = [], onTagClick }) 
                                             <p className="sm:hidden text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                                                 {project.summar || '暂无简介'}
                                             </p>
-                                            <p className="text-sm mt-0.5">
-                                                {project.describe || '暂无详细描述'}
-                                            </p>
+                                            <div className="prose prose-sm max-w-none dark:prose-invert mt-0.5 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                                                <ReactMarkdown>{project.describe || '暂无详细描述'}</ReactMarkdown>
+                                            </div>
                                         </div>
                                         <Badge
                                             variant="blue"
