@@ -228,6 +228,7 @@ Outline 是一款开源的团队知识库工具，支持 Markdown 编辑、实�
 
 AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取：
 
+- **优先：读取 `links[0]`**：对于已有项目，若 `links[0]` 存在且 `type` 为 `changelog`，**直接访问该 URL 获取最新版本信息**，无需重新查找来源。
 - **GitHub Releases**：`https://api.github.com/repos/{owner}/{repo}/releases`
 - **GitHub Tags**：`https://api.github.com/repos/{owner}/{repo}/tags`
 - **官网 Changelog 页面**：直接抓取产品官网的更新日志页面
