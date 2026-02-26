@@ -281,7 +281,7 @@
         align-items: flex-start;
     }
 
-    .classify--items > div {
+    .classify--items>div {
         display: flex;
         gap: 0.5rem;
         padding: 0.2rem 0.4rem;
@@ -296,13 +296,13 @@
         transition: all 0.2s ease-in-out;
     }
 
-    .classify--items > div:hover p svg path,
-    .classify--items > div:hover span {
+    .classify--items>div:hover p svg path,
+    .classify--items>div:hover span {
         color: oklch(0.52 0.09 223);
         fill: oklch(0.52 0.09 223);
     }
 
-    .classify--items > div p svg path {
+    .classify--items>div p svg path {
         fill: #afafaf;
         /* 默认灰色 */
         transition: fill 0.3s;
