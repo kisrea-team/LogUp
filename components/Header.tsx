@@ -20,7 +20,7 @@ export default function Header() {
                             <InputGroup className="flex rounded-[999] bg-trans border-transparent border w-[160px] h-8 dark:bg-black">
                                 <InputGroupInput placeholder="搜索" className='text-black dark:text-white' />
                                 <InputGroupAddon>
-                                    <Search/>
+                                    <Search />
                                 </InputGroupAddon>
                             </InputGroup>
                         </div>
