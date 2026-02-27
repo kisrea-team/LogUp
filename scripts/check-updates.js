@@ -157,19 +157,21 @@ async function main() {
         }
 
         // Server returned 200 — compare ETag / Last-Modified values
-        const etagChanged = result.etag && cached.etag && result.etag !== cached.etag;
-        const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
+        // If either header is the same as cached, treat as unchanged
+        const etagSame = result.etag && cached.etag && result.etag === cached.etag;
+        const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
         const noHeaders = !result.etag && !result.lastModified;
 
-        if (etagChanged || lmChanged) {
-          console.log(`[check-updates] CHANGED  (${result.status}): ${p.name}`);
-          changedNames.push(p.name);
+        if (etagSame || lmSame) {
+          // At least one header matches — unchanged
+          console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
         } else if (noHeaders) {
           // Server doesn't support caching headers — cannot determine, skip
           console.log(`[check-updates] no-cache (${result.status}): ${p.name} — server has no ETag/Last-Modified`);
         } else {
-          // Got 200 but ETag/Last-Modified unchanged — server doesn't support conditional requests
-          console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
+          // Both available headers differ from cache — likely changed
+          console.log(`[check-updates] CHANGED  (${result.status}): ${p.name}`);
+          changedNames.push(p.name);
         }
       })
     );
