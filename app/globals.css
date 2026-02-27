@@ -2,6 +2,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 /* 上面这个的意思是定义一个 custom variant，叫做 dark ，它会匹配所有带有 .dark 类的元素及其子元素。这样做的目的是为了方便在 Tailwind CSS 中使用 dark 模式的样式。 */
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
 /* 上面坚决不要动！ */
 @theme {
