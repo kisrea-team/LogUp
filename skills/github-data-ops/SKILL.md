@@ -228,6 +228,31 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 > **`update_source_url` 字段维护**：收录或更新项目时，将本次实际访问的版本来源 URL 写入 `update_source_url` 字段——新建项目时在 POST body 中传入，更新已有项目时通过 `PUT /api/projects/{id}` 的 `update_source_url` 参数同步写入。系统会在每次运营前对该 URL 发 HEAD 请求，ETag/Last-Modified 变化时自动提示优先检查该项目，从而减少每次全量扫描的工作量。若字段为空，该项目将不参与预检。
 
+## 搜索能力（DDGS Search API）
+
+**部署地址**：由运营环境提供，通过环境变量 `DDGS_SEARCH_API` 配置（本地调试默认 `http://localhost:8000`）。
+
+在需要查找真实链接时，**优先使用 DDGS Search API** 代替凭印象猜测 URL，保证链接真实可达。
+
+### 接口速查
+
+| 接口 | 用途 |
+|------|------|
+| `GET /search?q=关键词&max_results=10` | 通用网页搜索，返回 `title / url / body` |
+| `GET /search?q=关键词&site=sspai.com` | 限定站点搜索（少数派、知乎、B站、掘金、CSDN 等） |
+| `GET /search/news?q=关键词&max_results=10` | 新闻搜索，适合查热点、版本动态 |
+| `GET /search/images?q=logo名&max_results=5` | 图片搜索，辅助获取项目 Logo URL |
+
+### 使用规范
+
+1. **查找 links 中文链接时**：对每个目标平台分别搜索，例如：
+   - `GET /search?q=Obsidian 笔记&site=sspai.com&max_results=5`
+   - `GET /search?q=Obsidian 教程&site=zhihu.com&max_results=5`
+   - `GET /search?q=Obsidian 使用&site=bilibili.com&max_results=5`
+2. **拿到候选 URL 后，仍需用 WebFetch 验证可达性**（返回内容正常即为可用），不可直接无验证收录。
+3. **查找版本/热点动态**：使用 `/search/news` 搜索项目名 + "release" 或 "更新"。
+4. **若 DDGS Search API 不可用**：降级为 WebFetch 直接访问平台搜索结果页验证内容（仅用于验证，不收录搜索结果页 URL 本身）。
+
 ## 内容质量要求
 
 - 描述使用中文，自然流畅

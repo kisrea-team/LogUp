@@ -107,6 +107,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          DDGS_SEARCH_API: ${{ secrets.DDGS_SEARCH_API }}
 
       - name: Submit new URLs to Google Indexing API
         if: always()
