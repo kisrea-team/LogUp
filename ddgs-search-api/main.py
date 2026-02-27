@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from typing import Optional
 import logging
 
