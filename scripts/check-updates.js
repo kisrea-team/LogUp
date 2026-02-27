@@ -132,6 +132,8 @@ async function main() {
           return;
         }
 
+        const isFirstCheck = !cached.etag && !cached.lastModified;
+
         // Update cache with new ETag/Last-Modified if available
         if (result.etag || result.lastModified) {
           newCache[p.id] = {
@@ -142,11 +144,32 @@ async function main() {
           };
         }
 
-        if (!result.unchanged) {
+        if (isFirstCheck) {
+          // First time seeing this project — just record baseline, don't flag as changed
+          console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check, recording`);
+          return;
+        }
+
+        if (result.unchanged) {
+          // Server returned 304 Not Modified
+          console.log(`[check-updates] unchanged (304): ${p.name}`);
+          return;
+        }
+
+        // Server returned 200 — compare ETag / Last-Modified values
+        const etagChanged = result.etag && cached.etag && result.etag !== cached.etag;
+        const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
+        const noHeaders = !result.etag && !result.lastModified;
+
+        if (etagChanged || lmChanged) {
           console.log(`[check-updates] CHANGED  (${result.status}): ${p.name}`);
           changedNames.push(p.name);
+        } else if (noHeaders) {
+          // Server doesn't support caching headers — cannot determine, skip
+          console.log(`[check-updates] no-cache (${result.status}): ${p.name} — server has no ETag/Last-Modified`);
         } else {
-          console.log(`[check-updates] unchanged (304): ${p.name}`);
+          // Got 200 but ETag/Last-Modified unchanged — server doesn't support conditional requests
+          console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
         }
       })
     );
