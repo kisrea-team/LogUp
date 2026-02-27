@@ -40,10 +40,12 @@ def search_text(
     """
     query = f"site:{site} {q}" if site else q
     try:
-        results = DDGS().text(query, max_results=max_results)
+        logger.info(f"text search: {query}")
+        results = DDGS().text(query, max_results=max_results, region='cn-zh', safesearch='off', backend='auto')
+        logger.info(f"text results: {len(results) if results else 0} found")
         return {"query": query, "results": results or []}
     except Exception as e:
-        logger.error("search error: %s", e)
+        logger.error("search error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -57,10 +59,12 @@ def search_news(
     - 返回 date、title、body、url、source 字段
     """
     try:
-        results = DDGS().news(q, max_results=max_results)
+        logger.info(f"news search: {q}")
+        results = DDGS().news(q, max_results=max_results, region='cn-zh')
+        logger.info(f"news results: {len(results) if results else 0} found")
         return {"query": q, "results": results or []}
     except Exception as e:
-        logger.error("news search error: %s", e)
+        logger.error("news search error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -74,8 +78,10 @@ def search_images(
     - 返回 title、image、thumbnail、url 字段
     """
     try:
-        results = DDGS().images(q, max_results=max_results)
+        logger.info(f"image search: {q}")
+        results = DDGS().images(q, max_results=max_results, region='cn-zh')
+        logger.info(f"image results: {len(results) if results else 0} found")
         return {"query": q, "results": results or []}
     except Exception as e:
-        logger.error("image search error: %s", e)
+        logger.error("image search error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

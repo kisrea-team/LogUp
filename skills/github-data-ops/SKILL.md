@@ -155,12 +155,13 @@ description: |
 **收录规范：**
 - **必须包含至少 3 条非官方链接**（非官网、非官方文档），来自中文社区；其余数量由 AI 自行决定
 - **中文本地化链接优先**，目标是让中文用户不看官方文档就能上手或了解该项目，尽量多收录中文社区内容
-- 中文来源渠道（重点搜索）：
-  - 少数派（sspai.com）：产品测评、使用体验
-  - 知乎：教程专栏、使用心得、横向对比
-  - B站（bilibili.com）：视频教程、功能演示
-  - CSDN / 掘金（juejin.cn）：技术教程、集成指南
-  - 微信公众号文章（可通过搜狗搜索 `site:mp.weixin.qq.com` 查找）
+- **链接来源不限**：任何有价值的中文资料都可收录，包括但不限于：
+  - 专业评测平台（少数派、36氪、太平洋电脑网等）
+  - 社区讨论（知乎、V2EX、Reddit 中文、Reddit 英文等）
+  - 视频平台（B站、YouTube、小红书等）
+  - 技术博客（CSDN、掘金、Medium、个人博客等）
+  - 论坛与社区（微博、微信公众号、Discord、Telegram 等）
+  - 任何其他优质的中文讨论、教程、测评、技术文章
 - 链接标题使用中文，简洁描述内容要点（可翻译英文标题）
 - 优先收录内容质量高、具有参考价值的链接，避免重复或低质
 - **禁止使用搜索结果页链接**（如 `zhihu.com/search?q=`、`sspai.com/search?q=`、`bilibili.com/search/`、`google.com/search?q=` 等）。链接必须是具体的文章、视频、帖子页面。如果搜索不到合适的具体链接，宁可少收录，不要填入搜索页。
@@ -245,12 +246,13 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 ### 使用规范
 
-1. **查找 links 中文链接时**：对每个目标平台分别搜索，例如：
-   - `GET /search?q=Obsidian 笔记&site=sspai.com&max_results=5`
-   - `GET /search?q=Obsidian 教程&site=zhihu.com&max_results=5`
-   - `GET /search?q=Obsidian 使用&site=bilibili.com&max_results=5`
+1. **查找 links 中文链接时**：使用 `/search` 或 `/search/news` 进行广泛搜索，不限站点，例如：
+   - `GET /search?q=Obsidian 教程&max_results=10` — 通用搜索，涵盖所有中文资料
+   - `GET /search/news?q=Obsidian 更新 release&max_results=10` — 新闻搜索，涵盖讨论、测评、新闻动态
+   - `GET /search?q=Obsidian 笔记&site=sspai.com&max_results=5` — 如需限定特定平台可加 site 参数
+   - 搜索结果中任何有价值的中文资料链接（博客、论坛、讨论、教程等）都可收录，不必拘束于特定网站
 2. **拿到候选 URL 后，仍需用 WebFetch 验证可达性**（返回内容正常即为可用），不可直接无验证收录。
-3. **查找版本/热点动态**：使用 `/search/news` 搜索项目名 + "release" 或 "更新"。
+3. **查找版本/热点动态**：使用 `/search/news` 搜索项目名 + "release" 或 "更新"，可直接发现相关讨论和新闻。
 4. **若 DDGS Search API 不可用**：降级为 WebFetch 直接访问平台搜索结果页验证内容（仅用于验证，不收录搜索结果页 URL 本身）。
 
 ## 内容质量要求
@@ -261,4 +263,4 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 - 每次运营至少新增 5 个项目
 - **品类多样性（强制）**：每次新增项目中，GitHub 项目与非 GitHub 项目的比例保持约 **1:1**。例如新增 6 个项目，则约 3 个来自 GitHub，3 个来自其他品类（Android/iOS App、Windows/macOS 桌面软件、SaaS 服务等）。不允许全部或绝大多数为 GitHub 开源项目。
 - **更新日志本地化**：`content` 字段统一存储中文内容。若原始 release notes 为英文或其他外文，直接翻译为中文后存入数据库，无需保留原文
-- **links 非官方链接（强制）**：每个项目 `links` 必须包含 **至少 3 条非官方中文链接**，总数量由 AI 自行决定，链接须为具体文章/视频/帖子页面（禁止搜索结果页）
+- **links 非官方链接（强制）**：每个项目 `links` 必须包含 **至少 3 条非官方中文链接**，来自任何有价值的中文资料来源，链接须为具体文章/视频/帖子页面（禁止搜索结果页），每条链接须通过 WebFetch 验证可达
