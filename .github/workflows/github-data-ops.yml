@@ -47,6 +47,15 @@ jobs:
                 "api_base_url": "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions",
                 "api_key": "${GEMINI_API_KEY}",
                 "models": ["glm-5"]
+                "transformer": {
+                  "use": [
+                     [
+                       "maxtoken",
+                       {
+                         "max_tokens": 25000
+                       }
+                     ]
+                  ]
               },
               {
                 "name": "custom2",
