@@ -41,6 +41,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.claude-code-router
           cat > ~/.claude-code-router/config.json <<EOF
           {
@@ -70,17 +71,14 @@ jobs:
           }
           EOF
 
-      - name: Debug - Print config status
+      - name: Debug - env status
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
         run: |
-          echo "=== config exists? ==="
-          test -f ~/.claude-code-router/config.json && echo "YES" || echo "NO"
-          echo "=== GEMINI_API_KEY set? ==="
-          [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
-          echo "=== GEMINI2_API_KEY set? ==="
-          [ -n "$GEMINI2_API_KEY" ] && echo "YES" || echo "NO (empty!)"
+          echo "config exists: $(test -f ~/.claude-code-router/config.json && echo YES || echo NO)"
+          echo "GEMINI_API_KEY set: $( [ -n "$GEMINI_API_KEY" ] && echo YES || echo NO )"
+          echo "GEMINI2_API_KEY set: $( [ -n "$GEMINI2_API_KEY" ] && echo YES || echo NO )"
 
       - name: Install skills
         run: |
@@ -111,7 +109,9 @@ jobs:
       - name: Start Claude Code Router Daemon
         run: |
           nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start >/tmp/ccr.log 2>&1 &
-          sleep 3
+          sleep 5
+          echo "CCR started. Last logs:"
+          tail -n 50 /tmp/ccr.log || true
 
       - name: Prepare Dynamic Prompt
         run: |
@@ -128,7 +128,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Run Claude Code Core (verbose streaming)
+      - name: Run Claude Code Core (force live logs)
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
           ANTHROPIC_API_KEY: "sk-ant-local-ccr-1234567890"
@@ -142,13 +142,34 @@ jobs:
         run: |
           set -euo pipefail
 
-          CLAUDE_CMD="~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
+          sudo apt-get update -y
+          sudo apt-get install -y expect
+
+          touch /tmp/ccr.log
+          tail -n +1 -F /tmp/ccr.log | sed -u "s/^/[CCR] /" &
+          TAIL_PID=$!
+
+          (
+            while true; do
+              echo "[HEARTBEAT] $(date '+%F %T') Claude running..."
+              sleep 20
+            done
+          ) &
+          HB_PID=$!
+
+          cleanup() {
+            kill "$HB_PID" 2>/dev/null || true
+            kill "$TAIL_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          timeout 45m bash <<'BASH'
+          set -euo pipefail
+          printf '1\n' | unbuffer ~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
             --model claude-3-5-sonnet-20241022 \
             --dangerously-skip-permissions \
-            -p \"$PROMPT_TEXT\""
-
-          # 自动选择“1. 信任当前目录”，并实时输出 verbose 日志
-          printf '1\n' | script -q -e -f -c "$CLAUDE_CMD" /dev/null 2>&1 | tee /tmp/claude-code.log
+            -p "$PROMPT_TEXT" 2>&1 | tee /tmp/claude-code.log
+          BASH
 
       - name: Submit new URLs to Google Indexing API
         if: always()
@@ -162,6 +183,6 @@ jobs:
         if: failure()
         run: |
           echo "===== /tmp/ccr.log ====="
-          [ -f /tmp/ccr.log ] && tail -n 300 /tmp/ccr.log || echo "ccr.log not found"
+          [ -f /tmp/ccr.log ] && tail -n 300 /tmp/ccr.log || true
           echo "===== /tmp/claude-code.log ====="
-          [ -f /tmp/claude-code.log ] && tail -n 300 /tmp/claude-code.log || echo "claude-code.log not found"
+          [ -f /tmp/claude-code.log ] && tail -n 300 /tmp/claude-code.log || true
