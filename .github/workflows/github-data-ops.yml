@@ -58,7 +58,7 @@ jobs:
             "Router": {
               "default": "custom,glm-5",
               "background": "custom,glm-5",
-              "think": "custom2,gpt-5.3-codex",
+              "think": "custom,glm-5",
               "longContext": "custom,glm-5",
               "webSearch": "custom2,gpt-5.3-codex"
 
