@@ -126,25 +126,25 @@ jobs:
           # 将组装好的指令写入环境变量，防止下面执行时引号冲突
           echo "PROMPT_TEXT=/github-data-ops 自主运营项目数据库：先查询现有项目避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。${EXTRA}" >> $GITHUB_ENV
 
-      - name: Run Claude Code Core (绕过官方 Action 的事件限制)
+      - name: Run Claude Code Core (强制输出版)
         env:
-          # 指向你本地启动的 3456 端口
           ANTHROPIC_BASE_URL: http://localhost:3456
-          # 这是一个假 Key，用来骗过客户端启动校验
           ANTHROPIC_API_KEY: "sk-ant-local-ccr-1234567890"
-          # 业务环境变量
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           DDGS_SEARCH_API: ${{ secrets.DDGS_SEARCH_API }}
-          # 找回你最想要的详细日志
+          # 1. 强制声明这是一个“彩色终端”，即使在 CI 里
+          FORCE_COLOR: "1"
+          # 2. 官方样式设为 verbose
           CLAUDE_CODE_OUTPUT_STYLE: "verbose"
         run: |
-          # 使用 bunx 直接运行官方核心，彻底无视 "Unsupported event type"
-          # 注意：一定要带上 --non-interactive，否则 Actions 会卡死
-          ~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
+          # 3. 使用 script 命令伪装成 TTY 终端，强制让它实时打印日志
+          # 如果你的 runner 没有 script 命令，直接跑下面那行 bunx 也行，但要加 --yes
+          script -e -c "~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
             --model claude-3-5-sonnet-20241022 \
             --dangerously-skip-permissions \
-            -p "${{ env.PROMPT_TEXT }}"
+            --yes \
+            -p '${{ env.PROMPT_TEXT }}'" /dev/null
 
       - name: Submit new URLs to Google Indexing API
         if: always()
