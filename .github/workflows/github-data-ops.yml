@@ -3,7 +3,7 @@ name: GitHub Data Ops
 on:
   schedule:
     - cron: '0 */6 * * *'   # 每6小时运行一次
-  workflow_dispatch:
+  workflow_dispatch:        # 允许手动触发
   push:
     branches:
       - dev
@@ -21,20 +21,134 @@ jobs:
       pull-requests: read
       issues: read
       id-token: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: dev
-
       - name: Install Bun (新架构：提供极速运行环境)
         run: curl -fsSL https://bun.sh/install | bash
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+    
+      - name: Configure Claude Code Router
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
+        run: |
+          mkdir -p ~/.claude-code-router
+          cat > ~/.claude-code-router/config.json << EOF  
+          {
+            "APIKEY": "${GEMINI_API_KEY}",
+            "NON_INTERACTIVE_MODE": true,
+            "Providers": [
+              {
+                "name": "custom",
+                "api_base_url": "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions",
+                "api_key": "${GEMINI_API_KEY}",
+                "models": ["glm-5"]
+              },
+              {
+                "name": "custom2",
+                "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
+                "api_key": "${GEMINI2_API_KEY}",
+                "models": ["gpt-5.3-codex"]
+              }
+            ],
+            "Router": {
+              "default": "custom2,gpt-5.3-codex",
+              "background": "custom,glm-5",
+              "think": "custom2,gpt-5.3-codex",
+              "longContext": "custom,glm-5",
+              "webSearch": "custom2,gpt-5.3-codex"
+
+            }
+          }
+          EOF
+      - name: Debug - Print config
+        run: |
+          echo "=== config.json ==="
+          cat ~/.claude-code-router/config.json
+          echo "=== GEMINI_API_KEY set? ==="
+          [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}  
+      - name: Install skills
+        run: |
+          mkdir -p ~/.claude/skills
+          cp -r skills/. ~/.claude/skills/
+
+      - name: Install Google Indexing dependencies
+        run: npm install googleapis
+
+      - name: Restore ETag cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/etag-cache.json
+          key: etag-cache-${{ github.run_id }}
+          restore-keys: etag-cache-
+
+      - name: Check for updates (ETag probe)
+        run: node scripts/check-updates.js
+        env:
+          SITE_URL: https://zitons-logup-re.hf.space
+
+      - name: Capture sitemap before ops
+        run: |
+          curl -sf https://zitons-logup-re.hf.space/sitemap.xml -o /tmp/sitemap_before.xml \
+            || echo '<urlset/>' > /tmp/sitemap_before.xml
+          echo "运营前 URL 数量: $(grep -c '<loc>' /tmp/sitemap_before.xml || echo 0)"
+
+      
+      - name: Start Claude Code Router Daemon (新架构：启动本地代理基站)
+        run: |
+          nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start &
+          sleep 3 # 等待3秒，确保本地 3456 端口服务完全启动
+        shell: bash
+
+      - name: Prepare Dynamic Prompt (整合 ETag 结果)
+        id: prompt_gen
+        run: |
+          CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
+          if [ -n "$CHANGED" ]; then
+            EXTRA="以下项目页面已变化（ETag/Last-Modified 探针检测），请优先检查其版本更新：${CHANGED}。"
+          else
+            EXTRA=""
+          fi
+          # 将组装好的指令写入环境变量，防止下面执行时引号冲突
+          echo "PROMPT_TEXT=/github-data-ops 自主运营项目数据库：先查询现有项目避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。${EXTRA}" >> $GITHUB_ENV
+
+      - name: Run Claude Code Core (强制输出版)
+        env:
+          ANTHROPIC_BASE_URL: http://localhost:3456
+          ANTHROPIC_API_KEY: "sk-ant-local-ccr-1234567890"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          DDGS_SEARCH_API: ${{ secrets.DDGS_SEARCH_API }}
+          # 1. 强制声明这是一个“彩色终端”，即使在 CI 里
+          FORCE_COLOR: "1"
+          # 2. 官方样式设为 verbose
+          CLAUDE_CODE_OUTPUT_STYLE: "verbose"
+        run: |
+          # 3. 使用 script 命令伪装成 TTY 终端，强制让它实时打印日志
+          # 如果你的 runner 没有 script 命令，直接跑下面那行 bunx 也行，但要加 --yes
+          script -e -c "~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
+            --model claude-3-5-sonnet-20241022 \
+            --dangerously-skip-permissions \
+            --yes \
+            -p '${{ env.PROMPT_TEXT }}'" /dev/null
+
+      - name: Submit new URLs to Google Indexing API
+        if: always()
+        run: node scripts/submit-to-indexing.js
+        env:
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          SITE_URL: https://zitons-logup-re.hf.space
+          SITEMAP_BEFORE_FILE: /tmp/sitemap_before.xml          node-version: '20'
 
       - name: Configure Claude Code Router
         env:
