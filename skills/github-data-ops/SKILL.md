@@ -247,6 +247,16 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 | `GET /search/news?q=关键词` | 新闻与版本动态 | `results: [{title, url, body, date, source}]` |
 | `GET /search/images?q=logo名` | 图片搜索 (Logo) | `results: [{title, image, url, source}]` |
 
+
+| 路径 | 核心字段 | 字段差异注意 (GLM-5 必读) |
+| :--- | :--- | :--- |
+| `/search` | `results: [{href, title, body}]` | 链接是 **href**，禁止用 .url |
+| `/search/news` | `results: [{url, title, date, source}]` | 链接是 **url**，含发布日期 |
+| `/search/images` | `results: [{image, title, url}]` | 图片是 **image**，原页是 **url** |
+
+> ⚠️ **调用强制规范**：
+> 1. **URL 编码**：由于 Bash 环境限制，必须使用 `curl -G --data-urlencode "q=关键词"`。**严禁**直接在 URL 中写中文或空格。
+> 2. **层级结构**：所有结果均在 `.results` 下。如果搜索返回为空，请先检查编码是否正确。
 ### 使用规范
 
 1. **查找 links 中文链接时**：使用 `/search` 或 `/search/news` 进行广泛搜索，不限站点，例如：
