@@ -240,12 +240,12 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 ### 接口速查
 
-| 接口 | 用途 |
-|------|------|
-| `GET /search?q=关键词&max_results=10` | 通用网页搜索，返回 `title / url / body` |
-| `GET /search?q=关键词&site=sspai.com` | 限定站点搜索（少数派、知乎、B站、掘金、CSDN 等） |
-| `GET /search/news?q=关键词&max_results=10` | 新闻搜索，适合查热点、版本动态 |
-| `GET /search/images?q=logo名&max_results=5` | 图片搜索，辅助获取项目 Logo URL |
+| 接口 | 用途 | 返回核心字段 |
+|------|------|------------|
+| `GET /search?q=关键词` | 通用网页搜索 | `results: [{title, href, body}]` |
+| `GET /search?q=关键词&site=sspai.com` | 限定站点搜索 | `results: [{title, href, body}]` |
+| `GET /search/news?q=关键词` | 新闻与版本动态 | `results: [{title, url, body, date, source}]` |
+| `GET /search/images?q=logo名` | 图片搜索 (Logo) | `results: [{title, image, url, source}]` |
 
 ### 使用规范
 
