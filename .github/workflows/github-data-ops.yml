@@ -2,7 +2,7 @@ name: GitHub Data Ops
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # 每6小时运行一次
+    - cron: '0 */6 * * *' # 每6小时运行一次
   workflow_dispatch:
   push:
     branches:
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Configure Claude Code Router
         env:
@@ -72,10 +72,12 @@ jobs:
 
       - name: Debug - Print config
         run: |
-          echo "=== config.json ==="
-          cat ~/.claude-code-router/config.json
+          echo "=== config exists? ==="
+          test -f ~/.claude-code-router/config.json && echo "YES" || echo "NO"
           echo "=== GEMINI_API_KEY set? ==="
           [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
+          echo "=== GEMINI2_API_KEY set? ==="
+          [ -n "$GEMINI2_API_KEY" ] && echo "YES" || echo "NO (empty!)"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
@@ -128,7 +130,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Run Claude Code Core (强制输出版)
+      - name: Run Claude Code Core (CI non-interactive)
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
           ANTHROPIC_API_KEY: "sk-ant-local-ccr-1234567890"
@@ -137,11 +139,11 @@ jobs:
           DDGS_SEARCH_API: ${{ secrets.DDGS_SEARCH_API }}
           FORCE_COLOR: "1"
           CLAUDE_CODE_OUTPUT_STYLE: "verbose"
+          CI: "true"
         run: |
-          script -e -c "~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
+          printf '1\n' | script -q -e -c "~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
             --model claude-3-5-sonnet-20241022 \
             --dangerously-skip-permissions \
-            
             -p \"$PROMPT_TEXT\"" /dev/null
 
       - name: Submit new URLs to Google Indexing API
