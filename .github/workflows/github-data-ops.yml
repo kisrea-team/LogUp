@@ -20,7 +20,11 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -130,6 +134,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           DDGS_SEARCH_API: ${{ secrets.DDGS_SEARCH_API }}
+          CLAUDE_CODE_OUTPUT_STYLE: verbose
         with:
           # 因为流量被本地 3456 端口劫持，这里的 key 填个假名就行，但必填
           anthropic_api_key: "sk-ant-local-ccr-1234567890" 
