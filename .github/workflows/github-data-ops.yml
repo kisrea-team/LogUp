@@ -71,7 +71,7 @@ jobs:
               "think": "custom2,gpt-5.3-codex",
               "longContext": "custom,glm-5",
               "webSearch": "custom2,gpt-5.3-codex",
-              "longContextThreshold": 60000
+              "longContextThreshold": 10000
             }
           }
           EOF
