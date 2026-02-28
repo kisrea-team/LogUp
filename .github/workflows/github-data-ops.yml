@@ -56,7 +56,7 @@ jobs:
               }
             ],
             "Router": {
-              "default": "custom,glm-5",
+              "default": "custom2,gpt-5.3-codex",
               "background": "custom,glm-5",
               "think": "custom2,gpt-5.3-codex",
               "longContext": "custom,glm-5",
