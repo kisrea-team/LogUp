@@ -105,6 +105,10 @@ jobs:
 
       - name: Run github-data-ops skill
         run: |
+          echo 'export ANTHROPIC_BASE_URL="http://127.0.0.1:3456"' >> ~/.zshrc
+          echo 'export ANTHROPIC_AUTH_TOKEN="sk-ant-local-ccr-1234567890"' >> ~/.zshrc
+
+          source ~/.zshrc
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
             EXTRA="以下项目页面已变化（ETag/Last-Modified 探针检测），请优先检查其版本更新：${CHANGED}。"
