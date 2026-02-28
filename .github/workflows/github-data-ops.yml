@@ -44,15 +44,15 @@ jobs:
             "Providers": [
               {
                 "name": "custom",
-                "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
+                "api_base_url": "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions",
                 "api_key": "${GEMINI_API_KEY}",
-                "models": ["gpt-5.3-codex"]
+                "models": ["glm-5"]
               }
             ],
             "Router": {
-              "default": "custom,gpt-5.3-codex",
-              "background": "custom,gpt-5.3-codex",
-              "think": "custom,gpt-5.3-codex"
+              "default": "custom,glm-5",
+              "background": "custom,glm-5",
+              "think": "custom,glm-5"
             }
           }
           EOF
