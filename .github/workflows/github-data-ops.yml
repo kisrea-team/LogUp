@@ -33,7 +33,7 @@ jobs:
 
       - name: Configure Claude Code Router
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
         run: |
           mkdir -p ~/.claude-code-router
