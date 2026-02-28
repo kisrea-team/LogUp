@@ -148,7 +148,7 @@ jobs:
         env:
           GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
           SITE_URL: https://zitons-logup-re.hf.space
-          SITEMAP_BEFORE_FILE: /tmp/sitemap_before.xml          node-version: '20'
+          SITEMAP_BEFORE_FILE: /tmp/sitemap_before.xml
 
       - name: Configure Claude Code Router
         env:
