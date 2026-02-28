@@ -2,7 +2,7 @@ name: GitHub Data Ops
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # 每6小时运行一次
+    - cron: "0 */6 * * *" # 每6小时运行一次
   workflow_dispatch:
   push:
     branches:
@@ -28,7 +28,7 @@ jobs:
         with:
           ref: dev
 
-      - name: Install Bun (新架构：提供极速运行环境)
+      - name: Install Bun
         run: curl -fsSL https://bun.sh/install | bash
 
       - name: Setup Node.js
@@ -70,7 +70,10 @@ jobs:
           }
           EOF
 
-      - name: Debug - Print config
+      - name: Debug - Print config status
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
         run: |
           echo "=== config exists? ==="
           test -f ~/.claude-code-router/config.json && echo "YES" || echo "NO"
@@ -78,9 +81,6 @@ jobs:
           [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
           echo "=== GEMINI2_API_KEY set? ==="
           [ -n "$GEMINI2_API_KEY" ] && echo "YES" || echo "NO (empty!)"
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
 
       - name: Install skills
         run: |
@@ -98,9 +98,9 @@ jobs:
           restore-keys: etag-cache-
 
       - name: Check for updates (ETag probe)
-        run: node scripts/check-updates.js
         env:
           SITE_URL: https://zitons-logup-re.hf.space
+        run: node scripts/check-updates.js
 
       - name: Capture sitemap before ops
         run: |
@@ -108,14 +108,12 @@ jobs:
             || echo '<urlset/>' > /tmp/sitemap_before.xml
           echo "运营前 URL 数量: $(grep -c '<loc>' /tmp/sitemap_before.xml || echo 0)"
 
-      - name: Start Claude Code Router Daemon (新架构：启动本地代理基站)
+      - name: Start Claude Code Router Daemon
         run: |
           nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start >/tmp/ccr.log 2>&1 &
           sleep 3
-        shell: bash
 
-      - name: Prepare Dynamic Prompt (整合 ETag 结果)
-        id: prompt_gen
+      - name: Prepare Dynamic Prompt
         run: |
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
@@ -130,7 +128,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Run Claude Code Core (CI non-interactive)
+      - name: Run Claude Code Core (verbose streaming)
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
           ANTHROPIC_API_KEY: "sk-ant-local-ccr-1234567890"
@@ -140,16 +138,30 @@ jobs:
           FORCE_COLOR: "1"
           CLAUDE_CODE_OUTPUT_STYLE: "verbose"
           CI: "true"
+          TERM: "xterm-256color"
         run: |
-          printf '1\n' | script -q -e -c "~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
+          set -euo pipefail
+
+          CLAUDE_CMD="~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
             --model claude-3-5-sonnet-20241022 \
             --dangerously-skip-permissions \
-            -p \"$PROMPT_TEXT\"" /dev/null
+            -p \"$PROMPT_TEXT\""
+
+          # 自动选择“1. 信任当前目录”，并实时输出 verbose 日志
+          printf '1\n' | script -q -e -f -c "$CLAUDE_CMD" /dev/null 2>&1 | tee /tmp/claude-code.log
 
       - name: Submit new URLs to Google Indexing API
         if: always()
-        run: node scripts/submit-to-indexing.js
         env:
           GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
           SITE_URL: https://zitons-logup-re.hf.space
           SITEMAP_BEFORE_FILE: /tmp/sitemap_before.xml
+        run: node scripts/submit-to-indexing.js
+
+      - name: Debug logs on failure
+        if: failure()
+        run: |
+          echo "===== /tmp/ccr.log ====="
+          [ -f /tmp/ccr.log ] && tail -n 300 /tmp/ccr.log || echo "ccr.log not found"
+          echo "===== /tmp/claude-code.log ====="
+          [ -f /tmp/claude-code.log ] && tail -n 300 /tmp/claude-code.log || echo "claude-code.log not found"
