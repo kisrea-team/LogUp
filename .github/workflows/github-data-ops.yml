@@ -106,8 +106,6 @@ jobs:
       - name: Run github-data-ops skill
         run: |
           echo 'export ANTHROPIC_BASE_URL="http://127.0.0.1:3456"' >> ~/.zshrc
-          echo 'export ANTHROPIC_AUTH_TOKEN="sk-ant-local-ccr-1234567890"' >> ~/.zshrc
-
           source ~/.zshrc
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
@@ -118,6 +116,7 @@ jobs:
           ccr code -p "/github-data-ops 自主运营项目数据库：先查询现有项目避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。${EXTRA}" \
             --dangerously-skip-permissions \
             --verbose \
+            --model gpt-5.3-codex
             --output-format stream-json
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
