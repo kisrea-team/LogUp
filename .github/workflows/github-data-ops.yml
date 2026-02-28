@@ -144,7 +144,6 @@ jobs:
           ~/.bun/bin/bunx @anthropic-ai/claude-code@latest \
             --model claude-3-5-sonnet-20241022 \
             --dangerously-skip-permissions \
-            --non-interactive \
             -p "${{ env.PROMPT_TEXT }}"
 
       - name: Submit new URLs to Google Indexing API
