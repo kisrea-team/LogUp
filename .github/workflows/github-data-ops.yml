@@ -127,18 +127,29 @@ jobs:
             || echo '<urlset/>' > /tmp/sitemap_before.xml
           echo "运营前 URL 数量: $(grep -c '<loc>' /tmp/sitemap_before.xml || echo 0)"
 
-      - name: Run github-data-ops skill
+      - name: "Phase 1: Update existing projects"
         run: |
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
-            EXTRA="以下项目页面已变化（ETag/Last-Modified 探针检测），请优先检查其版本更新：${CHANGED}。"
+            CHANGED_MSG="以下项目页面已变化（ETag 探针检测），请逐一检查版本并更新：${CHANGED}。"
           else
-            EXTRA=""
+            CHANGED_MSG="本次无 ETag 探针标记变化的项目。"
           fi
-          ccr code -p "/github-data-ops 自主运营项目数据库：先查询现有项目避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。注意: DDGS_SEARCH_API以给出为${{ vars.DDGS_SEARCH_API }}${EXTRA}" \
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG} 2）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
             --verbose \
-            --output-format stream-json 2>&1 | tee /tmp/ops-output.jsonl
+            --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          DDGS_SEARCH_API: ${{ vars.DDGS_SEARCH_API }}
+
+      - name: "Phase 2: Add new projects"
+        run: |
+          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。先查询现有项目名称避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
+            --dangerously-skip-permissions \
+            --verbose \
+            --output-format stream-json 2>&1 | tee /tmp/ops-add.jsonl
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -149,25 +160,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          node -e "
-            const fs = require('fs');
-            const raw = fs.readFileSync('/tmp/ops-output.jsonl', 'utf-8');
-            const lines = raw.trim().split('\n');
-            let report = '';
-            for (let i = lines.length - 1; i >= 0; i--) {
-              try {
-                const obj = JSON.parse(lines[i]);
-                if (obj.type === 'result' && obj.result) {
-                  report = obj.result;
-                  break;
-                }
-              } catch {}
-            }
-            if (!report) report = '运营完成，未能提取详细报告。';
-            const date = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-            const body = '## 运营报告\n\n**时间**：' + date + '\n\n' + report;
-            fs.writeFileSync('/tmp/issue-body.md', body);
-          "
+          node << 'JSEOF'
+          const fs = require('fs');
+          function extractResult(file) {
+            try {
+              const lines = fs.readFileSync(file, 'utf-8').trim().split('\n');
+              for (let i = lines.length - 1; i >= 0; i--) {
+                try {
+                  const obj = JSON.parse(lines[i]);
+                  if (obj.type === 'result' && obj.result) return obj.result;
+                } catch {}
+              }
+            } catch {}
+            return null;
+          }
+          const update = extractResult('/tmp/ops-update.jsonl');
+          const add = extractResult('/tmp/ops-add.jsonl');
+          const date = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+          let body = '## 运营报告\n\n**时间**：' + date + '\n\n';
+          body += '### 存量更新\n\n' + (update || '未执行或无输出') + '\n\n';
+          body += '### 新项目收录\n\n' + (add || '未执行或无输出');
+          fs.writeFileSync('/tmp/issue-body.md', body);
+          JSEOF
           gh issue create \
             --title "运营报告 $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --body-file /tmp/issue-body.md \
