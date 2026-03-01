@@ -35,8 +35,9 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
+          GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
         run: |
-          mkdir -p ~/.claude-code-router
+          mkdir -p ~/.claude-code-router  
           cat > ~/.claude-code-router/config.json << EOF
           {
             "APIKEY": "${GEMINI_API_KEY}",
@@ -63,13 +64,22 @@ jobs:
                 "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
                 "api_key": "${GEMINI2_API_KEY}",
                 "models": ["gpt-5.3-codex"]
+              },
+              {
+                "name": "gemini",
+                "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+                "api_key": "${GEMINI3_API_KEY}",
+                "models": ["gemini-2.5-flash-lite"],
+                "transformer": {
+                  "use": ["gemini"]
+                }
               }
             ],
             "Router": {
               "default": "custom2,gpt-5.3-codex",
-              "background": "custom,glm-5",
+              "background": "gemini,gemini-2.5-flash-lite",
               "think": "custom2,gpt-5.3-codex",
-              "longContext": "custom,glm-5",
+              "longContext": "gemini,gemini-2.5-flash-lite",
               "webSearch": "custom2,gpt-5.3-codex",
               "longContextThreshold": 10000
             }
