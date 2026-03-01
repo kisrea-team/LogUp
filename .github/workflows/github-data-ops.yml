@@ -84,7 +84,7 @@ jobs:
             ],
             "Router": {
               "default": "custom2,gpt-5.3-codex",
-              "background": "llama,meta/llama-3.3-70b-instruct",
+              "background": "custom,glm-5",
               "think": "custom2,gpt-5.3-codex",
               "longContext": "gemini,gemini-2.5-flash-lite",
               "webSearch": "custom2,gpt-5.3-codex",
