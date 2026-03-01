@@ -41,7 +41,7 @@ def search_text(
     query = f"site:{site} {q}" if site else q
     try:
         logger.info(f"text search: {query}")
-        results = DDGS().text(query, max_results=max_results, region='cn-zh', safesearch='off', backend='auto')
+        results = DDGS().text(query, max_results=max_results, region='cn-zh', safesearch='moderate', backend='auto')
         logger.info(f"text results: {len(results) if results else 0} found")
         return {"query": query, "results": results or []}
     except Exception as e:
