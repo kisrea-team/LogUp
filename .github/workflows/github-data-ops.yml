@@ -36,6 +36,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
           GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
+          GEMINI4_API_KEY: ${{ secrets.GEMINI4_API_KEY }}
         run: |
           mkdir -p ~/.claude-code-router
           cat > ~/.claude-code-router/config.json << EOF
