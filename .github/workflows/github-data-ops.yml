@@ -73,11 +73,17 @@ jobs:
                 "transformer": {
                   "use": ["gemini"]
                 }
+              },
+              {
+                "name": "llama",
+                "api_base_url": "https://integrate.api.nvidia.com/v1/chat/completions",
+                "api_key": "${GEMINI4_API_KEY}",
+                "models": ["meta/llama-3.3-70b-instruct"]
               }
             ],
             "Router": {
               "default": "custom2,gpt-5.3-codex",
-              "background": "gemini,gemini-2.5-flash-lite",
+              "background": "llama,meta/llama-3.3-70b-instruct",
               "think": "custom2,gpt-5.3-codex",
               "longContext": "gemini,gemini-2.5-flash-lite",
               "webSearch": "custom2,gpt-5.3-codex",
