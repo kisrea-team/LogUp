@@ -42,6 +42,23 @@ function fetchJson(url) {
   });
 }
 
+/**
+ * If the URL points to a GitHub repo root, return its releases.atom feed instead.
+ * e.g. https://github.com/owner/repo  →  https://github.com/owner/repo/releases.atom
+ */
+function resolveProbeUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'github.com') {
+      const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+      if (parts.length === 2) {
+        return `https://github.com/${parts[0]}/${parts[1]}/releases.atom`;
+      }
+    }
+  } catch {}
+  return url;
+}
+
 function headRequest(url, etag, lastModified) {
   return new Promise((resolve) => {
     const headers = { 'User-Agent': 'logup-update-probe/1.0' };
@@ -125,7 +142,8 @@ async function main() {
     await Promise.all(
       batch.map(async (p) => {
         const cached = cache[p.id] || {};
-        const result = await headRequest(p.update_source_url, cached.etag, cached.lastModified);
+        const probeUrl = resolveProbeUrl(p.update_source_url);
+        const result = await headRequest(probeUrl, cached.etag, cached.lastModified);
 
         if (result.unchanged === null) {
           // Network error — skip silently, don't mark as changed
@@ -139,7 +157,7 @@ async function main() {
           newCache[p.id] = {
             etag: result.etag,
             lastModified: result.lastModified,
-            url: p.update_source_url,
+            url: probeUrl,
             checkedAt: new Date().toISOString(),
           };
         }
