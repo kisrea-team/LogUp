@@ -86,7 +86,7 @@ jobs:
               "default": "custom2,gpt-5.3-codex",
               "background": "custom,glm-5",
               "think": "custom2,gpt-5.3-codex",
-              "longContext": "gemini,gemini-2.5-flash-lite",
+              "longContext": "custom,glm-5",
               "webSearch": "custom2,gpt-5.3-codex",
               "longContextThreshold": 120000
             }
