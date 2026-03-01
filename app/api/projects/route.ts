@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const perPage = parseInt(searchParams.get('per_page') || '10', 10);
     const search = (searchParams.get('search') || '').trim();
+    const nameQuery = (searchParams.get('name') || '').trim();
     const type = (searchParams.get('type') || '').trim();
     const tag = (searchParams.get('tag') || '').trim();
     const sort = searchParams.get('sort') || 'updated_desc';
@@ -33,7 +34,10 @@ export async function GET(request: NextRequest) {
 
     // Build where filter
     const where: Record<string, unknown> = {};
-    if (search) {
+    if (nameQuery) {
+      // Fuzzy match on name field only
+      where.name = { contains: nameQuery, mode: 'insensitive' };
+    } else if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { author: { contains: search, mode: 'insensitive' } },

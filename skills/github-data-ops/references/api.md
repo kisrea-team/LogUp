@@ -106,12 +106,26 @@ Content-Type: application/json
 # 分页查询
 GET https://zitons-logup-re.hf.space/api/projects?page=1&per_page=10
 
+# 按名称模糊查找（仅匹配 name 字段，用于查重）
+GET https://zitons-logup-re.hf.space/api/projects?name=obsidian
+
 # 按标签筛选
 GET https://zitons-logup-re.hf.space/api/projects?tag=笔记工具
 
 # 单个项目（id 或 slug）
 GET https://zitons-logup-re.hf.space/api/projects/42
 GET https://zitons-logup-re.hf.space/api/projects/vercel-nextjs
+```
+
+### 查询项目总数
+
+```bash
+GET https://zitons-logup-re.hf.space/api/projects/count
+```
+
+返回示例：
+```json
+{ "total": 128 }
 ```
 
 ### 查询所有已有标签
