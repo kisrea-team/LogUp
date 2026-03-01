@@ -148,6 +148,8 @@ description: |
 | 触发 GitHub 热门抓取 | POST | `/api/scrape/github/trending` |
 | 抓取指定仓库 | POST | `/api/scrape/github` |
 | 项目列表 | GET | `/api/projects?page=1&per_page=50` |
+| 按名称模糊查找 | GET | `/api/projects?name=关键词` |
+| 项目总数 | GET | `/api/projects/count` |
 | 按标签筛选 | GET | `/api/projects?tag=笔记工具` |
 | 查询所有标签 | GET | `/api/projects/tags` |
 | 单个项目 | GET | `/api/projects/{id或slug}` |
