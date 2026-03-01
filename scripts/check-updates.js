@@ -51,7 +51,7 @@ function resolveProbeUrl(url) {
     const u = new URL(url);
     if (u.hostname === 'github.com') {
       const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-      if (parts.length === 2) {
+      if (parts.length >= 2) {
         return `https://github.com/${parts[0]}/${parts[1]}/releases.atom`;
       }
     }
