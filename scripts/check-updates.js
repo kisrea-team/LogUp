@@ -1,18 +1,19 @@
 /**
- * 预检脚本：用 curl -I (HEAD request) + ETag/Last-Modified 探测项目是否有更新
+ * 预检脚本：检测项目是否有更新
  *
  * 逻辑：
  * 1. 从 API 拉取所有项目列表（含 update_source_url）
- * 2. 从缓存文件读取上次的 ETag/Last-Modified（由 actions/cache 恢复）
- * 3. 并发对每个有 update_source_url 的项目发送 HEAD 请求
- *    - 若响应 304 Not Modified → 未变化
- *    - 若响应其他状态 → 视为可能已更新
- * 4. 将可能更新的项目名列表写入 /tmp/changed-projects.txt
- * 5. 将新的 ETag/Last-Modified 写回缓存文件（由 actions/cache 保存）
+ * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
+ * 3. 并发探测每个有 update_source_url 的项目：
+ *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
+ *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified
+ * 4. 将可能有更新的项目名列表写入 /tmp/changed-projects.txt
+ * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
  *
  * 环境变量：
  *   SITE_URL      - API 根地址，如 https://zitons-logup-re.hf.space
- *   ETAG_CACHE    - ETag 缓存文件路径，默认 /tmp/etag-cache.json
+ *   GITHUB_TOKEN  - GitHub Personal Access Token（用于 GitHub API）
+ *   ETAG_CACHE    - 缓存文件路径，默认 /tmp/etag-cache.json
  *   CHANGED_FILE  - 输出文件路径，默认 /tmp/changed-projects.txt
  */
 
@@ -21,19 +22,21 @@ const http = require('http');
 const fs = require('fs');
 
 const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').replace(/\/$/, '');
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 
-function fetchJson(url) {
+function fetchJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: REQUEST_TIMEOUT }, (res) => {
+    const options = { headers: { 'User-Agent': 'logup-update-probe/1.0', ...headers } };
+    const req = mod.get(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
+        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
         catch (e) { reject(new Error(`JSON parse error for ${url}: ${e.message}`)); }
       });
     });
@@ -43,22 +46,55 @@ function fetchJson(url) {
 }
 
 /**
- * If the URL points to a GitHub repo root, return its releases.atom feed instead.
- * e.g. https://github.com/owner/repo  →  https://github.com/owner/repo/releases.atom
+ * GitHub URL → extract owner/repo
+ * Matches github.com/{owner}/{repo} with any optional trailing path
  */
-function resolveProbeUrl(url) {
+function parseGitHubRepo(url) {
   try {
     const u = new URL(url);
     if (u.hostname === 'github.com') {
       const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-      if (parts.length >= 2) {
-        return `https://github.com/${parts[0]}/${parts[1]}/releases.atom`;
-      }
+      if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
     }
   } catch {}
-  return url;
+  return null;
 }
 
+/**
+ * Check GitHub project via /releases/latest API — compare tag_name
+ * Returns: { tagName, changed, isFirst, error }
+ */
+async function githubCheck(owner, repo, cachedTagName) {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+  const headers = {
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+
+  try {
+    const { status, body } = await fetchJson(apiUrl, headers);
+    if (status === 404) {
+      // No releases published — skip
+      return { tagName: null, changed: false, isFirst: false, error: 'no-releases' };
+    }
+    if (status !== 200) {
+      return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
+    }
+    const tagName = body.tag_name || null;
+    if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
+
+    if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
+    const changed = tagName !== cachedTagName;
+    return { tagName, changed, isFirst: false, error: null };
+  } catch (e) {
+    return { tagName: null, changed: false, isFirst: false, error: e.message };
+  }
+}
+
+/**
+ * Non-GitHub: HEAD request, compare ETag/Last-Modified
+ */
 function headRequest(url, etag, lastModified) {
   return new Promise((resolve) => {
     const headers = { 'User-Agent': 'logup-update-probe/1.0' };
@@ -76,7 +112,7 @@ function headRequest(url, etag, lastModified) {
         timeout: REQUEST_TIMEOUT,
       };
       const req = mod.request(options, (res) => {
-        res.resume(); // drain
+        res.resume();
         resolve({
           status: res.statusCode,
           etag: res.headers['etag'] || null,
@@ -97,7 +133,7 @@ async function fetchAllProjects() {
   const results = [];
   let page = 1;
   while (true) {
-    const data = await fetchJson(`${SITE_URL}/api/projects?page=${page}&per_page=100`);
+    const { body: data } = await fetchJson(`${SITE_URL}/api/projects?page=${page}&per_page=100`);
     const items = data.data || [];
     results.push(...items);
     if (items.length < 100 || page >= data.total_pages) break;
@@ -107,9 +143,10 @@ async function fetchAllProjects() {
 }
 
 async function main() {
-  console.log('[check-updates] Starting ETag probe...');
+  console.log('[check-updates] Starting update probe...');
+  if (!GITHUB_TOKEN) console.warn('[check-updates] GITHUB_TOKEN not set — GitHub API calls may be rate-limited');
 
-  // Load ETag cache
+  // Load cache
   let cache = {};
   try {
     if (fs.existsSync(ETAG_CACHE)) {
@@ -142,54 +179,71 @@ async function main() {
     await Promise.all(
       batch.map(async (p) => {
         const cached = cache[p.id] || {};
-        const probeUrl = resolveProbeUrl(p.update_source_url);
-        const result = await headRequest(probeUrl, cached.etag, cached.lastModified);
+        const ghRepo = parseGitHubRepo(p.update_source_url);
 
-        if (result.unchanged === null) {
-          // Network error — skip silently, don't mark as changed
-          return;
-        }
+        if (ghRepo) {
+          // ── GitHub: compare tag_name via API ──
+          const { tagName, changed, isFirst, error } = await githubCheck(
+            ghRepo.owner, ghRepo.repo, cached.tagName || null
+          );
 
-        const isFirstCheck = !cached.etag && !cached.lastModified;
+          if (error === 'no-releases') {
+            console.log(`[check-updates] no-releases: ${p.name} — skipped`);
+            return;
+          }
+          if (error) {
+            console.log(`[check-updates] error (${error}): ${p.name} — skipped`);
+            return;
+          }
 
-        // Update cache with new ETag/Last-Modified if available
-        if (result.etag || result.lastModified) {
-          newCache[p.id] = {
-            etag: result.etag,
-            lastModified: result.lastModified,
-            url: probeUrl,
-            checkedAt: new Date().toISOString(),
-          };
-        }
+          if (tagName) {
+            newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
+          }
 
-        if (isFirstCheck) {
-          // First time seeing this project — just record baseline, don't flag as changed
-          console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check, recording`);
-          return;
-        }
+          if (isFirst) {
+            console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
+          } else if (changed) {
+            console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
+            changedNames.push(p.name);
+          } else {
+            console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
+          }
 
-        if (result.unchanged) {
-          // Server returned 304 Not Modified
-          console.log(`[check-updates] unchanged (304): ${p.name}`);
-          return;
-        }
-
-        // Server returned 200 — compare ETag / Last-Modified values
-        // If either header is the same as cached, treat as unchanged
-        const etagSame = result.etag && cached.etag && result.etag === cached.etag;
-        const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
-        const noHeaders = !result.etag && !result.lastModified;
-
-        if (etagSame || lmSame) {
-          // At least one header matches — unchanged
-          console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
-        } else if (noHeaders) {
-          // Server doesn't support caching headers — cannot determine, skip
-          console.log(`[check-updates] no-cache (${result.status}): ${p.name} — server has no ETag/Last-Modified`);
         } else {
-          // Both available headers differ from cache — likely changed
-          console.log(`[check-updates] CHANGED  (${result.status}): ${p.name}`);
-          changedNames.push(p.name);
+          // ── Non-GitHub: HEAD request, ETag/Last-Modified ──
+          const result = await headRequest(p.update_source_url, cached.etag, cached.lastModified);
+
+          if (result.unchanged === null) return; // network error
+
+          const isFirstCheck = !cached.etag && !cached.lastModified;
+
+          if (result.etag || result.lastModified) {
+            newCache[p.id] = {
+              etag: result.etag,
+              lastModified: result.lastModified,
+              url: p.update_source_url,
+              checkedAt: new Date().toISOString(),
+            };
+          }
+
+          if (isFirstCheck) {
+            console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
+          } else if (result.unchanged) {
+            console.log(`[check-updates] unchanged (304): ${p.name}`);
+          } else {
+            const etagSame = result.etag && cached.etag && result.etag === cached.etag;
+            const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
+            const noHeaders = !result.etag && !result.lastModified;
+
+            if (etagSame || lmSame) {
+              console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
+            } else if (noHeaders) {
+              console.log(`[check-updates] no-cache (${result.status}): ${p.name}`);
+            } else {
+              console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
+              changedNames.push(p.name);
+            }
+          }
         }
       })
     );
@@ -202,7 +256,6 @@ async function main() {
     console.warn(`[check-updates] Could not write cache: ${e.message}`);
   }
 
-  // Write changed project list
   fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
   console.log(`[check-updates] Done. ${changedNames.length}/${probeTargets.length} projects may have updates`);
 }
@@ -210,5 +263,5 @@ async function main() {
 main().catch((e) => {
   console.error('[check-updates] Fatal error:', e.message);
   fs.writeFileSync(CHANGED_FILE, '');
-  process.exit(0); // Don't fail the workflow on probe errors
+  process.exit(0);
 });

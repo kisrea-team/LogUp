@@ -120,6 +120,7 @@ jobs:
         run: node scripts/check-updates.js
         env:
           SITE_URL: https://zitons-logup-re.hf.space
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Capture sitemap before ops
         run: |
