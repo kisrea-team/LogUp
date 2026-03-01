@@ -168,6 +168,29 @@ DELETE https://zitons-logup-re.hf.space/api/projects/42
 
 ## 版本操作
 
+### 查询项目版本列表
+
+```bash
+GET https://zitons-logup-re.hf.space/api/projects/42/versions
+```
+
+返回示例：
+```json
+[
+  {
+    "id": 123,
+    "project_id": 42,
+    "version": "v15.3.0",
+    "update_time": "2026-02-24T12:00:00.000Z",
+    "content": "## 更新内容\n\n- 新增功能",
+    "translation": null,
+    "download_url": "https://github.com/vercel/next.js/archive/refs/tags/v15.3.0.zip"
+  }
+]
+```
+
+> 按 `update_time` 倒序排列。**在检查项目是否已有某版本时必须先调用此接口**，避免重复写入。
+
 ### 新增版本
 
 ```bash

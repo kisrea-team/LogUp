@@ -186,6 +186,7 @@ description: |
 | 按标签筛选 | GET | `/api/projects?tag=笔记工具` |
 | 查询所有标签 | GET | `/api/projects/tags` |
 | 单个项目 | GET | `/api/projects/{id或slug}` |
+| 查询项目版本列表 | GET | `/api/projects/{id}/versions` |
 | 创建项目 | POST | `/api/projects` |
 | 更新项目 | PUT | `/api/projects/{id}` |
 | 删除项目 | DELETE | `/api/projects/{id}` |
