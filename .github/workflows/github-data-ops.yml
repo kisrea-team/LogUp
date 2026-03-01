@@ -37,7 +37,7 @@ jobs:
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
           GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
         run: |
-          mkdir -p ~/.claude-code-router  
+          mkdir -p ~/.claude-code-router
           cat > ~/.claude-code-router/config.json << EOF
           {
             "APIKEY": "${GEMINI_API_KEY}",
@@ -66,7 +66,7 @@ jobs:
                 "models": ["gpt-5.3-codex"]
               },
               {
-                "name": "gemini",
+                "name": "gemini",  
                 "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
                 "api_key": "${GEMINI3_API_KEY}",
                 "models": ["gemini-2.5-flash-lite"],
