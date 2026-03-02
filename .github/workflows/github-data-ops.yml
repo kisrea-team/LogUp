@@ -132,7 +132,7 @@ jobs:
         run: npm install googleapis
 
       - name: Restore ETag cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /tmp/etag-cache.json
           key: etag-cache-${{ github.run_id }}
@@ -143,6 +143,13 @@ jobs:
         env:
           SITE_URL: https://zitons-logup-re.hf.space
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Save ETag cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: /tmp/etag-cache.json
+          key: etag-cache-${{ github.run_id }}
 
       - name: Capture sitemap before ops
         run: |
