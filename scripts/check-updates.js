@@ -99,33 +99,23 @@ async function githubCheck(owner, repo, cachedTagName) {
 }
 
 /**
- * Fetch URL as plain text (for version_regex extraction).
+ * Fetch URL using Playwright (fully rendered HTML, supports JS-rendered pages).
  * Returns: { text, error }
  */
-function fetchText(url) {
-  return new Promise((resolve) => {
-    try {
-      const parsedUrl = new URL(url);
-      const mod = parsedUrl.protocol === 'https:' ? https : http;
-      const options = {
-        hostname: parsedUrl.hostname,
-        path: parsedUrl.pathname + parsedUrl.search,
-        method: 'GET',
-        headers: { 'User-Agent': 'logup-update-probe/1.0' },
-        timeout: REQUEST_TIMEOUT,
-      };
-      const req = mod.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => resolve({ text: data, error: null }));
-      });
-      req.on('error', (e) => resolve({ text: null, error: e.message }));
-      req.on('timeout', () => { req.destroy(); resolve({ text: null, error: 'timeout' }); });
-      req.end();
-    } catch (e) {
-      resolve({ text: null, error: e.message });
-    }
-  });
+async function fetchText(url) {
+  let browser;
+  try {
+    const { chromium } = require('playwright');
+    browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle', timeout: REQUEST_TIMEOUT });
+    const text = await page.content();
+    return { text, error: null };
+  } catch (e) {
+    return { text: null, error: e.message };
+  } finally {
+    if (browser) await browser.close();
+  }
 }
 
 /**
