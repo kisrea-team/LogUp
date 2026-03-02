@@ -215,16 +215,14 @@ async function main() {
 
           if (result.unchanged === null) return; // network error
 
-          const isFirstCheck = !cached.etag && !cached.lastModified;
+          const isFirstCheck = cache[p.id] === undefined;
 
-          if (result.etag || result.lastModified) {
-            newCache[p.id] = {
-              etag: result.etag,
-              lastModified: result.lastModified,
-              url: p.update_source_url,
-              checkedAt: new Date().toISOString(),
-            };
-          }
+          newCache[p.id] = {
+            etag: result.etag,
+            lastModified: result.lastModified,
+            url: p.update_source_url,
+            checkedAt: new Date().toISOString(),
+          };
 
           if (isFirstCheck) {
             console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
