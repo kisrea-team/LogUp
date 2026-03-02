@@ -233,15 +233,21 @@ async function main() {
           } else {
             const etagSame = result.etag && cached.etag && result.etag === cached.etag;
             const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
+            const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
             const noHeaders = !result.etag && !result.lastModified;
 
             if (etagSame || lmSame) {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
             } else if (noHeaders) {
               console.log(`[check-updates] no-cache (${result.status}): ${p.name}`);
-            } else {
+            } else if (lmChanged) {
+              // Last-Modified has definitively changed — reliable signal
               console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
               changedNames.push(p.name);
+            } else {
+              // ETag changed but no Last-Modified confirmation — many CDNs/App Store
+              // return volatile ETags that change every request without content changes
+              console.log(`[check-updates] etag-volatile (${result.status}): ${p.name} — ETag changed but no Last-Modified to confirm`);
             }
           }
         }
