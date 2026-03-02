@@ -106,21 +106,21 @@ jobs:
           mkdir -p ~/.claude/skills
           cp -r skills/. ~/.claude/skills/
 
+      - name: Install uv for MCP fetch server
+        uses: astral-sh/setup-uv@v5
+
       - name: Configure MCP server fetch
         run: |
           cat > .mcp.json << 'EOF'
           {
             "mcpServers": {
               "fetch": {
-                "command": "npx",
-                "args": ["-y", "@anthropic-ai/mcp-server-fetch"]
+                "command": "uvx",
+                "args": ["mcp-server-fetch"]
               }
             }
           }
           EOF
-
-      - name: Install Chromium for MCP fetch server
-        run: npx playwright install chromium --with-deps
 
       - name: Install Google Indexing dependencies
         run: npm install googleapis
