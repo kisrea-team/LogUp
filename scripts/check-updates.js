@@ -6,8 +6,12 @@
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
  * 3. 并发探测每个有 update_source_url 的项目：
  *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
- *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified
- * 4. 将可能有更新的项目名列表写入 /tmp/changed-projects.txt
+ *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified；
+ *                   若服务器不返回缓存头（no-cache），则比较 Content-Length：
+ *                   Content-Length 有变化（或缺失）→ 加入 no-cache 列表交 AI 筛查；
+ *                   Content-Length 相同 → 视为未变化
+ * 4. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
+ *    将需 AI 筛查的 no-cache 项目名列表写入 /tmp/nocache-projects.txt
  * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
  *
  * 环境变量：
@@ -15,6 +19,7 @@
  *   GITHUB_TOKEN  - GitHub Personal Access Token（用于 GitHub API）
  *   ETAG_CACHE    - 缓存文件路径，默认 /tmp/etag-cache.json
  *   CHANGED_FILE  - 输出文件路径，默认 /tmp/changed-projects.txt
+ *   NOCACHE_FILE  - no-cache 输出文件路径，默认 /tmp/nocache-projects.txt
  */
 
 const https = require('https');
@@ -25,6 +30,7 @@ const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').re
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
+const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 
@@ -93,7 +99,37 @@ async function githubCheck(owner, repo, cachedTagName) {
 }
 
 /**
- * Non-GitHub: HEAD request, compare ETag/Last-Modified
+ * Fetch URL as plain text (for version_regex extraction).
+ * Returns: { text, error }
+ */
+function fetchText(url) {
+  return new Promise((resolve) => {
+    try {
+      const parsedUrl = new URL(url);
+      const mod = parsedUrl.protocol === 'https:' ? https : http;
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'GET',
+        headers: { 'User-Agent': 'logup-update-probe/1.0' },
+        timeout: REQUEST_TIMEOUT,
+      };
+      const req = mod.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve({ text: data, error: null }));
+      });
+      req.on('error', (e) => resolve({ text: null, error: e.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ text: null, error: 'timeout' }); });
+      req.end();
+    } catch (e) {
+      resolve({ text: null, error: e.message });
+    }
+  });
+}
+
+/**
+ * Non-GitHub: HEAD request, compare ETag/Last-Modified/Content-Length
  */
 function headRequest(url, etag, lastModified) {
   return new Promise((resolve) => {
@@ -117,6 +153,7 @@ function headRequest(url, etag, lastModified) {
           status: res.statusCode,
           etag: res.headers['etag'] || null,
           lastModified: res.headers['last-modified'] || null,
+          contentLength: res.headers['content-length'] || null,
           unchanged: res.statusCode === 304,
         });
       });
@@ -164,6 +201,7 @@ async function main() {
   } catch (e) {
     console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
     fs.writeFileSync(CHANGED_FILE, '');
+    fs.writeFileSync(NOCACHE_FILE, '');
     process.exit(0);
   }
 
@@ -171,6 +209,7 @@ async function main() {
   console.log(`[check-updates] ${projects.length} projects total, ${probeTargets.length} have update_source_url`);
 
   const changedNames = [];
+  const noCacheNames = [];
   const newCache = { ...cache };
 
   // Process in batches
@@ -210,21 +249,81 @@ async function main() {
           }
 
         } else {
-          // ── Non-GitHub: HEAD request, ETag/Last-Modified ──
+          // ── Non-GitHub: HEAD request, ETag/Last-Modified; fallback to Content-Length for no-cache ──
           const result = await headRequest(p.update_source_url, cached.etag, cached.lastModified);
 
           if (result.unchanged === null) return; // network error
 
-          const isFirstCheck = !cached.etag && !cached.lastModified;
+          const isFirstCheck = cache[p.id] === undefined;
+          const noHeaders = !result.etag && !result.lastModified;
 
-          if (result.etag || result.lastModified) {
+          if (noHeaders) {
+            // Server returns no cache headers.
+            // If the project has a version_regex, GET the page and extract the version — reliable.
+            // Otherwise fall back to Content-Length comparison and flag for AI triage.
+            if (p.version_regex) {
+              const { text, error } = await fetchText(p.update_source_url);
+              if (error) {
+                console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+                return;
+              }
+              let version = null;
+              try {
+                const re = new RegExp(p.version_regex);
+                const match = re.exec(text);
+                if (match && match[1] === undefined) {
+                  console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
+                  noCacheNames.push(p.name);
+                  return;
+                }
+                version = match ? match[1] : null;
+              } catch (e) {
+                console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
+                return;
+              }
+              if (!version) {
+                console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
+                noCacheNames.push(p.name);
+                return;
+              }
+              newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
+              if (isFirstCheck || !cached.regexVersion) {
+                console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
+              } else if (version === cached.regexVersion) {
+                console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
+              } else {
+                console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
+                changedNames.push(p.name);
+              }
+              return;
+            }
+
+            // No version_regex — compare Content-Length as a lightweight signal.
+            // If Content-Length changed (or is absent), flag for AI triage; if same, treat as unchanged.
             newCache[p.id] = {
-              etag: result.etag,
-              lastModified: result.lastModified,
+              contentLength: result.contentLength,
               url: p.update_source_url,
               checkedAt: new Date().toISOString(),
             };
+            const contentLengthUnchanged = result.contentLength && cached.contentLength &&
+                           result.contentLength === cached.contentLength;
+            if (isFirstCheck || !cached.contentLength) {
+              console.log(`[check-updates] baseline (no-cache): ${p.name} — Content-Length: ${result.contentLength ?? 'absent'}`);
+            } else if (contentLengthUnchanged) {
+              console.log(`[check-updates] unchanged (no-cache): ${p.name} — Content-Length ${result.contentLength}`);
+            } else {
+              console.log(`[check-updates] suspect (no-cache): ${p.name} — Content-Length ${cached.contentLength} → ${result.contentLength ?? 'absent'}`);
+              noCacheNames.push(p.name);
+            }
+            return;
           }
+
+          newCache[p.id] = {
+            etag: result.etag,
+            lastModified: result.lastModified,
+            url: p.update_source_url,
+            checkedAt: new Date().toISOString(),
+          };
 
           if (isFirstCheck) {
             console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
@@ -234,12 +333,9 @@ async function main() {
             const etagSame = result.etag && cached.etag && result.etag === cached.etag;
             const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
             const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
-            const noHeaders = !result.etag && !result.lastModified;
 
             if (etagSame || lmSame) {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
-            } else if (noHeaders) {
-              console.log(`[check-updates] no-cache (${result.status}): ${p.name}`);
             } else if (lmChanged) {
               // Last-Modified has definitively changed — reliable signal
               console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
@@ -263,11 +359,13 @@ async function main() {
   }
 
   fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
-  console.log(`[check-updates] Done. ${changedNames.length}/${probeTargets.length} projects may have updates`);
+  fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
+  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect (out of ${probeTargets.length} probed from ${projects.length} total)`);
 }
 
 main().catch((e) => {
   console.error('[check-updates] Fatal error:', e.message);
   fs.writeFileSync(CHANGED_FILE, '');
+  fs.writeFileSync(NOCACHE_FILE, '');
   process.exit(0);
 });

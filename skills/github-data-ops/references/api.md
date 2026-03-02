@@ -99,6 +99,8 @@ Content-Type: application/json
 - `latest_version`：以 `v` 开头
 - `tags`：中文标签数组，2-5 个，用于关联同类项目
 - `links`：相关资源链接数组，每条含 `title`（中文标题）、`url`、`type`（tutorial/review/docs/video/blog/community）
+- `update_source_url`（可选）：预检脚本通过此 URL 检测更新，建议填写
+- `version_regex`（可选）：从 `update_source_url` 页面 HTML 中提取版本号的 JS 正则（带捕获组，捕获组1为版本号）。供预检脚本对 no-cache 项目直接精确检测版本变化，无需依赖 Content-Length。示例：`"class=\"version\">([\\d.]+)<"`
 
 ### 查询项目
 

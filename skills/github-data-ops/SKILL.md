@@ -121,6 +121,15 @@ description: |
 2. **按需更新/补齐存量 (优先级：补债 > 更新)**
    - **优先补漏**：针对数据库中 **`latest_version` 为空或缺失版本详情** 的存量项目，必须先检索并补齐其最新的版本数据（`POST /versions`）。
    - **强制更新**：针对提示词中 "页面已变化" 的项目，必须立即检查并更新其最新版本。
+   - **no-cache 智能筛查**：若提示词中列出了"no-cache 嫌疑项目"（`update_source_url` 服务器不返回缓存头、且 Content-Length 已变化，存在更新嫌疑），**不可逐一全量检查**，须用以下多种信号快速预判，只对高概率更新项目做完整版本核查，其余跳过：
+     1. **新闻搜索**：对每个 no-cache 嫌疑项目执行 `/search/news?q={项目名} release`，若近期（1个月内）有发布动态则列为高优先级；
+     2. **DB 时效判断**：查询数据库中该项目的 `latest_update_time`，与其典型发布周期对比——长期未更新（如超过 3 个月）的项目更值得检查；
+     3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
+   - **填充 `version_regex`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
+     1. 用 mcp-server-fetch 抓取该项目的 `update_source_url` 页面 HTML；
+     2. 分析 HTML 结构，定位版本号所在位置（如 `<span class="version">v1.2.3</span>`）；
+     3. 编写能从该 HTML 中精确匹配版本号的 JavaScript 正则（使用捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
+     4. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测。
    - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
 
 3. **决策选品 (版本准入制)**
@@ -158,7 +167,8 @@ description: |
 | `type` | String? | 语言/分类 |
 | `tags` | String[] | 标签列表，用于关联同类项目（见标签规范） |
 | `links` | Json | 相关资源链接数组（见链接规范） |
-| `update_source_url` | String? | **新增项目时必填**。获取版本更新信息的首选 URL（GitHub Releases 页、官网 Changelog、RSS Feed 等）。预检脚本每次运行前会对此 URL 发 HEAD 请求，若 ETag/Last-Modified 有变化则提示优先更新；字段为空的项目不参与预检，需每次全量检查。 |
+| `update_source_url` | String? | **新增项目时必填**。获取版本更新信息的首选 URL（GitHub Releases 页、官网 Changelog、RSS Feed 等）。预检脚本每次运行前会对此 URL 发 HEAD 请求：若 ETag/Last-Modified 有变化则标记为 changed 提示优先更新；若服务器不返回缓存头，则比较 Content-Length —— Content-Length 变化时列入 no-cache 嫌疑列表交 AI 筛查，Content-Length 不变则视为未更新；字段为空的项目不参与预检，需每次全量检查。 |
+| `version_regex` | Text? | 可选。用于从 `update_source_url` 页面 HTML 中提取最新版本号的正则表达式（JS 格式，使用捕获组，捕获组 1 为版本号）。设置后，预检脚本对 no-cache 项目会直接 GET 页面并用此正则提取版本与缓存比对，优先于 Content-Length 方案，可精确检测更新。AI 在处理 no-cache 嫌疑项目时应为尚未设置此字段的项目分析页面结构并填充该字段。 |
 
 ### versions 表
 
@@ -309,7 +319,7 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 获取到更新日志后统一翻译为中文存入 `content` 字段。若无法获取真实日志，可根据版本号和项目特性自行撰写简要更新说明。
 
-> **`update_source_url` 必填说明**：新增项目时必须在 POST body 中传入此字段，缺少此字段视为未完成，须补填后再提交。更新已有项目时若尚未填写，也请通过 `PUT /api/projects/{id}` 补填。系统会在每次运营前对该 URL 发 HEAD 请求，ETag/Last-Modified 变化时自动提示优先检查，减少全量扫描开销。
+> **`update_source_url` 必填说明**：新增项目时必须在 POST body 中传入此字段，缺少此字段视为未完成，须补填后再提交。更新已有项目时若尚未填写，也请通过 `PUT /api/projects/{id}` 补填。系统会在每次运营前对该 URL 发 HEAD 请求：ETag/Last-Modified 变化时自动标记为 changed 提示优先检查；服务器不返回缓存头时，若该项目已设置 `version_regex`，脚本会 GET 页面并用正则精确提取版本号比对（有变化则直接标记为 changed）；否则比较 Content-Length，Content-Length 变化则列入 no-cache 嫌疑列表交 AI 智能筛查（并请 AI 同时填充 `version_regex`），Content-Length 不变则跳过。
 
 ## 网页抓取能力（mcp-server-fetch）
 
