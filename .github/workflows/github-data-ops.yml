@@ -171,13 +171,13 @@ jobs:
           fi
           if [ -n "$NOCACHE" ]; then
             NOCACHE_UPDATE_MSG=" 2）以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请用以下方式快速预判哪些最可能已更新：①新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。no-cache 嫌疑项目列表：${NOCACHE}。"
-            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：访问其 update_source_url 页面，分析页面结构（预检脚本使用 Playwright 渲染后的完整 HTML，支持 JS 渲染页面），编写能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库。每个项目都要处理，不得跳过。"
+            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：访问其 update_source_url 页面，分析页面结构（预检脚本使用 Playwright 渲染后的完整 HTML，支持 JS 渲染页面；但 api.github.com 和 itunes.apple.com 这两个域名例外，使用普通 curl 而非 Playwright），编写能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库。每个项目都要处理，不得跳过。"
           else
             NOCACHE_UPDATE_MSG=""
             REGEX_MSG=""
           fi
           if [ -n "$REGEX_FAILED" ]; then
-            REGEX_FAILED_MSG=" 另：以下非 GitHub 项目已设置 version_regex 但预检匹配失败（正则无匹配或无捕获组），请务必逐一处理：①先尝试修正现有 version_regex，访问 update_source_url 页面分析 Playwright 渲染后的 HTML，重写能正确提取版本号的正则；②若当前 update_source_url 页面结构无法可靠提取版本号，则搜索更合适的 URL（如 releases API、RSS/Atom feed、JSON endpoint 等），通过 PUT /api/projects/{id} 同时更新 update_source_url 和 version_regex 两个字段。每个项目必须处理完毕，确保最终正则能提取到版本号。这些项目均为非 GitHub 项目，version_regex 至关重要，不得跳过。失败项目列表：${REGEX_FAILED}。"
+            REGEX_FAILED_MSG=" 另：以下非 GitHub 项目已设置 version_regex 但预检匹配失败（正则无匹配或无捕获组），请务必逐一处理：①先尝试修正现有 version_regex，访问 update_source_url 页面分析页面内容（注意：api.github.com 和 itunes.apple.com 这两个域名使用普通 curl 获取内容，而非 Playwright 渲染），重写能正确提取版本号的正则；②若当前 update_source_url 页面结构无法可靠提取版本号，则搜索更合适的 URL（如 releases API、RSS/Atom feed、JSON endpoint 等），通过 PUT /api/projects/{id} 同时更新 update_source_url 和 version_regex 两个字段。每个项目必须处理完毕，确保最终正则能提取到版本号。这些项目均为非 GitHub 项目，version_regex 至关重要，不得跳过。失败项目列表：${REGEX_FAILED}。"
           else
             REGEX_FAILED_MSG=""
           fi
