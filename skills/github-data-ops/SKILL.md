@@ -126,9 +126,9 @@ description: |
      2. **DB 时效判断**：查询数据库中该项目的 `latest_update_time`，与其典型发布周期对比——长期未更新（如超过 3 个月）的项目更值得检查；
      3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
    - **填充 `version_regex`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
-     1. 用 mcp-server-fetch 抓取该项目的 `update_source_url` 页面 HTML；
-     2. 分析 HTML 结构，定位版本号所在位置（如 `<span class="version">v1.2.3</span>`）；
-     3. 编写能从该 HTML 中精确匹配版本号的 JavaScript 正则（使用捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
+     1. 用 mcp-server-fetch 以 **Markdown 格式**获取该项目 `update_source_url` 页面（mcp-server-fetch 默认返回 Markdown），快速扫描并定位最新版本号及其锚点文本（版本号周围的特征短语，如 "Latest release:" 或 "Current version"）；
+     2. 在本地用脚本获取该页面的**原始 HTML**（api.github.com 和 itunes.apple.com 域名用普通 HTTP GET，其他页面用 Playwright 渲染），在 HTML 中搜索步骤 1 确定的版本号字符串，截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 HTML 片段；
+     3. 根据此 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
      4. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测。
    - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
 
