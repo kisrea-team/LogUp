@@ -109,14 +109,20 @@ jobs:
       - name: Install uv for MCP fetch server
         uses: astral-sh/setup-uv@v5
 
-      - name: Configure MCP server fetch
+      - name: Configure MCP servers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          cat > .mcp.json << 'EOF'
+          cat > .mcp.json << EOF
           {
             "mcpServers": {
               "fetch": {
                 "command": "uvx",
                 "args": ["mcp-server-fetch"]
+              },
+              "postgres": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"]
               }
             }
           }
