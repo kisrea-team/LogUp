@@ -127,7 +127,7 @@ description: |
      3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
    - **填充 `version_regex`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
      1. 用 mcp-server-fetch 以 **Markdown 格式**获取该项目 `update_source_url` 页面（mcp-server-fetch 默认返回 Markdown），快速扫描并定位最新版本号及其锚点文本（版本号周围的特征短语，如 "Latest release:" 或 "Current version"）；
-     2. 在本地用脚本获取该页面的**原始 HTML**（api.github.com 和 itunes.apple.com 域名用普通 HTTP GET，其他页面用 Playwright 渲染），在 HTML 中搜索步骤 1 确定的版本号字符串，截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 HTML 片段；
+     2. 使用 mcp-server-fetch 以 **raw 模式**分块抓取该页面（设置 `raw=true`，通过 `start_index` 和 `max_length` 参数分块，每块约 2000 字符，逐块搜索步骤 1 确定的版本号字符串，以节省 token），截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 raw HTML 片段；
      3. 根据此 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
      4. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测。
    - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
@@ -313,7 +313,7 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 - **优先：复用已有 `links`**：更新已有项目时，先扫描该项目的 `links` 数组，找到 GitHub Releases、官网 Changelog、RSS Feed 等可用于获取版本信息的链接，直接访问，无需重新搜索来源。
 - **GitHub Releases**：`https://api.github.com/repos/{owner}/{repo}/releases`
 - **GitHub Tags**：`https://api.github.com/repos/{owner}/{repo}/tags`
-- **官网 Changelog 页面**：直接抓取产品官网的更新日志页面
+- **官网 Changelog 页面**：使用 mcp-server-fetch 以 **Markdown 模式**（默认）抓取产品官网的更新日志页面
 - **RSS/Atom Feed**：若软件提供 release feed，直接解析
 - **其他来源**：博客、公告页、版本说明文档等
 
