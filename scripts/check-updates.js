@@ -25,6 +25,7 @@ const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').re
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
+const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 
@@ -164,6 +165,7 @@ async function main() {
   } catch (e) {
     console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
     fs.writeFileSync(CHANGED_FILE, '');
+    fs.writeFileSync(NOCACHE_FILE, '');
     process.exit(0);
   }
 
@@ -171,6 +173,7 @@ async function main() {
   console.log(`[check-updates] ${projects.length} projects total, ${probeTargets.length} have update_source_url`);
 
   const changedNames = [];
+  const noCacheNames = [];
   const newCache = { ...cache };
 
   // Process in batches
@@ -238,6 +241,7 @@ async function main() {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
             } else if (noHeaders) {
               console.log(`[check-updates] no-cache (${result.status}): ${p.name}`);
+              noCacheNames.push(p.name);
             } else if (lmChanged) {
               // Last-Modified has definitively changed — reliable signal
               console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
@@ -261,11 +265,13 @@ async function main() {
   }
 
   fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
-  console.log(`[check-updates] Done. ${changedNames.length}/${probeTargets.length} projects may have updates`);
+  fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
+  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache (out of ${probeTargets.length} probed from ${projects.length} total)`);
 }
 
 main().catch((e) => {
   console.error('[check-updates] Fatal error:', e.message);
   fs.writeFileSync(CHANGED_FILE, '');
+  fs.writeFileSync(NOCACHE_FILE, '');
   process.exit(0);
 });
