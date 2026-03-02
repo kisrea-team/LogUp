@@ -6,7 +6,8 @@
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
  * 3. 并发探测每个有 update_source_url 的项目：
  *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
- *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified
+ *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified；
+ *                   若服务器不返回缓存头（no-cache），则 GET 请求体并比较 SHA-256 内容哈希
  * 4. 将可能有更新的项目名列表写入 /tmp/changed-projects.txt
  * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
  *
@@ -20,12 +21,12 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').replace(/\/$/, '');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
-const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 
@@ -130,6 +131,37 @@ function headRequest(url, etag, lastModified) {
   });
 }
 
+/**
+ * Fetch URL body and return its SHA-256 hex digest.
+ * Used as fallback when the server returns no ETag/Last-Modified headers.
+ * Returns: { hash, error }
+ */
+function getContentHash(url) {
+  return new Promise((resolve) => {
+    try {
+      const parsedUrl = new URL(url);
+      const mod = parsedUrl.protocol === 'https:' ? https : http;
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'GET',
+        headers: { 'User-Agent': 'logup-update-probe/1.0' },
+        timeout: REQUEST_TIMEOUT,
+      };
+      const req = mod.request(options, (res) => {
+        const hash = crypto.createHash('sha256');
+        res.on('data', (chunk) => hash.update(chunk));
+        res.on('end', () => resolve({ hash: hash.digest('hex'), error: null }));
+      });
+      req.on('error', (e) => resolve({ hash: null, error: e.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ hash: null, error: 'timeout' }); });
+      req.end();
+    } catch (e) {
+      resolve({ hash: null, error: e.message });
+    }
+  });
+}
+
 async function fetchAllProjects() {
   const results = [];
   let page = 1;
@@ -165,7 +197,6 @@ async function main() {
   } catch (e) {
     console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
     fs.writeFileSync(CHANGED_FILE, '');
-    fs.writeFileSync(NOCACHE_FILE, '');
     process.exit(0);
   }
 
@@ -173,7 +204,6 @@ async function main() {
   console.log(`[check-updates] ${projects.length} projects total, ${probeTargets.length} have update_source_url`);
 
   const changedNames = [];
-  const noCacheNames = [];
   const newCache = { ...cache };
 
   // Process in batches
@@ -213,12 +243,32 @@ async function main() {
           }
 
         } else {
-          // ── Non-GitHub: HEAD request, ETag/Last-Modified ──
+          // ── Non-GitHub: HEAD request, ETag/Last-Modified; fallback to content hash ──
           const result = await headRequest(p.update_source_url, cached.etag, cached.lastModified);
 
           if (result.unchanged === null) return; // network error
 
           const isFirstCheck = cache[p.id] === undefined;
+          const noHeaders = !result.etag && !result.lastModified;
+
+          if (noHeaders) {
+            // Server returns no cache headers — compare SHA-256 of response body instead
+            const { hash, error } = await getContentHash(p.update_source_url);
+            if (error) {
+              console.log(`[check-updates] hash-error: ${p.name} — ${error}`);
+              return;
+            }
+            newCache[p.id] = { contentHash: hash, url: p.update_source_url, checkedAt: new Date().toISOString() };
+            if (isFirstCheck || !cached.contentHash) {
+              console.log(`[check-updates] baseline (hash): ${p.name}`);
+            } else if (hash === cached.contentHash) {
+              console.log(`[check-updates] unchanged (hash): ${p.name}`);
+            } else {
+              console.log(`[check-updates] CHANGED (hash): ${p.name}`);
+              changedNames.push(p.name);
+            }
+            return;
+          }
 
           newCache[p.id] = {
             etag: result.etag,
@@ -235,13 +285,9 @@ async function main() {
             const etagSame = result.etag && cached.etag && result.etag === cached.etag;
             const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
             const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
-            const noHeaders = !result.etag && !result.lastModified;
 
             if (etagSame || lmSame) {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
-            } else if (noHeaders) {
-              console.log(`[check-updates] no-cache (${result.status}): ${p.name}`);
-              noCacheNames.push(p.name);
             } else if (lmChanged) {
               // Last-Modified has definitively changed — reliable signal
               console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
@@ -265,13 +311,11 @@ async function main() {
   }
 
   fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
-  fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
-  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache (out of ${probeTargets.length} probed from ${projects.length} total)`);
+  console.log(`[check-updates] Done. ${changedNames.length} changed out of ${probeTargets.length} probed (${projects.length} total)`);
 }
 
 main().catch((e) => {
   console.error('[check-updates] Fatal error:', e.message);
   fs.writeFileSync(CHANGED_FILE, '');
-  fs.writeFileSync(NOCACHE_FILE, '');
   process.exit(0);
 });
