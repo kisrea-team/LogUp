@@ -311,6 +311,29 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 
 > **`update_source_url` 必填说明**：新增项目时必须在 POST body 中传入此字段，缺少此字段视为未完成，须补填后再提交。更新已有项目时若尚未填写，也请通过 `PUT /api/projects/{id}` 补填。系统会在每次运营前对该 URL 发 HEAD 请求，ETag/Last-Modified 变化时自动提示优先检查，减少全量扫描开销。
 
+## 网页抓取能力（mcp-server-fetch）
+
+运营环境已配置 `mcp-server-fetch` MCP 服务，可通过 MCP 工具直接抓取网页内容，用于查找项目信息和版本数据。
+
+### 适用场景
+
+- **查找项目版本信息**：直接访问 GitHub Releases 页面、官网 Changelog、应用商店页面等，提取最新版本号和更新日志
+- **获取项目详情**：访问项目官网、README 页面，获取项目描述、功能特性等信息
+- **验证链接可达性**：对自行构造或猜测的 URL 进行实际访问确认
+- **抓取非 GitHub 项目信息**：访问 App Store、Google Play、官网等页面获取商业软件/App 的版本和更新信息
+
+### 使用优先级
+
+1. **GitHub 项目版本**：优先使用 GitHub API（`https://api.github.com/repos/{owner}/{repo}/releases`），mcp-server-fetch 作为补充
+2. **非 GitHub 项目版本**：优先使用 mcp-server-fetch 直接访问官网 Changelog 或应用商店页面
+3. **链接验证**：对非搜索引擎返回的自行构造 URL，使用 mcp-server-fetch 验证可达性
+4. **内容提取**：当需要从网页中提取结构化信息（版本号、发布日期、更新内容）时使用
+
+### 与其他工具的配合
+
+- **mcp-server-fetch + DDGS Search API**：先用 DDGS 搜索找到目标页面 URL，再用 mcp-server-fetch 抓取页面详细内容
+- **mcp-server-fetch + GitHub API**：GitHub API 受限流时，可降级使用 mcp-server-fetch 直接访问 GitHub Releases 页面
+
 ## 搜索能力（DDGS Search API）
 
 **部署地址**：由运营环境提供，通过环境变量 `DDGS_SEARCH_API` 配置（默认 `http://104.168.43.209:8000`）。

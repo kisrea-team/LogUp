@@ -106,6 +106,19 @@ jobs:
           mkdir -p ~/.claude/skills
           cp -r skills/. ~/.claude/skills/
 
+      - name: Configure MCP server fetch
+        run: |
+          cat > .mcp.json << 'EOF'
+          {
+            "mcpServers": {
+              "fetch": {
+                "command": "npx",
+                "args": ["-y", "@anthropic-ai/mcp-server-fetch"]
+              }
+            }
+          }
+          EOF
+
       - name: Install Google Indexing dependencies
         run: npm install googleapis
 
