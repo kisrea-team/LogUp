@@ -62,7 +62,7 @@ function parseGitHubRepo(url) {
       const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
       if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -296,7 +296,7 @@ async function main() {
               checkedAt: new Date().toISOString(),
             };
             const contentLengthUnchanged = result.contentLength && cached.contentLength &&
-                           result.contentLength === cached.contentLength;
+              result.contentLength === cached.contentLength;
             if (isFirstCheck || !cached.contentLength) {
               console.log(`[check-updates] baseline (no-cache): ${p.name} — Content-Length: ${result.contentLength ?? 'absent'}`);
             } else if (contentLengthUnchanged) {
