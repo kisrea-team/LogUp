@@ -126,10 +126,9 @@ description: |
      2. **DB 时效判断**：查询数据库中该项目的 `latest_update_time`，与其典型发布周期对比——长期未更新（如超过 3 个月）的项目更值得检查；
      3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
    - **填充 `version_regex`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
-     1. 用 mcp-server-fetch 以 **Markdown 格式**获取该项目 `update_source_url` 页面（mcp-server-fetch 默认返回 Markdown），快速扫描并定位最新版本号及其锚点文本（版本号周围的特征短语，如 "Latest release:" 或 "Current version"）；
-     2. 使用 mcp-server-fetch 以 **raw 模式**分块抓取该页面（设置 `raw=true`，通过 `start_index` 和 `max_length` 参数分块，每块约 2000 字符，逐块搜索步骤 1 确定的版本号字符串，以节省 token），截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 raw HTML 片段；
-     3. 根据此 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
-     4. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测。
+     1. 使用 mcp-server-fetch 以 **raw 模式**分块抓取该页面（设置 `raw=true`，通过 `start_index` 和 `max_length` 参数分块，每块约 2000 字符，逐块搜索最新版本号字符串，截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 raw HTML 片段；
+     2. 根据此 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
+     3. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测。
    - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
 
 3. **决策选品 (版本准入制)**
