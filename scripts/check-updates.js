@@ -99,11 +99,39 @@ async function githubCheck(owner, repo, cachedTagName) {
   }
 }
 
+// Domains that return plain text/JSON and don't need JS rendering — use curl-like GET instead of Playwright.
+const PLAIN_HTTP_DOMAINS = ['api.github.com', 'itunes.apple.com'];
+
+/**
+ * Fetch URL using plain HTTP GET (no browser, suitable for API/JSON endpoints).
+ * Returns: { text, error }
+ */
+function fetchTextPlain(url) {
+  return new Promise((resolve) => {
+    const mod = url.startsWith('https') ? https : http;
+    const options = { headers: { 'User-Agent': 'logup-update-probe/1.0' }, timeout: REQUEST_TIMEOUT };
+    const req = mod.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => resolve({ text: data, error: null }));
+    });
+    req.on('error', (e) => resolve({ text: null, error: e.message }));
+    req.on('timeout', () => { req.destroy(); resolve({ text: null, error: 'Timeout' }); });
+  });
+}
+
 /**
  * Fetch URL using Playwright (fully rendered HTML, supports JS-rendered pages).
+ * For api.github.com and itunes.apple.com, uses plain HTTP GET instead.
  * Returns: { text, error }
  */
 async function fetchText(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    if (PLAIN_HTTP_DOMAINS.includes(hostname)) {
+      return await fetchTextPlain(url);
+    }
+  } catch { /* malformed URL — fall through to Playwright */ }
   let browser;
   try {
     const { chromium } = require('playwright');
