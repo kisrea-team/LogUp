@@ -166,11 +166,13 @@ jobs:
             CHANGED_MSG="本次无 ETag 探针标记变化的项目。"
           fi
           if [ -n "$NOCACHE" ]; then
-            NOCACHE_MSG=" 另：以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请先用多种手段快速预判哪些最可能已更新：①用新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。此外，对列表中每个尚未设置 version_regex 字段的项目，请访问其 update_source_url 页面，分析 HTML 结构，编写能匹配版本号的正则（使用捕获组，捕获组1为版本号），通过 PUT /api/projects/{id} 写入 version_regex 字段，以便后续自动检测。no-cache 嫌疑项目列表：${NOCACHE}。"
+            NOCACHE_UPDATE_MSG=" 2）以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请用以下方式快速预判哪些最可能已更新：①新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。no-cache 嫌疑项目列表：${NOCACHE}。"
+            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：访问其 update_source_url 页面，分析 HTML/文本结构，编写能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库。每个项目都要处理，不得跳过。"
           else
-            NOCACHE_MSG=""
+            NOCACHE_UPDATE_MSG=""
+            REGEX_MSG=""
           fi
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_MSG} 2）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_UPDATE_MSG}${REGEX_MSG} 4）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
