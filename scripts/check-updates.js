@@ -31,6 +31,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
 const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
+const REGEX_FAILED_FILE = process.env.REGEX_FAILED_FILE || '/tmp/regex-failed-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 
@@ -192,6 +193,7 @@ async function main() {
     console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
     fs.writeFileSync(CHANGED_FILE, '');
     fs.writeFileSync(NOCACHE_FILE, '');
+    fs.writeFileSync(REGEX_FAILED_FILE, '');
     process.exit(0);
   }
 
@@ -200,6 +202,7 @@ async function main() {
 
   const changedNames = [];
   const noCacheNames = [];
+  const regexFailedNames = [];
   const newCache = { ...cache };
 
   // Process in batches
@@ -263,7 +266,7 @@ async function main() {
                 const match = re.exec(text);
                 if (match && match[1] === undefined) {
                   console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
-                  noCacheNames.push(p.name);
+                  regexFailedNames.push(p.name);
                   return;
                 }
                 version = match ? match[1] : null;
@@ -273,7 +276,7 @@ async function main() {
               }
               if (!version) {
                 console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
-                noCacheNames.push(p.name);
+                regexFailedNames.push(p.name);
                 return;
               }
               newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
@@ -350,12 +353,14 @@ async function main() {
 
   fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
   fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
-  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect (out of ${probeTargets.length} probed from ${projects.length} total)`);
+  fs.writeFileSync(REGEX_FAILED_FILE, regexFailedNames.join('\n'));
+  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect, ${regexFailedNames.length} regex-failed (out of ${probeTargets.length} probed from ${projects.length} total)`);
 }
 
 main().catch((e) => {
   console.error('[check-updates] Fatal error:', e.message);
   fs.writeFileSync(CHANGED_FILE, '');
   fs.writeFileSync(NOCACHE_FILE, '');
+  fs.writeFileSync(REGEX_FAILED_FILE, '');
   process.exit(0);
 });

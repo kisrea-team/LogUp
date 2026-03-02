@@ -163,6 +163,7 @@ jobs:
         run: |
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           NOCACHE=$(cat /tmp/nocache-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
+          REGEX_FAILED=$(cat /tmp/regex-failed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
             CHANGED_MSG="以下项目页面已变化（ETag/Last-Modified 探针检测），请逐一检查版本并更新：${CHANGED}。"
           else
@@ -175,7 +176,12 @@ jobs:
             NOCACHE_UPDATE_MSG=""
             REGEX_MSG=""
           fi
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_UPDATE_MSG}${REGEX_MSG} 4）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}。重要约束：version_regex 字段仅针对上述 no-cache 项目列表中的项目补充，其余项目（包括任务1和任务4中的项目）无需处理 version_regex 字段。" \
+          if [ -n "$REGEX_FAILED" ]; then
+            REGEX_FAILED_MSG=" 另：以下项目已设置 version_regex 但预检匹配失败（正则无匹配或无捕获组）。请逐一处理：①先尝试修正现有 version_regex，访问 update_source_url 页面分析 Playwright 渲染后的 HTML，重写能正确提取版本号的正则；②若当前 update_source_url 页面结构无法可靠提取版本号，则搜索更合适的 URL（如 releases API、RSS/Atom feed、JSON endpoint 等），通过 PUT /api/projects/{id} 同时更新 update_source_url 和 version_regex 两个字段。每个项目必须处理完毕，确保最终正则能提取到版本号。失败项目列表：${REGEX_FAILED}。"
+          else
+            REGEX_FAILED_MSG=""
+          fi
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_UPDATE_MSG}${REGEX_MSG}${REGEX_FAILED_MSG} 4）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}。重要约束：version_regex 字段仅针对上述 no-cache 项目列表中的项目补充，其余项目（包括任务1和任务4中的项目）无需处理 version_regex 字段。" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
