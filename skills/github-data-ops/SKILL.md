@@ -370,6 +370,59 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 3. **查找版本/热点动态**：使用 `/search/news` 搜索项目名 + "release" 或 "更新"，可直接发现相关讨论和新闻。
 4. **若 DDGS Search API 不可用**：降级为 WebFetch 直接访问平台搜索结果页验证内容（仅用于验证，不收录搜索结果页 URL 本身）。
 
+## 数据库直连能力（PostgreSQL MCP）
+
+运营环境已配置 `@modelcontextprotocol/server-postgres` MCP 服务，可通过 MCP 工具直接执行 SQL 查询，适用于需要批量处理或复杂查询的场景。
+
+### 适用场景
+
+- **批量查重**：使用 SQL 一次性检索所有可能重复的项目（按名称、slug 相似度等），效率远高于逐条 API 调用
+- **复杂聚合查询**：统计标签分布、版本覆盖率、缺失版本的项目列表等
+- **批量状态检查**：一次性找出所有 `latest_version` 为空、`update_source_url` 为空的项目
+- **数据一致性修复**：直接用 SQL UPDATE 批量修正数据问题
+
+### 常用查重 SQL
+
+```sql
+-- 按名称关键词查重（替代逐条 API 调用）
+SELECT id, name, slug, latest_version
+FROM projects
+WHERE name ILIKE '%关键词%' OR slug ILIKE '%关键词%';
+
+-- 查找所有重复 slug
+SELECT slug, COUNT(*) as cnt
+FROM projects
+GROUP BY slug
+HAVING COUNT(*) > 1;
+
+-- 查找所有缺失版本的项目（无 latest_version）
+SELECT id, name, slug
+FROM projects
+WHERE latest_version IS NULL OR latest_version = ''
+ORDER BY created_at DESC;
+
+-- 查找所有没有 update_source_url 的项目
+SELECT id, name, slug, latest_version
+FROM projects
+WHERE update_source_url IS NULL OR update_source_url = ''
+ORDER BY id;
+
+-- 一次性获取项目总数
+SELECT COUNT(*) FROM projects;
+```
+
+### 使用优先级
+
+- **批量查重首选 PostgreSQL MCP**：需要确认多个项目是否已存在时，使用一条 SQL 比多次 API 调用效率更高
+- **单项目查重优先 API**：单个项目查重仍推荐使用 `GET /api/projects?name=关键词`，简单快速
+- **数据修复/补全用 SQL**：需要批量更新或修复时，直接用 SQL UPDATE/INSERT
+
+### 注意事项
+
+- **只读优先**：优先使用 SELECT 查询；写操作（INSERT/UPDATE/DELETE）在 API 无法满足需求时方可使用
+- **事务安全**：批量写操作建议包裹在事务中（`BEGIN; ... COMMIT;`）
+- **数据一致性**：直接写数据库时需手动维护 `updated_at` 等字段，优先通过 API 操作
+
 ## 内容质量要求
 
 - 描述使用中文，自然流畅
