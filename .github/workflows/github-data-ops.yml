@@ -119,6 +119,9 @@ jobs:
           }
           EOF
 
+      - name: Install Chromium for MCP fetch server
+        run: npx playwright install chromium --with-deps
+
       - name: Install Google Indexing dependencies
         run: npm install googleapis
 
