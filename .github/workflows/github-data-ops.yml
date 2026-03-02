@@ -171,7 +171,7 @@ jobs:
           fi
           if [ -n "$NOCACHE" ]; then
             NOCACHE_UPDATE_MSG=" 2）以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请用以下方式快速预判哪些最可能已更新：①新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。no-cache 嫌疑项目列表：${NOCACHE}。"
-            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：访问其 update_source_url 页面，分析页面结构（预检脚本使用 Playwright 渲染后的完整 HTML，支持 JS 渲染页面；但 api.github.com 和 itunes.apple.com 这两个域名例外，使用普通 curl 而非 Playwright），编写能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库。每个项目都要处理，不得跳过。"
+            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：① 先用 mcp-server-fetch 以 Markdown 格式获取 update_source_url 页面，快速扫描定位最新版本号及其锚点文本（版本号周围的特征短语）；② 在本地用脚本获取该页面原始 HTML（api.github.com 和 itunes.apple.com 域名用普通 curl，其他页面用 Playwright 渲染），在 HTML 中搜索步骤①确定的版本号字符串，截取该位置前后各 250-500 字符（共 500-1000 字符）的 HTML 片段；③ 根据此 HTML 片段生成能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库。每个项目都要处理，不得跳过。"
           else
             NOCACHE_UPDATE_MSG=""
             REGEX_MSG=""
