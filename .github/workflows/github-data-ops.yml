@@ -159,12 +159,18 @@ jobs:
       - name: "Phase 1: Update existing projects"
         run: |
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
+          NOCACHE=$(cat /tmp/nocache-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           if [ -n "$CHANGED" ]; then
-            CHANGED_MSG="以下项目页面已变化（探针检测），请逐一检查版本并更新：${CHANGED}。"
+            CHANGED_MSG="以下项目页面已变化（ETag/Last-Modified 探针检测），请逐一检查版本并更新：${CHANGED}。"
           else
-            CHANGED_MSG="本次无探针标记变化的项目。"
+            CHANGED_MSG="本次无 ETag 探针标记变化的项目。"
           fi
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG} 2）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
+          if [ -n "$NOCACHE" ]; then
+            NOCACHE_MSG=" 另：以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请先用多种手段快速预判哪些最可能已更新：①用新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。no-cache 嫌疑项目列表：${NOCACHE}。"
+          else
+            NOCACHE_MSG=""
+          fi
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_MSG} 2）查询所有没有 update_source_url 的项目，全部检查是否有新版本并更新。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
