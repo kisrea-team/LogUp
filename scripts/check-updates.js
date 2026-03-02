@@ -99,6 +99,36 @@ async function githubCheck(owner, repo, cachedTagName) {
 }
 
 /**
+ * Fetch URL as plain text (for version_regex extraction).
+ * Returns: { text, error }
+ */
+function fetchText(url) {
+  return new Promise((resolve) => {
+    try {
+      const parsedUrl = new URL(url);
+      const mod = parsedUrl.protocol === 'https:' ? https : http;
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'GET',
+        headers: { 'User-Agent': 'logup-update-probe/1.0' },
+        timeout: REQUEST_TIMEOUT,
+      };
+      const req = mod.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve({ text: data, error: null }));
+      });
+      req.on('error', (e) => resolve({ text: null, error: e.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ text: null, error: 'timeout' }); });
+      req.end();
+    } catch (e) {
+      resolve({ text: null, error: e.message });
+    }
+  });
+}
+
+/**
  * Non-GitHub: HEAD request, compare ETag/Last-Modified/Content-Length
  */
 function headRequest(url, etag, lastModified) {
@@ -228,7 +258,47 @@ async function main() {
           const noHeaders = !result.etag && !result.lastModified;
 
           if (noHeaders) {
-            // Server returns no cache headers — compare Content-Length as a lightweight signal.
+            // Server returns no cache headers.
+            // If the project has a version_regex, GET the page and extract the version — reliable.
+            // Otherwise fall back to Content-Length comparison and flag for AI triage.
+            if (p.version_regex) {
+              const { text, error } = await fetchText(p.update_source_url);
+              if (error) {
+                console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+                return;
+              }
+              let version = null;
+              try {
+                const re = new RegExp(p.version_regex);
+                const match = re.exec(text);
+                if (match && match[1] === undefined) {
+                  console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
+                  noCacheNames.push(p.name);
+                  return;
+                }
+                version = match ? match[1] : null;
+              } catch (e) {
+                console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
+                return;
+              }
+              if (!version) {
+                console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
+                noCacheNames.push(p.name);
+                return;
+              }
+              newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
+              if (isFirstCheck || !cached.regexVersion) {
+                console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
+              } else if (version === cached.regexVersion) {
+                console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
+              } else {
+                console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
+                changedNames.push(p.name);
+              }
+              return;
+            }
+
+            // No version_regex — compare Content-Length as a lightweight signal.
             // If Content-Length changed (or is absent), flag for AI triage; if same, treat as unchanged.
             newCache[p.id] = {
               contentLength: result.contentLength,

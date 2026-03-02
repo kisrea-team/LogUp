@@ -25,6 +25,7 @@ model Project {
   tags                String[] @default([])
   links               Json     @default("[]")
   update_source_url   String?
+  version_regex       String?  @db.Text
   versions            Version[]
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

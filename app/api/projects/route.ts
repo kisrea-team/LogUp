@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
         tags: true,
         links: true,
         update_source_url: true,
+        version_regex: true,
       },
     });
 

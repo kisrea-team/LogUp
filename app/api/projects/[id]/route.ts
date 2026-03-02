@@ -38,6 +38,7 @@ export async function GET(
         tags: true,
         links: true,
         update_source_url: true,
+        version_regex: true,
         versions: {
           orderBy: { update_time: 'desc' },
           select: {
@@ -81,7 +82,7 @@ export async function PUT(
   try {
     const id = parseInt(params.id, 10);
     const body = await request.json();
-    const { icon, name, latest_version, latest_update_time, describe, summar, author, type, tags, links, update_source_url } = body;
+    const { icon, name, latest_version, latest_update_time, describe, summar, author, type, tags, links, update_source_url, version_regex } = body;
 
     const project = await prisma.project.update({
       where: { id },
@@ -97,6 +98,7 @@ export async function PUT(
         ...(Array.isArray(tags) ? { tags } : {}),
         ...(Array.isArray(links) ? { links } : {}),
         ...(update_source_url !== undefined ? { update_source_url: update_source_url || null } : {}),
+        ...(version_regex !== undefined ? { version_regex: version_regex || null } : {}),
       },
       select: {
         id: true,
@@ -112,6 +114,7 @@ export async function PUT(
         tags: true,
         links: true,
         update_source_url: true,
+        version_regex: true,
         versions: {
           orderBy: { update_time: 'desc' },
           select: {
