@@ -7,9 +7,12 @@
  * 3. 并发探测每个有 update_source_url 的项目：
  *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
  *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified；
- *                   若服务器不返回缓存头（no-cache），则比较 Content-Length：
- *                   Content-Length 有变化（或缺失）→ 加入 no-cache 列表交 AI 筛查；
- *                   Content-Length 相同 → 视为未变化
+ *                   若服务器不返回缓存头（no-cache），则：
+ *                   ① 项目名为 owner/repo 格式（GitHub 项目）→ 调用 GitHub API 比较 tag_name，
+ *                      成功则直接判断变化，失败或无 releases 则回退到 Content-Length；
+ *                   ② 否则比较 Content-Length：
+ *                      Content-Length 有变化（或缺失）→ 加入 no-cache 列表交 AI 筛查；
+ *                      Content-Length 相同 → 视为未变化
  * 4. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
  *    将需 AI 筛查的 no-cache 项目名列表写入 /tmp/nocache-projects.txt
  * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
@@ -319,7 +322,34 @@ async function main() {
               return;
             }
 
-            // No version_regex — compare Content-Length as a lightweight signal.
+            // No version_regex — try GitHub API if the project name is in owner/repo format.
+            // This resolves GitHub projects without relying on Content-Length or AI triage.
+            const nameParts = p.name.split('/');
+            if (nameParts.length === 2 && nameParts[0].trim() && nameParts[1].trim()) {
+              const [ghOwner, ghRepo] = nameParts.map((s) => s.trim());
+              const ghResult = await githubCheck(ghOwner, ghRepo, cached.tagName || null);
+              if (!ghResult.error) {
+                if (ghResult.tagName) {
+                  newCache[p.id] = { tagName: ghResult.tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
+                }
+                if (ghResult.isFirst) {
+                  console.log(`[check-updates] baseline (github/name): ${p.name} — tag ${ghResult.tagName}`);
+                } else if (ghResult.changed) {
+                  console.log(`[check-updates] CHANGED (github/name): ${p.name} — ${cached.tagName} → ${ghResult.tagName}`);
+                  changedNames.push(p.name);
+                } else {
+                  console.log(`[check-updates] unchanged (github/name): ${p.name} — ${ghResult.tagName}`);
+                }
+                return;
+              }
+              if (ghResult.error !== 'no-releases') {
+                // Unexpected API failure — log and fall through to Content-Length check
+                console.log(`[check-updates] github-api-error (no-cache): ${p.name} — ${ghResult.error}`);
+              }
+              // 'no-releases': project has no GitHub releases, fall through to Content-Length check
+            }
+
+            // Compare Content-Length as a lightweight signal.
             // If Content-Length changed (or is absent), flag for AI triage; if same, treat as unchanged.
             newCache[p.id] = {
               contentLength: result.contentLength,
