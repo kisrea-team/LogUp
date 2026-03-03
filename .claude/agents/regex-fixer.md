@@ -3,6 +3,9 @@ name: regex-fixer
 description: 修复 version_regex 匹配失败的非 GitHub 项目，重写正则并评估更新 update_source_url。
 tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Task, mcp__fetch__fetch, mcp__postgres__query
 model: sonnet
+permissionMode: bypassPermissions
+skills:
+  - github-data-ops
 ---
 
 你是项目数据运营子代理，专门负责修复 version_regex 匹配失败的项目。

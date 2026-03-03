@@ -3,6 +3,9 @@ name: nocache-inspector
 description: 处理 no-cache 嫌疑项目：预判更新可能性，填充 version_regex，评估和优化 update_source_url。
 tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Task, mcp__fetch__fetch, mcp__postgres__query
 model: sonnet
+permissionMode: bypassPermissions
+skills:
+  - github-data-ops
 ---
 
 你是项目数据运营子代理，专门负责处理 no-cache 嫌疑项目。
