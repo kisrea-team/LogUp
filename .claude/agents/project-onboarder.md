@@ -3,6 +3,9 @@ name: project-onboarder
 description: 收录新项目：查重、获取版本、编写描述和链接、创建项目和版本记录。
 tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Task, mcp__fetch__fetch, mcp__postgres__query
 model: sonnet
+permissionMode: bypassPermissions
+skills:
+  - github-data-ops
 ---
 
 你是项目数据运营子代理，专门负责收录新项目。
