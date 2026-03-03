@@ -126,13 +126,17 @@ description: |
      2. **DB 时效判断**：查询数据库中该项目的 `latest_update_time`，与其典型发布周期对比——长期未更新（如超过 3 个月）的项目更值得检查；
      3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
    - **填充 `version_regex` 与核查 `update_source_url`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
-     1. 使用 mcp-server-fetch 以 **raw 模式**分块抓取该页面（设置 `raw=true`，通过 `start_index` 和 `max_length` 参数分块，每块约 2000 字符，逐块搜索最新版本号字符串，截取该位置**前后各 250-500 字符**（共 500-1000 字符）的 raw HTML 片段；
-     2. 根据此 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
-     3. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测；
-     4. **非 GitHub 项目专属**：若该项目的 `update_source_url` 不含 `github.com`，还须同步评估当前 URL 是否为版本提取的最优来源——若存在更稳定可靠的 URL（如 releases 页、RSS/Atom feed、JSON endpoint 等），搜索并切换，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段一并写入。
+     1. 使用 mcp-server-fetch 以 **raw 模式**抓取该页面（设置 `raw=true`），**先**抓取前 0-4000 字符（`start_index=0`，`max_length=4000`），在其中搜索版本号字符串；若找到，截取版本号前后各 250-500 字符的 raw HTML 片段备用；
+     2. 若第一块未找到版本号，则通过 `start_index` **跳跃式**抓取页面其他位置（如 4000、12000、24000 等，每次 `max_length=4000`），直到找到版本号所在片段，截取前后各 250-500 字符备用；
+     3. 若多次跳跃抓取仍未找到版本号，则**修改 `update_source_url`**（切换至 releases 页、RSS/Atom feed、JSON endpoint 等更易提取的页面），基于新页面重新抓取并生成正则；
+     4. 根据找到的 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
+     5. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测；
+     6. **非 GitHub 项目专属**：若该项目的 `update_source_url` 不含 `github.com`，还须同步评估当前 URL 是否为版本提取的最优来源——若存在更稳定可靠的 URL（如 releases 页、RSS/Atom feed、JSON endpoint 等），搜索并切换，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段一并写入。
    - **修复 `version_regex` 失败项目**：若提示词中列出了 regex_failed 项目（已设置 version_regex 但预检匹配失败的非 GitHub 项目），必须逐一：
-     1. 使用 mcp-server-fetch 以 raw 模式分块抓取当前 `update_source_url` 页面，分析 raw HTML 结构，重写能正确提取版本号的正则；
-     2. **无论当前正则是否可修复**，都须主动搜索并评估是否有更合适的 URL（如 releases 页、RSS/Atom feed、JSON endpoint 等），确认最优 URL 后，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段同时写入数据库。
+     1. 使用 mcp-server-fetch 以 raw 模式抓取当前 `update_source_url` 页面，**先**抓取前 0-4000 字符（`start_index=0`，`max_length=4000`），搜索版本号字符串；若找到，截取前后各 250-500 字符的 raw HTML 片段；
+     2. 若未找到，通过 `start_index` **跳跃式**抓取其他位置（如 4000、12000、24000 等），直到找到版本号片段，分析版本号标签/属性结构，重写能正确提取版本号的正则；
+     3. 若多次跳跃仍未找到，则**切换至更合适的 URL**（如 releases 页、RSS/Atom feed、JSON endpoint 等）后重新抓取并生成正则；
+     4. **无论当前正则是否可修复**，都须主动搜索并评估是否有更合适的 URL，确认最优 URL 后，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段同时写入数据库。
    - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
 
 3. **决策选品 (版本准入制)**
