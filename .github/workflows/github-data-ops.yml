@@ -101,10 +101,13 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  
 
-      - name: Install skills
+      - name: Install skills and agents
         run: |
           mkdir -p ~/.claude/skills
           cp -r skills/. ~/.claude/skills/
+          echo "Installed skills to ~/.claude/skills/"
+          echo "Agent definitions in .claude/agents/ (auto-discovered by Claude Code from project directory)"
+          ls -la .claude/agents/ 2>/dev/null || echo "No .claude/agents/ in project directory"
 
       - name: Install uv for MCP fetch server
         uses: astral-sh/setup-uv@v5
@@ -164,19 +167,25 @@ jobs:
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           NOCACHE=$(cat /tmp/nocache-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           REGEX_FAILED=$(cat /tmp/regex-failed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。请严格按照技能文档中的「子代理架构」章节执行，使用子代理（Task 工具）分别处理各项目。
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。你是编排者（主代理），必须使用 Task 工具启动子代理来处理每个项目，自己不要直接操作项目数据。
 
-          主代理编排步骤：
-          1. 通过 API/SQL 查询以下各项目列表的详细信息（id、name、update_source_url、version_regex、latest_version、latest_update_time、links 等）
-          2. 按任务类型为每个项目（或小组）创建子代理，传入该项目的 JSON 数据和任务指令
-          3. 查询所有缺少 update_source_url 的项目，同样使用子代理逐一补充
+          .claude/agents/ 目录中已定义以下命名代理，使用 Task 工具启动它们：
+          - project-updater：处理 ETag/Last-Modified 变化的项目版本更新
+          - nocache-inspector：处理 no-cache 嫌疑项目（预判更新+填充 version_regex）
+          - regex-fixer：修复 version_regex 匹配失败的非 GitHub 项目
+          - url-filler：为缺少 update_source_url 的项目补充 URL
+
+          编排步骤：
+          1. 通过 API/SQL 查询以下各项目的详细信息（id、name、update_source_url、version_regex、latest_version、latest_update_time、links 等）
+          2. 为每个项目使用 Task 工具启动对应的命名代理，传入该项目的 JSON 数据和环境信息
+          3. 查询所有缺少 update_source_url 的项目，启动 url-filler 代理逐一补充
           4. 汇总所有子代理返回的 JSON 结果，输出运营报告
 
           项目列表（由预检脚本提供）：
-          - ETag/Last-Modified 变化项目（类型1-版本更新）：${CHANGED:-无}
-          - No-cache 嫌疑项目（类型2-需预判更新+填充 version_regex）：${NOCACHE:-无}
-          - Regex 匹配失败项目（类型3-需修复 version_regex 和 update_source_url）：${REGEX_FAILED:-无}
-          - 缺少 update_source_url 的项目（类型4）：请自行通过 API/SQL 查询
+          - ETag/Last-Modified 变化项目 → 启动 project-updater：${CHANGED:-无}
+          - No-cache 嫌疑项目 → 启动 nocache-inspector：${NOCACHE:-无}
+          - Regex 匹配失败项目 → 启动 regex-fixer：${REGEX_FAILED:-无}
+          - 缺少 update_source_url 的项目 → 启动 url-filler：请自行通过 API/SQL 查询
 
           环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
@@ -189,12 +198,14 @@ jobs:
 
       - name: "Phase 2: Add new projects (sub-agent orchestration)"
         run: |
-          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。请严格按照技能文档中的「子代理架构」章节执行，使用子代理（Task 工具）分别处理各新项目。
+          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。你是编排者（主代理），必须使用 Task 工具启动 project-onboarder 子代理来处理每个新项目，自己不要直接操作项目数据。
 
-          主代理编排步骤：
+          .claude/agents/ 目录中已定义 project-onboarder 命名代理，使用 Task 工具启动它。
+
+          编排步骤：
           1. 查询现有项目名称（通过 API/SQL），建立查重索引
           2. 按 30%追热点 + 70%填补空白策略选品（收录范围不限：GitHub 开源、Android/iOS App、桌面软件、SaaS 等）
-          3. 为每个候选新项目创建子代理（类型5-新项目收录），传入候选项目信息和任务指令
+          3. 为每个候选新项目使用 Task 工具启动 project-onboarder 代理，传入候选项目信息和环境信息
           4. 汇总所有子代理返回的 JSON 结果，输出运营报告
           5. 本次至少新增 5 个项目，GitHub 与非 GitHub 项目比例约 1:1
 
