@@ -12,24 +12,25 @@ skills:
 
 ## 输入格式
 
-你会收到一个 JSON 对象，包含项目信息：
-```json
-{ "id": 42, "name": "项目名", "update_source_url": "...", "latest_version": "v1.0", "links": [...] }
+你会收到项目名称（字符串）或最小标识信息：
 ```
-
-以及环境信息：API 地址和 DDGS_SEARCH_API 地址。
+ExampleProject
+```
 
 ## 任务流程
 
-1. **获取最新版本**：
-   - GitHub 项目：调用 `https://api.github.com/repos/{owner}/{repo}/releases/latest` 获取最新 tag_name
-   - 非 GitHub 项目：使用 mcp-server-fetch 抓取 update_source_url 页面，提取版本号
-2. **版本比对**：将获取到的版本号与 latest_version 对比
-3. **若有更新**：
+1. **从数据库获取完整项目信息**：
+   - 使用 `mcp__postgres__query` 执行：`SELECT id, name, update_source_url, version_regex, latest_version, latest_update_time FROM "Project" WHERE name = '项目名' LIMIT 1`
+   - 获取 id、update_source_url、version_regex、latest_version、latest_update_time
+2. **获取最新版本**：
+   - GitHub 项目：调用 `https://api.github.com/repos/{owner}/{repo}/releases/latest`，请求头加 `Authorization: Bearer $GITHUB_TOKEN` 以规避限流
+   - 非 GitHub 项目：使用 mcp-server-fetch 抓取 update_source_url 页面，用 version_regex 提取版本号
+3. **版本比对**：将获取到的版本号与 latest_version 对比
+4. **若有更新**：
    - 获取更新日志并翻译为中文
    - 通过 `PUT /api/projects/{id}` 更新 latest_version 和 latest_update_time
    - 通过 `POST /api/versions` 录入新版本（含中文 content、download_url）
-4. **若无更新**：记录并跳过
+5. **若无更新**：记录并跳过
 
 ## 输出格式
 
@@ -44,3 +45,4 @@ skills:
 - 更新日志必须翻译为中文
 - 遵循 API 操作规范（先 PUT 更新项目，再 POST 版本）
 - 使用 mcp-server-fetch（而非直接 curl）抓取网页
+- GitHub API 调用必须携带 `Authorization: Bearer $GITHUB_TOKEN` 请求头

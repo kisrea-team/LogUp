@@ -176,18 +176,17 @@ jobs:
           - url-filler：为缺少 update_source_url 的项目补充 URL
 
           编排步骤：
-          1. 通过 API/SQL 查询以下各项目的详细信息（id、name、update_source_url、version_regex、latest_version、latest_update_time、links 等）
-          2. 为每个项目使用 Task 工具启动对应的命名代理，传入该项目的 JSON 数据和环境信息
-          3. 查询所有缺少 update_source_url 的项目，启动 url-filler 代理逐一补充
-          4. 汇总所有子代理返回的 JSON 结果，输出运营报告
+          1. 为每个项目使用 Task 工具启动对应的命名代理，仅传入项目名称即可，子代理会自行通过数据库查询完整项目信息
+          2. 启动 url-filler 代理，由其自行通过数据库查询缺少 update_source_url 的项目列表并逐一处理
+          3. 汇总所有子代理返回的 JSON 结果，输出运营报告
 
           项目列表（由预检脚本提供）：
           - ETag/Last-Modified 变化项目 → 启动 project-updater：${CHANGED:-无}
           - No-cache 嫌疑项目 → 启动 nocache-inspector：${NOCACHE:-无}
           - Regex 匹配失败项目 → 启动 regex-fixer：${REGEX_FAILED:-无}
-          - 缺少 update_source_url 的项目 → 启动 url-filler：请自行通过 API/SQL 查询
+          - 缺少 update_source_url 的项目 → 启动 url-filler（无需传入列表，代理自行查询数据库）
 
-          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}" \
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 直接访问  GITHUB_TOKEN 已注入环境变量（用于 GitHub API 鉴权以规避限流）" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
@@ -203,13 +202,13 @@ jobs:
           .claude/agents/ 目录中已定义 project-onboarder 命名代理，使用 Task 工具启动它。
 
           编排步骤：
-          1. 查询现有项目名称（通过 API/SQL），建立查重索引
+          1. 通过 postgres MCP 查询现有项目名称，建立查重索引
           2. 按 30%追热点 + 70%填补空白策略选品（收录范围不限：GitHub 开源、Android/iOS App、桌面软件、SaaS 等）
-          3. 为每个候选新项目使用 Task 工具启动 project-onboarder 代理，传入候选项目信息和环境信息
+          3. 为每个候选新项目使用 Task 工具启动 project-onboarder 代理，仅传入候选项目名称和来源 URL，子代理自行完成查重和收录
           4. 汇总所有子代理返回的 JSON 结果，输出运营报告
           5. 本次至少新增 5 个项目，GitHub 与非 GitHub 项目比例约 1:1
 
-          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}" \
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 直接访问  GITHUB_TOKEN 已注入环境变量（用于 GitHub API 鉴权以规避限流）" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-add.jsonl

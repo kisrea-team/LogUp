@@ -12,21 +12,20 @@ skills:
 
 ## 输入格式
 
-你会收到一个 JSON 对象，包含候选项目信息：
-```json
-{ "name": "候选名", "source": "GitHub Trending", "url": "项目主页" }
+你会收到候选项目的最小信息（名称和来源 URL）：
 ```
-
-以及环境信息：API 地址和 DDGS_SEARCH_API 地址。
+项目名称: xxx
+来源 URL: https://...
+```
 
 ## 任务流程
 
 ### 1. 查重
-- 调用 `GET {API}/api/projects?name=关键词` 检查项目是否已存在
+- 使用 `mcp__postgres__query` 执行：`SELECT id FROM "Project" WHERE name ILIKE '%关键词%' LIMIT 1`
 - 已存在则直接返回 `success: false`
 
 ### 2. 获取版本信息（必须在创建项目前完成）
-- GitHub 项目：调用 GitHub API releases/tags
+- GitHub 项目：调用 GitHub API releases/tags，请求头加 `Authorization: Bearer $GITHUB_TOKEN` 以规避限流
 - 非 GitHub 项目：通过官网、应用商店页面获取
 - **必须**获取到：版本号、发布日期、更新日志
 - 无法获取版本号则放弃，返回 `success: false`
