@@ -101,10 +101,13 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  
 
-      - name: Install skills
+      - name: Install skills and agents
         run: |
           mkdir -p ~/.claude/skills
           cp -r skills/. ~/.claude/skills/
+          echo "Installed skills to ~/.claude/skills/"
+          echo "Agent definitions in .claude/agents/ (auto-discovered by Claude Code from project directory)"
+          ls -la .claude/agents/ 2>/dev/null || echo "No .claude/agents/ in project directory"
 
       - name: Install uv for MCP fetch server
         uses: astral-sh/setup-uv@v5
@@ -159,29 +162,32 @@ jobs:
             || echo '<urlset/>' > /tmp/sitemap_before.xml
           echo "运营前 URL 数量: $(grep -c '<loc>' /tmp/sitemap_before.xml || echo 0)"
 
-      - name: "Phase 1: Update existing projects"
+      - name: "Phase 1: Update existing projects (sub-agent orchestration)"
         run: |
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           NOCACHE=$(cat /tmp/nocache-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           REGEX_FAILED=$(cat /tmp/regex-failed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
-          if [ -n "$CHANGED" ]; then
-            CHANGED_MSG="以下项目页面已变化（ETag/Last-Modified 探针检测），请逐一检查版本并更新：${CHANGED}。"
-          else
-            CHANGED_MSG="本次无 ETag 探针标记变化的项目。"
-          fi
-          if [ -n "$NOCACHE" ]; then
-            NOCACHE_UPDATE_MSG=" 2）以下项目的 update_source_url 服务器不返回缓存头（no-cache），Content-Length 发生了变化，存在更新嫌疑。请用以下方式快速预判哪些最可能已更新：①新闻搜索（/search/news?q={项目名} release）查看近期发布动态；②对比数据库中 latest_update_time 与该项目的典型发布周期，长期未更新者优先；③对高可能性项目直接获取 update_source_url 页面比对版本号。综合信号后仅对高可能性项目做完整版本核查，其余跳过。no-cache 嫌疑项目列表：${NOCACHE}。"
-            REGEX_MSG=" 3）对上述 no-cache 项目列表中每个尚未设置 version_regex 字段的项目，必须逐一完成：1.使用 mcp-server-fetch 以 raw 模式抓取该页面（设置 raw=true），先抓取前 0-4000 字符（start_index=0，max_length=4000），在其中搜索版本号字符串；若找到，截取版本号前后各 250-500 字符的 raw HTML 片段；若未找到，则通过 start_index 跳跃式抓取页面其他位置（如 4000、12000、24000 等，每次 max_length=4000），直到找到版本号所在片段并截取前后各 250-500 字符备用；若多次跳跃抓取仍未找到版本号，则尝试修改 update_source_url（切换至 releases 页、RSS/Atom feed、JSON endpoint 等更易提取的页面），基于新页面重新抓取并生成正则；2.根据找到的 HTML 片段生成能精准匹配版本号的正则表达式（必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），然后通过 PUT /api/projects/{id} 将 version_regex 字段写入数据库；3.对于非 GitHub 项目（update_source_url 不含 github.com），还须同步评估当前 update_source_url 是否为版本提取的最优 URL——若存在更稳定可靠的页面（如 releases 页、RSS/Atom feed、JSON endpoint 等），搜索并切换至该 URL，通过 PUT /api/projects/{id} 将 update_source_url 和 version_regex 两个字段同时写入数据库。每个项目都要处理，不得跳过。"
-          else
-            NOCACHE_UPDATE_MSG=""
-            REGEX_MSG=""
-          fi
-          if [ -n "$REGEX_FAILED" ]; then
-            REGEX_FAILED_MSG=" 另：以下非 GitHub 项目已设置 version_regex 但预检匹配失败（正则无匹配或无捕获组），请务必逐一处理：①使用 mcp-server-fetch 以 raw 模式抓取 update_source_url 页面（设置 raw=true），先抓取前 0-4000 字符（start_index=0，max_length=4000），搜索版本号字符串；若找到，截取前后各 250-500 字符的 raw HTML 片段；若未找到，则通过 start_index 跳跃式抓取其他位置（如 4000、12000、24000 等，每次 max_length=4000），直到找到版本号片段，分析版本号标签/属性结构，重写能正确提取版本号的正则；若多次跳跃仍未找到，则切换至更合适的 URL（如 releases 页、RSS/Atom feed、JSON endpoint、版本号直接可见的官网下载页等）后重新抓取；②无论当前 update_source_url 是否可提取版本号，都须主动搜索并评估是否有更合适的 URL，确认最优 URL 后，通过 PUT /api/projects/{id} 将 update_source_url 和 version_regex 两个字段同时写入数据库。每个项目必须处理完毕，确保最终正则能提取到版本号。这些项目均为非 GitHub 项目，version_regex 和 update_source_url 至关重要，不得跳过。失败项目列表：${REGEX_FAILED}。"
-          else
-            REGEX_FAILED_MSG=""
-          fi
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。任务：1）${CHANGED_MSG}${NOCACHE_UPDATE_MSG}${REGEX_MSG}${REGEX_FAILED_MSG} 4）查询所有没有 update_source_url 的项目，逐一搜索合适的 update_source_url 并写入数据库；对于非 GitHub 项目（即 update_source_url 不含 github.com 的项目），必须同时分析页面结构、编写能精准提取版本号的 version_regex（必要时可修改update_source_url以保证正则匹配，必须含捕获组，捕获组1为版本号字符串，版本号格式通常为 \\d+\\.\\d+ 或 v\\d+ 等），将 update_source_url 和 version_regex 两个字段通过 PUT /api/projects/{id} 一并写入数据库；GitHub 项目（update_source_url 含 github.com）仅填充 update_source_url，无需填充 version_regex。完成后输出更新汇总。通过 API https://zitons-logup-re.hf.space 直接执行，无需确认。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}。重要约束：version_regex 字段处理规则：① GitHub 项目（update_source_url 含 github.com）一律不填充 version_regex；② 非 GitHub 项目在补充 update_source_url 时（任务3、任务4）必须同时填充 version_regex；③ 任务1中 ETag/Last-Modified 探针标记变化的已有项目无需处理 version_regex；④ no-cache 嫌疑列表（任务3）中的非 GitHub 项目，在填充 version_regex 的同时必须检查并更新 update_source_url 为最优 URL；⑤ regex_failed 列表中的非 GitHub 项目，无论当前正则是否可修复，都必须同时更新 update_source_url 和 version_regex 两个字段。" \
+          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。你是编排者（主代理），必须使用 Task 工具启动子代理来处理每个项目，自己不要直接操作项目数据。
+
+          .claude/agents/ 目录中已定义以下命名代理，使用 Task 工具启动它们：
+          - project-updater：处理 ETag/Last-Modified 变化的项目版本更新
+          - nocache-inspector：处理 no-cache 嫌疑项目（预判更新+填充 version_regex）
+          - regex-fixer：修复 version_regex 匹配失败的非 GitHub 项目
+          - url-filler：为缺少 update_source_url 的项目补充 URL
+
+          编排步骤：
+          1. 通过 API/SQL 查询以下各项目的详细信息（id、name、update_source_url、version_regex、latest_version、latest_update_time、links 等）
+          2. 为每个项目使用 Task 工具启动对应的命名代理，传入该项目的 JSON 数据和环境信息
+          3. 查询所有缺少 update_source_url 的项目，启动 url-filler 代理逐一补充
+          4. 汇总所有子代理返回的 JSON 结果，输出运营报告
+
+          项目列表（由预检脚本提供）：
+          - ETag/Last-Modified 变化项目 → 启动 project-updater：${CHANGED:-无}
+          - No-cache 嫌疑项目 → 启动 nocache-inspector：${NOCACHE:-无}
+          - Regex 匹配失败项目 → 启动 regex-fixer：${REGEX_FAILED:-无}
+          - 缺少 update_source_url 的项目 → 启动 url-filler：请自行通过 API/SQL 查询
+
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
@@ -190,9 +196,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           DDGS_SEARCH_API: ${{ vars.DDGS_SEARCH_API }}
 
-      - name: "Phase 2: Add new projects"
+      - name: "Phase 2: Add new projects (sub-agent orchestration)"
         run: |
-          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。先查询现有项目名称避免重复，按30%追热点（GitHub Trending/Product Hunt/应用商店榜单/科技媒体热点等）+70%填补空白（小众精品、商业工具、中文资料少的软件）策略，收录范围不限（GitHub开源项目、Android/iOS App、Windows/macOS桌面软件、SaaS服务等均可），自行爬取版本和更新日志并翻译为中文，通过 API https://zitons-logup-re.hf.space 直接执行，无需确认，本次至少新增5个项目。注意: DDGS_SEARCH_API已给出为${{ vars.DDGS_SEARCH_API }}" \
+          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。你是编排者（主代理），必须使用 Task 工具启动 project-onboarder 子代理来处理每个新项目，自己不要直接操作项目数据。
+
+          .claude/agents/ 目录中已定义 project-onboarder 命名代理，使用 Task 工具启动它。
+
+          编排步骤：
+          1. 查询现有项目名称（通过 API/SQL），建立查重索引
+          2. 按 30%追热点 + 70%填补空白策略选品（收录范围不限：GitHub 开源、Android/iOS App、桌面软件、SaaS 等）
+          3. 为每个候选新项目使用 Task 工具启动 project-onboarder 代理，传入候选项目信息和环境信息
+          4. 汇总所有子代理返回的 JSON 结果，输出运营报告
+          5. 本次至少新增 5 个项目，GitHub 与非 GitHub 项目比例约 1:1
+
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-add.jsonl
