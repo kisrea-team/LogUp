@@ -6,13 +6,13 @@
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
  * 3. 并发探测每个有 update_source_url 的项目：
  *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
- *    - 其他 URL   → HEAD 请求，比较 ETag/Last-Modified；
- *                   若服务器不返回缓存头（no-cache），则：
- *                   ① 项目名为 owner/repo 格式（GitHub 项目）→ 调用 GitHub API 比较 tag_name，
- *                      成功则直接判断变化，失败或无 releases 则回退到 Content-Length；
+ *    - 其他 URL   → HEAD 请求，仅凭 ETag 判断：
+ *                   无 ETag（含仅有 Last-Modified）→ 视为 no-cache，进入下一分支：
+ *                   ① 有 version_regex → GET 页面提取版本号比较，失败则加入 regex-failed 列表；
  *                   ② 否则比较 Content-Length：
  *                      Content-Length 有变化（或缺失）→ 加入 no-cache 列表交 AI 筛查；
  *                      Content-Length 相同 → 视为未变化
+ *                   有 ETag → 304/ETag 相同则未变化；ETag 变化视为 volatile，忽略
  * 4. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
  *    将需 AI 筛查的 no-cache 项目名列表写入 /tmp/nocache-projects.txt
  * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
@@ -279,7 +279,7 @@ async function main() {
           if (result.unchanged === null) return; // network error
 
           const isFirstCheck = cache[p.id] === undefined;
-          const noHeaders = !result.etag && !result.lastModified;
+          const noHeaders = !result.etag;
 
           if (noHeaders) {
             // Server returns no cache headers.
@@ -322,33 +322,6 @@ async function main() {
               return;
             }
 
-            // No version_regex — try GitHub API if the project name is in owner/repo format.
-            // This resolves GitHub projects without relying on Content-Length or AI triage.
-            const nameParts = p.name.split('/');
-            if (nameParts.length === 2 && nameParts[0].trim() && nameParts[1].trim()) {
-              const [ghOwner, ghRepo] = nameParts.map((s) => s.trim());
-              const ghResult = await githubCheck(ghOwner, ghRepo, cached.tagName || null);
-              if (!ghResult.error) {
-                if (ghResult.tagName) {
-                  newCache[p.id] = { tagName: ghResult.tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
-                }
-                if (ghResult.isFirst) {
-                  console.log(`[check-updates] baseline (github/name): ${p.name} — tag ${ghResult.tagName}`);
-                } else if (ghResult.changed) {
-                  console.log(`[check-updates] CHANGED (github/name): ${p.name} — ${cached.tagName} → ${ghResult.tagName}`);
-                  changedNames.push(p.name);
-                } else {
-                  console.log(`[check-updates] unchanged (github/name): ${p.name} — ${ghResult.tagName}`);
-                }
-                return;
-              }
-              if (ghResult.error !== 'no-releases') {
-                // Unexpected API failure — log and fall through to Content-Length check
-                console.log(`[check-updates] github-api-error (no-cache): ${p.name} — ${ghResult.error}`);
-              }
-              // 'no-releases': project has no GitHub releases, fall through to Content-Length check
-            }
-
             // Compare Content-Length as a lightweight signal.
             // If Content-Length changed (or is absent), flag for AI triage; if same, treat as unchanged.
             newCache[p.id] = {
@@ -371,7 +344,6 @@ async function main() {
 
           newCache[p.id] = {
             etag: result.etag,
-            lastModified: result.lastModified,
             url: p.update_source_url,
             checkedAt: new Date().toISOString(),
           };
@@ -382,19 +354,11 @@ async function main() {
             console.log(`[check-updates] unchanged (304): ${p.name}`);
           } else {
             const etagSame = result.etag && cached.etag && result.etag === cached.etag;
-            const lmSame = result.lastModified && cached.lastModified && result.lastModified === cached.lastModified;
-            const lmChanged = result.lastModified && cached.lastModified && result.lastModified !== cached.lastModified;
-
-            if (etagSame || lmSame) {
+            if (etagSame) {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
-            } else if (lmChanged) {
-              // Last-Modified has definitively changed — reliable signal
-              console.log(`[check-updates] CHANGED (${result.status}): ${p.name}`);
-              changedNames.push(p.name);
             } else {
-              // ETag changed but no Last-Modified confirmation — many CDNs/App Store
-              // return volatile ETags that change every request without content changes
-              console.log(`[check-updates] etag-volatile (${result.status}): ${p.name} — ETag changed but no Last-Modified to confirm`);
+              // ETag changed — many CDNs/App Store return volatile ETags, treat as unchanged
+              console.log(`[check-updates] etag-volatile (${result.status}): ${p.name} — ETag changed but volatile, treating as unchanged`);
             }
           }
         }

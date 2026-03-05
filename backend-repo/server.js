@@ -998,6 +998,15 @@ const server = http.createServer(async (req, res) => {
 });
 
 const port = process.env.BACKEND_NODE_PORT ? parseInt(process.env.BACKEND_NODE_PORT, 10) : 8000;
-server.listen(port, '0.0.0.0', () => {
-    console.log(`Backend server listening on port ${port}`);
-});
+prisma.$connect()
+    .then(() => {
+        server.listen(port, '0.0.0.0', () => {
+            console.log(`Backend server listening on port ${port}`);
+        });
+    })
+    .catch((e) => {
+        console.error('Failed to connect to database on startup:', e.message);
+        server.listen(port, '0.0.0.0', () => {
+            console.log(`Backend server listening on port ${port} (database not yet available)`);
+        });
+    });

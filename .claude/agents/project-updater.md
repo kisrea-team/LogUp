@@ -30,14 +30,20 @@ ExampleProject
    - 获取更新日志并翻译为中文
    - 通过 `PUT /api/projects/{id}` 更新 latest_version 和 latest_update_time
    - 通过 `POST /api/versions` 录入新版本（含中文 content、download_url）
-5. **若无更新**：记录并跳过
+5. **若无更新且项目有 version_regex**：
+   - 预检脚本判断该项目有变化，但提取到的版本与库中一致，说明 update_source_url 或 version_regex 可能已失效
+   - 使用 Task 工具启动 `regex-fixer` 子代理，传入项目名称，令其重新评估并修复 update_source_url 和 version_regex
+   - 将 regex-fixer 的返回结果一并纳入本次输出
+6. **若无更新且项目无 version_regex**：记录并跳过
 
 ## 输出格式
 
 返回 JSON：
 ```json
-{ "id": 42, "name": "...", "updated": true/false, "new_version": "v2.0" | null, "error": null | "错误信息" }
+{ "id": 42, "name": "...", "updated": true/false, "new_version": "v2.0" | null, "regex_fixed": true/false | null, "error": null | "错误信息" }
 ```
+
+`regex_fixed` 仅在触发 regex-fixer 时出现，`true` 表示修复成功，`false` 表示修复失败。
 
 ## 规范
 
