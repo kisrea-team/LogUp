@@ -116,42 +116,37 @@ description: |
 ## 📅 每次运营任务流程 (V5.2 强制执行版)
 
 1. **获取现有数据 (全量检索)**
-   - **执行分页查询**：查询当前数据库已有项目，构建 Slug 索引以查重并定位缺失版本记录的项目。
+   - 分页查询当前数据库已有项目，构建 Slug 索引以查重并定位缺失版本记录的项目。
+   - 识别现有任务来源：`changed`、`no-cache`、`regex-failed`、`no-url`、`latest_version` 为空或缺失版本详情。
 
-2. **按需更新/补齐存量 (优先级：补债 > 更新)**
-   - **优先补漏**：针对数据库中 **`latest_version` 为空或缺失版本详情** 的存量项目，必须先检索并补齐其最新的版本数据（`POST /versions`）。
-   - **强制更新**：针对提示词中 "页面已变化" 的项目，必须立即检查并更新其最新版本。
-   - **no-cache 智能筛查**：若提示词中列出了"no-cache 嫌疑项目"（`update_source_url` 服务器不返回缓存头、且 Content-Length 已变化，存在更新嫌疑），**不可逐一全量检查**，须用以下多种信号快速预判，只对高概率更新项目做完整版本核查，其余跳过：
-     1. **新闻搜索**：对每个 no-cache 嫌疑项目执行 `/search/news?q={项目名} release`，若近期（1个月内）有发布动态则列为高优先级；
-     2. **DB 时效判断**：查询数据库中该项目的 `latest_update_time`，与其典型发布周期对比——长期未更新（如超过 3 个月）的项目更值得检查；
-     3. **直接获取版本页**：对经过上述初筛认为高可能性的项目，直接用 mcp-server-fetch 抓取 `update_source_url` 页面，提取版本号与数据库记录对比，若更新则立即执行版本录入。
-   - **填充 `version_regex` 与核查 `update_source_url`**：对提示词中每个 no-cache 嫌疑项目，**若其 `version_regex` 字段为空**，必须：
-     1. 使用 mcp-server-fetch 以 **raw 模式**抓取该页面（设置 `raw=true`），**先**抓取前 0-4000 字符（`start_index=0`，`max_length=4000`），在其中搜索版本号字符串；若找到，截取版本号前后各 250-500 字符的 raw HTML 片段备用；
-     2. 若第一块未找到版本号，则通过 `start_index` **跳跃式**抓取页面其他位置（如 4000、12000、24000 等，每次 `max_length=4000`），直到找到版本号所在片段，截取前后各 250-500 字符备用；
-     3. 若多次跳跃抓取仍未找到版本号，则**修改 `update_source_url`**（切换至 releases 页、RSS/Atom feed、JSON endpoint 等更易提取的页面），基于新页面重新抓取并生成正则；
-     4. 根据找到的 HTML 片段分析版本号的标签/属性结构，编写能精确匹配版本号的 JavaScript 正则（必须含捕获组，捕获组 1 为版本号字符串），例如 `class="version">([\\d.]+)</`；
-     5. 通过 `PUT /api/projects/{id}` 将 `version_regex` 字段写入数据库，以便后续自动精确检测；
-     6. **非 GitHub 项目专属**：若该项目的 `update_source_url` 不含 `github.com`，还须同步评估当前 URL 是否为版本提取的最优来源——若存在更稳定可靠的 URL（如 releases 页、RSS/Atom feed、JSON endpoint 等），搜索并切换，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段一并写入。
-   - **修复 `version_regex` 失败项目**：若提示词中列出了 regex_failed 项目（已设置 version_regex 但预检匹配失败的非 GitHub 项目），必须逐一：
-     1. 使用 mcp-server-fetch 以 raw 模式抓取当前 `update_source_url` 页面，**先**抓取前 0-4000 字符（`start_index=0`，`max_length=4000`），搜索版本号字符串；若找到，截取前后各 250-500 字符的 raw HTML 片段；
-     2. 若未找到，通过 `start_index` **跳跃式**抓取其他位置（如 4000、12000、24000 等），直到找到版本号片段，分析版本号标签/属性结构，重写能正确提取版本号的正则；
-     3. 若多次跳跃仍未找到，则**切换至更合适的 URL**（如 releases 页、RSS/Atom feed、JSON endpoint 等）后重新抓取并生成正则；
-     4. **无论当前正则是否可修复**，都须主动搜索并评估是否有更合适的 URL，确认最优 URL 后，通过 `PUT /api/projects/{id}` 将 `update_source_url` 和 `version_regex` 两个字段同时写入数据库。
-   - **清理**：如遇明显质量低劣或信息严重过时的项目可顺手删除。
+2. **主代理分类与分发 (优先级：补债 > 更新)**
+   - **存量补漏**：对 `latest_version` 为空或缺失版本详情的已有项目，交给 `project-handler`；如无明确触发原因，可仅传项目名，由子代理自行查询并判断。
+   - **页面已变化 / 正则失效 / 缺少 URL**：
+     - `changed` → `project-handler`
+     - `regex-failed` → `project-handler`
+     - `no-url` → `project-handler`
+   - **no-cache 嫌疑项目**：统一交给 `nocache-inspector`，由其负责预判更新概率、补充 `version_regex`、评估 `update_source_url`，以及必要时录入新版本。
+   - **明显低质量或严重过时项目**：主代理可在汇总阶段标记为待清理，但不在 skill 中规定具体清理动作。
 
-3. **决策选品 (版本准入制)**
+3. **主代理为子代理准备输入**
+   - 给 `project-handler`：优先传 `项目名 [触发原因: changed|regex-failed|no-url]`；若是补漏任务，可仅传项目名。
+   - 给 `nocache-inspector`：至少传项目名；若主代理已拿到完整记录，优先提供 `{ id, name, update_source_url, version_regex, latest_version, latest_update_time }`。
+   - 给 `project-onboarder`：传 `{ name, source, url }` 或等价的候选项目线索。
+   - 主代理统一补充环境信息：API 根地址、搜索接口地址、认证信息来源。
+
+4. **决策选品 (版本准入制)**
    - 按 30/70 策略选品。
    - **[熔断逻辑]**：**无法获取确切数字版本号 (Latest Release/Tag) 的项目禁止收录。** 严禁录入无版本、仅有 commit 的项目。
 
-4. **信息深度采集 (双重指标)**
+5. **信息深度采集 (双重指标)**
    - **版本详情**：必须获取版本号、发布日期及中文翻译后的更新日志。
    - **链接完整性**：必须包含 **至少 3 条** 非官方中文链接（来自知乎、少数派、B站、掘金等）。
 
-5. **执行原子化操作 (项目+版本强绑定)**
+6. **执行原子化操作 (项目+版本强绑定)**
    - **新增项目连招**：执行 `POST /api/projects` (创建项目) 后，**必须紧接着**执行 `POST /api/versions` (录入版本)。
    - **禁令**：严禁只添加项目而不录入版本，禁止任何形式的异步补录或“先建后补”。
 
-6. **收尾质量审计 (Audit)**
+7. **收尾质量审计 (Audit)**
    - 输出运营统计：新增/更新/删除各几条。
    - **强制核查**：必须在总结中明确说明：**“本次新增的 X 个项目是否均已成功同步录入版本数据？”**
 
@@ -454,116 +449,31 @@ SELECT COUNT(*) FROM projects;
 
 > **核心原则**：主代理负责数据收集与任务编排，通过 Claude Code **Task 工具**启动子代理处理各个项目的具体操作。每个子代理运行在独立上下文中，拥有与主代理完全相同的工具能力（MCP fetch、PostgreSQL、DDGS Search API 等），但互不共享上下文，有效避免 token 浪费。
 >
-> **重要**：子代理功能依赖 `.claude/agents/` 目录中定义的命名代理文件，而非仅靠此技能文档描述。已定义的代理：`project-updater`、`nocache-inspector`、`regex-fixer`、`url-filler`、`project-onboarder`。
+> **重要**：子代理功能依赖 `.claude/agents/` 目录中定义的命名代理文件，而非仅靠此技能文档描述。主代理只负责收集任务、分发任务、汇总结果；具体执行步骤以下列代理文件为准：`project-handler`、`nocache-inspector`、`project-onboarder`。
 
-### 工作模式
+### 主代理分发速记
 
-```
-主代理（编排者）
-  │
-  ├─ 1. 数据收集：通过 API/SQL 获取项目列表和详细信息
-  │
-  ├─ 2. 任务分派：使用 Task 工具启动命名代理或 general-purpose 子代理
-  │     ├─ project-updater 代理：处理版本更新
-  │     ├─ nocache-inspector 代理：处理 no-cache 嫌疑项目
-  │     ├─ regex-fixer 代理：修复正则
-  │     ├─ url-filler 代理：补充 update_source_url
-  │     └─ project-onboarder 代理：收录新项目
-  │
-  └─ 3. 结果汇总：收集所有子代理返回的 JSON 结果，输出运营报告
-```
+| 任务类型 | 分发目标 | 主代理最小输入 |
+|---------|---------|---------------|
+| `changed` / `regex-failed` / `no-url` / 存量补漏 | `project-handler` | `项目名 [触发原因: changed|regex-failed|no-url]`；补漏任务可仅传项目名 |
+| `no-cache` | `nocache-inspector` | 项目名，或 `{ id, name, update_source_url, version_regex, latest_version, latest_update_time }` |
+| 新项目收录 | `project-onboarder` | `{ name, source, url }` 或等价候选线索 |
 
 ### 主代理职责
 
-1. **数据收集**：
-   - 从提示词中获取变化项目列表（changed / no-cache / regex-failed）
-   - 通过 `GET /api/projects?name=关键词` 或 SQL 获取各项目详细信息（id、name、update_source_url、version_regex、latest_version、latest_update_time、links 等）
-   - 查询缺少 `update_source_url` 的项目列表
+1. 收集项目与任务来源信息。
+2. 按任务类型分发给命名代理。
+3. 为子代理补充环境信息（API、搜索接口、认证来源）。
+4. 汇总子代理结果，输出运营统计。
 
-2. **任务分派**（使用 Task 工具）：
-   - 将项目按任务类型分类
-   - 为每个项目使用 **Task 工具** 启动对应的命名代理
-   - 向子代理仅传递：该项目的 JSON 数据 + 环境信息（API 地址、DDGS_SEARCH_API 地址）
+### 子代理返回结果速记
 
-3. **结果汇总**：
-   - 收集所有子代理返回的 JSON 结果
-   - 统计：更新 N 个、修复正则 N 个、补充 URL N 个、新增 N 个、失败 N 个
-   - 输出运营报告
+- `project-handler`：返回单项目维护结果，含 `action`、`new_version`、`new_url`、`new_regex`、`error`
+- `nocache-inspector`：返回 no-cache 检查结果，含 `updated`、`new_version`、`version_regex_set`、`url_updated`、`error`
+- `project-onboarder`：返回新项目收录结果，含 `id`、`version`、`success`、`error`
 
-### 子代理启动方式
+### 分发约束
 
-Claude Code 提供两种启动子代理的方式，均通过 **Task 工具**实现：
-
-#### 方式一：启动命名代理（推荐）
-
-使用 `.claude/agents/` 目录中预定义的命名代理。命名代理已包含完整的任务说明、工具列表和模型配置，主代理只需传入项目数据：
-
-```
-启动 project-updater 代理，传入以下项目数据：
-
-项目信息：{"id": 42, "name": "项目名", "update_source_url": "...", "latest_version": "v1.0", "links": [...]}
-环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API={值}
-```
-
-#### 方式二：启动 general-purpose 子代理
-
-当需要灵活处理或命名代理不完全匹配时，可启动 general-purpose 子代理并内联提供完整指令：
-
-```
-Use the Task tool:
-{
-  "subagent_type": "general-purpose",
-  "description": "更新项目 XXX 的版本信息",
-  "prompt": "你是项目数据运营子代理。\n\n项目信息：{...}\n\n任务：检查该项目最新版本...\n环境：API=... DDGS_SEARCH_API=..."
-}
-```
-
-### 已定义的命名代理
-
-| 代理名称 | 任务类型 | 对应文件 |
-|---------|---------|---------|
-| `project-updater` | ETag/Last-Modified 变化项目的版本更新 | `.claude/agents/project-updater.md` |
-| `nocache-inspector` | No-cache 嫌疑项目处理（预判+填充 regex） | `.claude/agents/nocache-inspector.md` |
-| `regex-fixer` | 修复 version_regex 匹配失败的项目 | `.claude/agents/regex-fixer.md` |
-| `url-filler` | 补充缺少 update_source_url 的项目 | `.claude/agents/url-filler.md` |
-| `project-onboarder` | 收录新项目（查重→版本→描述→创建） | `.claude/agents/project-onboarder.md` |
-
-### 子代理输入/输出契约
-
-#### project-updater（版本更新）
-- **输入**：`{ id, name, update_source_url, latest_version, links }`
-- **输出**：`{ id, name, updated: bool, new_version: string|null, error: string|null }`
-
-#### nocache-inspector（No-cache 嫌疑处理）
-- **输入**：`{ id, name, update_source_url, version_regex, latest_version, latest_update_time }`
-- **输出**：`{ id, name, updated: bool, new_version: string|null, version_regex_set: bool, url_updated: bool, error: string|null }`
-
-#### regex-fixer（正则修复）
-- **输入**：`{ id, name, update_source_url, version_regex }`
-- **输出**：`{ id, name, new_regex: string|null, new_url: string|null, error: string|null }`
-
-#### url-filler（补充 URL）
-- **输入**：`{ id, name, slug, latest_version }`
-- **输出**：`{ id, name, new_url: string|null, version_regex: string|null, error: string|null }`
-
-#### project-onboarder（新项目收录）
-- **输入**：`{ name, source, url }` 或由子代理自主发现
-- **输出**：`{ name: string, id: number|null, version: string|null, success: bool, error: string|null }`
-
-### 批次策略
-
-| 任务类型 | 分组策略 | 说明 |
-|---------|---------|------|
-| 版本更新（changed） | 每个项目独立启动 project-updater | 并行处理，互不干扰 |
-| No-cache 嫌疑 | 每个项目独立启动 nocache-inspector | 需复杂页面分析 |
-| Regex 修复 | 每个项目独立启动 regex-fixer | 需逐一分析页面结构 |
-| 补充 URL | 每个项目独立启动 url-filler | 操作相对标准化 |
-| 新项目收录 | 每个项目独立启动 project-onboarder | 需完整信息采集流程 |
-
-### version_regex 字段处理规则（子代理遵循）
-
-1. **GitHub 项目**（update_source_url 含 github.com）：一律不填充 version_regex
-2. **非 GitHub 项目**在补充 update_source_url 时必须同时填充 version_regex
-3. ETag/Last-Modified 探针标记变化的项目无需处理 version_regex
-4. No-cache 嫌疑列表中的非 GitHub 项目，填充 version_regex 的同时必须检查并更新 update_source_url 为最优 URL
-5. Regex-failed 列表中的项目，必须同时更新 update_source_url 和 version_regex
+- 优先使用命名代理，不再在 skill 中展开子代理内部 SOP。
+- `version_regex`、`update_source_url` 的修复与优化，由子代理自行负责。
+- GitHub 项目不填充 `version_regex`；非 GitHub 项目如需新增或修复 `update_source_url`，应同步评估 `version_regex`。

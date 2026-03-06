@@ -182,26 +182,19 @@ jobs:
           CHANGED=$(cat /tmp/changed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           NOCACHE=$(cat /tmp/nocache-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
           REGEX_FAILED=$(cat /tmp/regex-failed-projects.txt 2>/dev/null | tr '\n' '、' | sed 's/、$//')
-          ccr code -p "/github-data-ops 本阶段任务：仅更新已有项目，不新增。你是编排者（主代理），必须使用 Task 工具启动子代理来处理每个项目，自己不要直接操作项目数据。
-
-          .claude/agents/ 目录中已定义以下命名代理，使用 Task 工具启动它们：
-          - project-updater：处理 ETag/Last-Modified 变化的项目版本更新
-          - nocache-inspector：处理 no-cache 嫌疑项目（预判更新+填充 version_regex）
-          - regex-fixer：修复 version_regex 匹配失败的非 GitHub 项目
-          - url-filler：为缺少 update_source_url 的项目补充 URL
+          ccr code -p "本阶段任务：仅更新已有项目，不新增。使用 Task 工具启动子代理，自己不直接操作数据。
 
           编排步骤：
-          1. 为每个项目使用 Task 工具启动对应的命名代理，仅传入项目名称即可，子代理会自行通过数据库查询完整项目信息
-          2. 启动 url-filler 代理，由其自行通过数据库查询缺少 update_source_url 的项目列表并逐一处理
-          3. 汇总所有子代理返回的 JSON 结果，输出运营报告
+          1. 为以下每个项目各启动一个 project-handler 子代理（传入「项目名 触发原因」）：
+             - changed 项目（ETag/版本变化，触发原因 changed）：${CHANGED:-无}
+             - regex-failed 项目（正则失效，触发原因 regex-failed）：${REGEX_FAILED:-无}
+          2. 为以下项目各启动一个 nocache-inspector 子代理：${NOCACHE:-无}
+          3. 通过 postgres MCP 查询缺少 update_source_url 的项目：
+             SELECT name FROM \"Project\" WHERE update_source_url IS NULL OR update_source_url = '' ORDER BY id
+             为每个结果各启动一个 project-handler 子代理（触发原因 no-url）
+          4. 收到每个子代理结果后只需简单记录，全部完成后统一输出 JSON 数组汇总报告
 
-          项目列表（由预检脚本提供）：
-          - ETag/Last-Modified 变化项目 → 启动 project-updater：${CHANGED:-无}
-          - No-cache 嫌疑项目 → 启动 nocache-inspector：${NOCACHE:-无}
-          - Regex 匹配失败项目 → 启动 regex-fixer：${REGEX_FAILED:-无}
-          - 缺少 update_source_url 的项目 → 启动 url-filler（无需传入列表，代理自行查询数据库）
-
-          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 直接访问  GITHUB_TOKEN 已注入环境变量（用于 GitHub API 鉴权以规避限流）" \
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 访问  GITHUB_TOKEN 已注入（用于 GitHub API）" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
@@ -212,9 +205,7 @@ jobs:
 
       - name: "Phase 2: Add new projects (sub-agent orchestration)"
         run: |
-          ccr code -p "/github-data-ops 本阶段任务：仅收录新项目，不修改已有项目。你是编排者（主代理），必须使用 Task 工具启动 project-onboarder 子代理来处理每个新项目，自己不要直接操作项目数据。
-
-          .claude/agents/ 目录中已定义 project-onboarder 命名代理，使用 Task 工具启动它。
+          ccr code -p "本阶段任务：仅收录新项目，不修改已有项目。使用 Task 工具启动 project-onboarder 子代理，自己不直接操作数据。
 
           编排步骤：
           1. 通过 postgres MCP 查询现有项目名称，建立查重索引
