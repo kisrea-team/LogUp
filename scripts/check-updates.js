@@ -34,6 +34,7 @@ const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
 const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const REGEX_FAILED_FILE = process.env.REGEX_FAILED_FILE || '/tmp/regex-failed-projects.txt';
+const RSSHUB_RADAR_RULES_URL = process.env.RSSHUB_RADAR_RULES_URL || 'https://rsshub.js.org/build/radar-rules.js';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
@@ -49,6 +50,7 @@ const BROWSER_HEADERS = {
 };
 
 let sharedBrowserPromise = null;
+let rssHubRadarDomainsPromise = null;
 
 function fetchJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -68,6 +70,77 @@ function fetchJson(url, headers = {}) {
     req.on('error', reject);
     req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout fetching ${url}`)); });
   });
+}
+
+function fetchRemoteText(url, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const options = {
+      headers: { ...BROWSER_HEADERS, ...headers },
+      timeout: REQUEST_TIMEOUT,
+    };
+    const req = mod.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => resolve({ status: res.statusCode, text: data }));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout fetching ${url}`)); });
+  });
+}
+
+function extractDomainsFromRadarRules(sourceText) {
+  const matches = sourceText.match(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi) || [];
+  const domains = new Set();
+  for (const rawMatch of matches) {
+    const domain = rawMatch.toLowerCase();
+    if (
+      domain === 'www.w3.org'
+      || domain === 'localhost'
+      || domain.endsWith('.json')
+      || domain.endsWith('.js')
+    ) {
+      continue;
+    }
+    domains.add(domain);
+  }
+  return [...domains].sort((a, b) => a.length - b.length);
+}
+
+async function getRssHubRadarDomains() {
+  if (!rssHubRadarDomainsPromise) {
+    rssHubRadarDomainsPromise = (async () => {
+      const { status, text } = await fetchRemoteText(RSSHUB_RADAR_RULES_URL);
+      if (status !== 200) {
+        throw new Error(`http-${status}`);
+      }
+      const domains = extractDomainsFromRadarRules(text);
+      console.log(`[check-updates] RSSHub radar domains loaded: ${domains.length}`);
+      return domains;
+    })().catch((error) => {
+      console.warn(`[check-updates] rsshub-radar-load-failed: ${error.message}`);
+      return [];
+    });
+  }
+  return rssHubRadarDomainsPromise;
+}
+
+async function logRssHubRadarMatch(projectName, projectUrl) {
+  try {
+    const hostname = new URL(projectUrl).hostname.toLowerCase();
+    const domains = await getRssHubRadarDomains();
+    if (!domains.length) return;
+
+    const matchedDomain = domains.find((domain) => (
+      hostname === domain || hostname.endsWith(`.${domain}`)
+    ));
+
+    if (matchedDomain) {
+      console.log(`[check-updates] rsshub-radar-match: ${projectName} — ${hostname} matches ${matchedDomain}`);
+    }
+  } catch {
+    // ignore invalid URL / remote errors for informational logging
+  }
 }
 
 /**
@@ -414,6 +487,7 @@ async function main() {
           } else {
             // ── Non-GitHub ──
             const isFirstCheck = cache[p.id] === undefined;
+            await logRssHubRadarMatch(p.name, p.update_source_url);
 
             if (p.version_regex) {
               // ── Priority: version_regex → GET page and extract version (skip HEAD) ──
