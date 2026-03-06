@@ -36,6 +36,9 @@ const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const REGEX_FAILED_FILE = process.env.REGEX_FAILED_FILE || '/tmp/regex-failed-projects.txt';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
+
+let sharedBrowserPromise = null;
 
 function fetchJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -101,6 +104,97 @@ async function githubCheck(owner, repo, cachedTagName) {
   }
 }
 
+async function getSharedBrowser() {
+  if (!sharedBrowserPromise) {
+    const { chromium } = require('playwright');
+    sharedBrowserPromise = chromium.launch({
+      headless: true,
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+      ],
+    });
+  }
+  return sharedBrowserPromise;
+}
+
+async function closeSharedBrowser() {
+  if (!sharedBrowserPromise) return;
+  try {
+    const browser = await sharedBrowserPromise;
+    await browser.close();
+  } catch {
+    // ignore close errors
+  } finally {
+    sharedBrowserPromise = null;
+  }
+}
+
+async function createStealthContext(browser) {
+  const context = await browser.newContext({
+    userAgent: BROWSER_USER_AGENT,
+    viewport: { width: 1366, height: 768 },
+    locale: 'zh-CN',
+    timezoneId: 'Asia/Shanghai',
+    colorScheme: 'light',
+    deviceScaleFactor: 1,
+    extraHTTPHeaders: {
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'Upgrade-Insecure-Requests': '1',
+    },
+  });
+
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => undefined,
+    });
+
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['zh-CN', 'zh', 'en-US', 'en'],
+    });
+
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => [
+        { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+        { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+        { name: 'Native Client', filename: 'internal-nacl-plugin' },
+      ],
+    });
+
+    Object.defineProperty(navigator, 'platform', {
+      get: () => 'Win32',
+    });
+
+    Object.defineProperty(window, 'chrome', {
+      get: () => ({
+        runtime: {},
+        app: { isInstalled: false },
+      }),
+    });
+
+    const originalQuery = window.navigator.permissions?.query;
+    if (originalQuery) {
+      window.navigator.permissions.query = (parameters) => (
+        parameters && parameters.name === 'notifications'
+          ? Promise.resolve({ state: Notification.permission })
+          : originalQuery(parameters)
+      );
+    }
+  });
+
+  await context.route('**/*', async (route) => {
+    const resourceType = route.request().resourceType();
+    if (resourceType === 'image' || resourceType === 'media' || resourceType === 'font') {
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+
+  return context;
+}
+
 // Domains that return plain text/JSON and don't need JS rendering — use curl-like GET instead of Playwright.
 const PLAIN_HTTP_DOMAINS = ['api.github.com', 'itunes.apple.com'];
 
@@ -134,18 +228,18 @@ async function fetchText(url) {
       return await fetchTextPlain(url);
     }
   } catch { /* malformed URL — fall through to Playwright */ }
-  let browser;
+  let context;
   try {
-    const { chromium } = require('playwright');
-    browser = await chromium.launch();
-    const page = await browser.newPage();
+    const browser = await getSharedBrowser();
+    context = await createStealthContext(browser);
+    const page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle', timeout: REQUEST_TIMEOUT });
     const text = await page.content();
     return { text, error: null };
   } catch (e) {
     return { text: null, error: e.message };
   } finally {
-    if (browser) await browser.close();
+    if (context) await context.close();
   }
 }
 
@@ -204,177 +298,181 @@ async function main() {
   console.log('[check-updates] Starting update probe...');
   if (!GITHUB_TOKEN) console.warn('[check-updates] GITHUB_TOKEN not set — GitHub API calls may be rate-limited');
 
-  // Load cache
-  let cache = {};
   try {
-    if (fs.existsSync(ETAG_CACHE)) {
-      cache = JSON.parse(fs.readFileSync(ETAG_CACHE, 'utf-8'));
-      console.log(`[check-updates] Loaded cache with ${Object.keys(cache).length} entries`);
+    // Load cache
+    let cache = {};
+    try {
+      if (fs.existsSync(ETAG_CACHE)) {
+        cache = JSON.parse(fs.readFileSync(ETAG_CACHE, 'utf-8'));
+        console.log(`[check-updates] Loaded cache with ${Object.keys(cache).length} entries`);
+      }
+    } catch {
+      console.log('[check-updates] No valid cache found, starting fresh');
     }
-  } catch {
-    console.log('[check-updates] No valid cache found, starting fresh');
-  }
 
-  // Fetch all projects
-  let projects;
-  try {
-    projects = await fetchAllProjects();
-  } catch (e) {
-    console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
-    fs.writeFileSync(CHANGED_FILE, '');
-    fs.writeFileSync(NOCACHE_FILE, '');
-    fs.writeFileSync(REGEX_FAILED_FILE, '');
-    process.exit(0);
-  }
+    // Fetch all projects
+    let projects;
+    try {
+      projects = await fetchAllProjects();
+    } catch (e) {
+      console.error(`[check-updates] Failed to fetch projects: ${e.message}`);
+      fs.writeFileSync(CHANGED_FILE, '');
+      fs.writeFileSync(NOCACHE_FILE, '');
+      fs.writeFileSync(REGEX_FAILED_FILE, '');
+      process.exit(0);
+    }
 
-  const probeTargets = projects.filter((p) => p.update_source_url);
-  console.log(`[check-updates] ${projects.length} projects total, ${probeTargets.length} have update_source_url`);
+    const probeTargets = projects.filter((p) => p.update_source_url);
+    console.log(`[check-updates] ${projects.length} projects total, ${probeTargets.length} have update_source_url`);
 
-  const changedNames = [];
-  const noCacheNames = [];
-  const regexFailedNames = [];
-  const newCache = { ...cache };
+    const changedNames = [];
+    const noCacheNames = [];
+    const regexFailedNames = [];
+    const newCache = { ...cache };
 
-  // Process in batches
-  for (let i = 0; i < probeTargets.length; i += CONCURRENCY) {
-    const batch = probeTargets.slice(i, i + CONCURRENCY);
-    await Promise.all(
-      batch.map(async (p) => {
-        const cached = cache[p.id] || {};
-        const ghRepo = parseGitHubRepo(p.update_source_url);
+    // Process in batches
+    for (let i = 0; i < probeTargets.length; i += CONCURRENCY) {
+      const batch = probeTargets.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        batch.map(async (p) => {
+          const cached = cache[p.id] || {};
+          const ghRepo = parseGitHubRepo(p.update_source_url);
 
-        if (ghRepo) {
-          // ── GitHub: compare tag_name via API ──
-          const { tagName, changed, isFirst, error } = await githubCheck(
-            ghRepo.owner, ghRepo.repo, cached.tagName || null
-          );
+          if (ghRepo) {
+            // ── GitHub: compare tag_name via API ──
+            const { tagName, changed, isFirst, error } = await githubCheck(
+              ghRepo.owner, ghRepo.repo, cached.tagName || null
+            );
 
-          if (error === 'no-releases') {
-            console.log(`[check-updates] no-releases: ${p.name} — skipped`);
-            return;
-          }
-          if (error) {
-            console.log(`[check-updates] error (${error}): ${p.name} — skipped`);
-            return;
-          }
-
-          if (tagName) {
-            newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
-          }
-
-          if (isFirst) {
-            console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
-          } else if (changed) {
-            console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
-            changedNames.push(p.name);
-          } else {
-            console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
-          }
-
-        } else {
-          // ── Non-GitHub ──
-          const isFirstCheck = cache[p.id] === undefined;
-
-          if (p.version_regex) {
-            // ── Priority: version_regex → GET page and extract version (skip HEAD) ──
-            const { text, error } = await fetchText(p.update_source_url);
-            if (error) {
-              console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+            if (error === 'no-releases') {
+              console.log(`[check-updates] no-releases: ${p.name} — skipped`);
               return;
             }
-            let version = null;
-            try {
-              const re = new RegExp(p.version_regex);
-              const match = re.exec(text);
-              if (match && match[1] === undefined) {
-                console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
+            if (error) {
+              console.log(`[check-updates] error (${error}): ${p.name} — skipped`);
+              return;
+            }
+
+            if (tagName) {
+              newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
+            }
+
+            if (isFirst) {
+              console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
+            } else if (changed) {
+              console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
+              changedNames.push(p.name);
+            } else {
+              console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
+            }
+
+          } else {
+            // ── Non-GitHub ──
+            const isFirstCheck = cache[p.id] === undefined;
+
+            if (p.version_regex) {
+              // ── Priority: version_regex → GET page and extract version (skip HEAD) ──
+              const { text, error } = await fetchText(p.update_source_url);
+              if (error) {
+                console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+                return;
+              }
+              let version = null;
+              try {
+                const re = new RegExp(p.version_regex);
+                const match = re.exec(text);
+                if (match && match[1] === undefined) {
+                  console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
+                  regexFailedNames.push(p.name);
+                  return;
+                }
+                version = match ? match[1] : null;
+              } catch (e) {
+                console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
+                return;
+              }
+              if (!version) {
+                console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
                 regexFailedNames.push(p.name);
                 return;
               }
-              version = match ? match[1] : null;
-            } catch (e) {
-              console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
+              newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
+              if (isFirstCheck || !cached.regexVersion) {
+                console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
+              } else if (version === cached.regexVersion) {
+                console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
+              } else {
+                console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
+                changedNames.push(p.name);
+              }
               return;
             }
-            if (!version) {
-              console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
-              regexFailedNames.push(p.name);
+
+            // ── No version_regex: HEAD request + ETag ──
+            const result = await headRequest(p.update_source_url, cached.etag, null);
+
+            if (result.unchanged === null) return; // network error
+
+            if (!result.etag) {
+              // No ETag: Content-Length comparison, flag suspect for AI triage
+              newCache[p.id] = {
+                contentLength: result.contentLength,
+                url: p.update_source_url,
+                checkedAt: new Date().toISOString(),
+              };
+              const contentLengthUnchanged = result.contentLength && cached.contentLength &&
+                result.contentLength === cached.contentLength;
+              if (isFirstCheck || !cached.contentLength) {
+                console.log(`[check-updates] baseline (no-cache): ${p.name} — Content-Length: ${result.contentLength ?? 'absent'}`);
+              } else if (contentLengthUnchanged) {
+                console.log(`[check-updates] unchanged (no-cache): ${p.name} — Content-Length ${result.contentLength}`);
+              } else {
+                console.log(`[check-updates] suspect (no-cache): ${p.name} — Content-Length ${cached.contentLength} → ${result.contentLength ?? 'absent'}`);
+                noCacheNames.push(p.name);
+              }
               return;
             }
-            newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
-            if (isFirstCheck || !cached.regexVersion) {
-              console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
-            } else if (version === cached.regexVersion) {
-              console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
-            } else {
-              console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
-              changedNames.push(p.name);
-            }
-            return;
-          }
 
-          // ── No version_regex: HEAD request + ETag ──
-          const result = await headRequest(p.update_source_url, cached.etag, null);
-
-          if (result.unchanged === null) return; // network error
-
-          if (!result.etag) {
-            // No ETag: Content-Length comparison, flag suspect for AI triage
+            // Has ETag
             newCache[p.id] = {
-              contentLength: result.contentLength,
+              etag: result.etag,
               url: p.update_source_url,
               checkedAt: new Date().toISOString(),
             };
-            const contentLengthUnchanged = result.contentLength && cached.contentLength &&
-              result.contentLength === cached.contentLength;
-            if (isFirstCheck || !cached.contentLength) {
-              console.log(`[check-updates] baseline (no-cache): ${p.name} — Content-Length: ${result.contentLength ?? 'absent'}`);
-            } else if (contentLengthUnchanged) {
-              console.log(`[check-updates] unchanged (no-cache): ${p.name} — Content-Length ${result.contentLength}`);
-            } else {
-              console.log(`[check-updates] suspect (no-cache): ${p.name} — Content-Length ${cached.contentLength} → ${result.contentLength ?? 'absent'}`);
-              noCacheNames.push(p.name);
-            }
-            return;
-          }
 
-          // Has ETag
-          newCache[p.id] = {
-            etag: result.etag,
-            url: p.update_source_url,
-            checkedAt: new Date().toISOString(),
-          };
-
-          if (isFirstCheck) {
-            console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
-          } else if (result.unchanged) {
-            console.log(`[check-updates] unchanged (304): ${p.name}`);
-          } else {
-            const etagSame = result.etag && cached.etag && result.etag === cached.etag;
-            if (etagSame) {
-              console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
+            if (isFirstCheck) {
+              console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
+            } else if (result.unchanged) {
+              console.log(`[check-updates] unchanged (304): ${p.name}`);
             } else {
-              // ETag changed → flag for AI check; if no actual update, AI will add version_regex
-              console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
-              changedNames.push(p.name);
+              const etagSame = result.etag && cached.etag && result.etag === cached.etag;
+              if (etagSame) {
+                console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
+              } else {
+                // ETag changed → flag for AI check; if no actual update, AI will add version_regex
+                console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
+                changedNames.push(p.name);
+              }
             }
           }
-        }
-      })
-    );
-  }
+        })
+      );
+    }
 
-  // Save updated cache
-  try {
-    fs.writeFileSync(ETAG_CACHE, JSON.stringify(newCache, null, 2));
-  } catch (e) {
-    console.warn(`[check-updates] Could not write cache: ${e.message}`);
-  }
+    // Save updated cache
+    try {
+      fs.writeFileSync(ETAG_CACHE, JSON.stringify(newCache, null, 2));
+    } catch (e) {
+      console.warn(`[check-updates] Could not write cache: ${e.message}`);
+    }
 
-  fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
-  fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
-  fs.writeFileSync(REGEX_FAILED_FILE, regexFailedNames.join('\n'));
-  console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect, ${regexFailedNames.length} regex-failed (out of ${probeTargets.length} probed from ${projects.length} total)`);
+    fs.writeFileSync(CHANGED_FILE, changedNames.join('\n'));
+    fs.writeFileSync(NOCACHE_FILE, noCacheNames.join('\n'));
+    fs.writeFileSync(REGEX_FAILED_FILE, regexFailedNames.join('\n'));
+    console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect, ${regexFailedNames.length} regex-failed (out of ${probeTargets.length} probed from ${projects.length} total)`);
+  } finally {
+    await closeSharedBrowser();
+  }
 }
 
 main().catch((e) => {
