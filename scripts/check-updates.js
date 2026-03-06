@@ -156,7 +156,8 @@ function parseGitHubRepo(url) {
   try {
     const u = new URL(url);
     if (u.hostname === 'github.com' || u.hostname.endsWith('.github.com')) {
-      const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+      let parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+      if (u.hostname === 'api.github.com' && parts[0] === 'repos') parts = parts.slice(1);
       if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
     }
   } catch { }
