@@ -88,6 +88,8 @@ function parseGithubRepoInput(input) {
     trimmed = trimmed.replace(/[),.;]+$/g, '');
     const urlMatch = trimmed.match(/^https?:\/\/github\.com\/([^/]+)\/([^/#?]+)(?:[/?#].*)?$/i);
     if (urlMatch) return { owner: urlMatch[1], repo: urlMatch[2] };
+    const apiMatch = trimmed.match(/^https?:\/\/api\.github\.com\/repos\/([^/]+)\/([^/#?]+)(?:[/?#].*)?$/i);
+    if (apiMatch) return { owner: apiMatch[1], repo: apiMatch[2] };
     const shortMatch = trimmed.match(/^([^/]+)\/([^/#?]+)$/);
     if (shortMatch) return { owner: shortMatch[1], repo: shortMatch[2] };
     return null;
