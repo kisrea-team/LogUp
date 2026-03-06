@@ -5,8 +5,8 @@ import OpenAI from 'openai';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = 'https://integrate.api.nvidia.com/v1';
-const MODEL = 'openai/gpt-oss-20b';
+const BASE_URL = 'https://api.siliconflow.cn/v1';
+const MODEL = 'tencent/Hunyuan-MT-7B';
 
 export async function POST(request: NextRequest) {
     try {
