@@ -86,10 +86,11 @@ jobs:
               "default": "custom2,gpt-5.3-codex",
               "background": "custom,glm-5",
               "think": "custom2,gpt-5.4",
-              "longContext": "custom,glm-5",
+              "longContext": "custom2,gpt-5.4",
               "webSearch": "custom2,gpt-5.4",
               "longContextThreshold": 10000
             }
+
 
           }
           EOF
