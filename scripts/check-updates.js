@@ -389,7 +389,7 @@ function detectFeeds(projectName, pageUrl, html) {
       let href = hrefMatch[1];
       // Resolve relative URLs
       if (href.startsWith('/')) {
-        try { href = new URL(href, pageUrl).href; } catch {}
+        try { href = new URL(href, pageUrl).href; } catch { }
       }
       const titleMatch = tag.match(/title\s*=\s*["']([^"']+)["']/i);
       const title = titleMatch ? titleMatch[1] : '';
