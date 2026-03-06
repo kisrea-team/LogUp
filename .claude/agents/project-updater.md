@@ -4,8 +4,6 @@ description: 检查并更新已有项目的版本信息。接收项目数据，�
 tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Task, mcp__fetch__fetch, mcp__postgres__query
 model: sonnet
 permissionMode: bypassPermissions
-skills:
-  - github-data-ops
 ---
 
 你是项目数据运营子代理，专门负责检查和更新已有项目的版本。

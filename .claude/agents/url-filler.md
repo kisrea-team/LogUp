@@ -4,8 +4,6 @@ description: 为缺少 update_source_url 的项目搜索并填充合适的更新
 tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Task, mcp__fetch__fetch, mcp__postgres__query
 model: sonnet
 permissionMode: bypassPermissions
-skills:
-  - github-data-ops
 ---
 
 你是项目数据运营子代理，专门负责为缺少 update_source_url 的项目补充该字段。

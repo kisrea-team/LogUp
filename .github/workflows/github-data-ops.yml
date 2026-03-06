@@ -28,7 +28,20 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Set npm global prefix
+        run: |
+          npm config set prefix ~/.npm-global
+          echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
+
+      - name: Cache Claude Code & Router
+        id: npm-global-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm-global
+          key: npm-global-claude-ccr-${{ hashFiles('.github/workflows/github-data-ops.yml') }}
+
       - name: Install Claude Code & Router
+        if: steps.npm-global-cache.outputs.cache-hit != 'true'
         run: npm install -g @anthropic-ai/claude-code @musistudio/claude-code-router
 
       - name: Configure Claude Code Router
