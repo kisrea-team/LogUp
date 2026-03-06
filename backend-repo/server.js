@@ -301,7 +301,7 @@ async function scrapeGithubTrendingToDb({ language, since, perPage, limitPerRepo
                 ...(t.language ? { type: t.language } : {}),
                 icon,
             },
-        }).catch(() => {});
+        }).catch(() => { });
     }
 
     return { trending, summary };
@@ -942,7 +942,7 @@ const server = http.createServer(async (req, res) => {
                     if (Number.isFinite(intervalMinutes) && intervalMinutes > 0) {
                         trendingSchedule.intervalMs = Math.round(intervalMinutes * 60000);
                         trendingSchedule.timer = setInterval(() => {
-                            runTrendingScheduleOnce().catch(() => {});
+                            runTrendingScheduleOnce().catch(() => { });
                         }, trendingSchedule.intervalMs);
                     }
                 }

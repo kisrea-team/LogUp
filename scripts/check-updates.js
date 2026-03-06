@@ -6,13 +6,12 @@
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
  * 3. 并发探测每个有 update_source_url 的项目：
  *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
- *    - 其他 URL   → HEAD 请求，仅凭 ETag 判断：
- *                   无 ETag（含仅有 Last-Modified）→ 视为 no-cache，进入下一分支：
- *                   ① 有 version_regex → GET 页面提取版本号比较，失败则加入 regex-failed 列表；
- *                   ② 否则比较 Content-Length：
- *                      Content-Length 有变化（或缺失）→ 加入 no-cache 列表交 AI 筛查；
- *                      Content-Length 相同 → 视为未变化
- *                   有 ETag → 304/ETag 相同则未变化；ETag 变化视为 volatile，忽略
+ *    - 其他 URL（有 version_regex）→ 直接 GET 页面提取版本号，跳过 HEAD；
+ *                   匹配失败则加入 regex-failed 列表
+ *    - 其他 URL（无 version_regex）→ HEAD 请求：
+ *                   无 ETag → 比较 Content-Length，变化则加入 no-cache 列表交 AI 筛查；
+ *                   有 ETag + 变化 → 加入 changed 列表，AI 核查无更新时补充 version_regex；
+ *                   有 ETag + 相同/304 → 未变化
  * 4. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
  *    将需 AI 筛查的 no-cache 项目名列表写入 /tmp/nocache-projects.txt
  * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
@@ -273,57 +272,54 @@ async function main() {
           }
 
         } else {
-          // ── Non-GitHub: HEAD request, ETag/Last-Modified; fallback to Content-Length for no-cache ──
-          const result = await headRequest(p.update_source_url, cached.etag, cached.lastModified);
-
-          if (result.unchanged === null) return; // network error
-
+          // ── Non-GitHub ──
           const isFirstCheck = cache[p.id] === undefined;
-          const noHeaders = !result.etag;
 
-          if (noHeaders) {
-            // Server returns no cache headers.
-            // If the project has a version_regex, GET the page and extract the version — reliable.
-            // Otherwise fall back to Content-Length comparison and flag for AI triage.
-            if (p.version_regex) {
-              const { text, error } = await fetchText(p.update_source_url);
-              if (error) {
-                console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
-                return;
-              }
-              let version = null;
-              try {
-                const re = new RegExp(p.version_regex);
-                const match = re.exec(text);
-                if (match && match[1] === undefined) {
-                  console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
-                  regexFailedNames.push(p.name);
-                  return;
-                }
-                version = match ? match[1] : null;
-              } catch (e) {
-                console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
-                return;
-              }
-              if (!version) {
-                console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
+          if (p.version_regex) {
+            // ── Priority: version_regex → GET page and extract version (skip HEAD) ──
+            const { text, error } = await fetchText(p.update_source_url);
+            if (error) {
+              console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+              return;
+            }
+            let version = null;
+            try {
+              const re = new RegExp(p.version_regex);
+              const match = re.exec(text);
+              if (match && match[1] === undefined) {
+                console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
                 regexFailedNames.push(p.name);
                 return;
               }
-              newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
-              if (isFirstCheck || !cached.regexVersion) {
-                console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
-              } else if (version === cached.regexVersion) {
-                console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
-              } else {
-                console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
-                changedNames.push(p.name);
-              }
+              version = match ? match[1] : null;
+            } catch (e) {
+              console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
               return;
             }
+            if (!version) {
+              console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
+              regexFailedNames.push(p.name);
+              return;
+            }
+            newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
+            if (isFirstCheck || !cached.regexVersion) {
+              console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
+            } else if (version === cached.regexVersion) {
+              console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
+            } else {
+              console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
+              changedNames.push(p.name);
+            }
+            return;
+          }
 
-            // Compare Content-Length as a lightweight signal.
-            // If Content-Length changed (or is absent), flag for AI triage; if same, treat as unchanged.
+          // ── No version_regex: HEAD request + ETag ──
+          const result = await headRequest(p.update_source_url, cached.etag, null);
+
+          if (result.unchanged === null) return; // network error
+
+          if (!result.etag) {
+            // No ETag: Content-Length comparison, flag suspect for AI triage
             newCache[p.id] = {
               contentLength: result.contentLength,
               url: p.update_source_url,
@@ -342,6 +338,7 @@ async function main() {
             return;
           }
 
+          // Has ETag
           newCache[p.id] = {
             etag: result.etag,
             url: p.update_source_url,
@@ -357,8 +354,9 @@ async function main() {
             if (etagSame) {
               console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
             } else {
-              // ETag changed — many CDNs/App Store return volatile ETags, treat as unchanged
-              console.log(`[check-updates] etag-volatile (${result.status}): ${p.name} — ETag changed but volatile, treating as unchanged`);
+              // ETag changed → flag for AI check; if no actual update, AI will add version_regex
+              console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
+              changedNames.push(p.name);
             }
           }
         }

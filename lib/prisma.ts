@@ -34,4 +34,4 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 // Pre-warm the connection pool so the first request doesn't bear the full handshake latency
-prisma.$connect().catch(() => {});
+prisma.$connect().catch(() => { });
