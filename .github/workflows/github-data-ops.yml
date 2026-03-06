@@ -159,7 +159,7 @@ jobs:
           key: etag-cache-${{ github.run_id }}
           restore-keys: etag-cache-
 
-      - name: Check for updates (ETag probe)
+      - name: Check for updates (ETag → GitHub → nocache → regex)
         run: node scripts/check-updates.js
         env:
           SITE_URL: https://zitons-logup-re.hf.space

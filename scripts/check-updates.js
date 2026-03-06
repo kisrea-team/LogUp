@@ -1,20 +1,24 @@
 /**
  * 预检脚本：检测项目是否有更新
  *
- * 逻辑：
+ * 逻辑（按顺序执行三个阶段）：
  * 1. 从 API 拉取所有项目列表（含 update_source_url）
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
- * 3. 并发探测每个有 update_source_url 的项目：
- *    - GitHub URL → 调用 GitHub API /releases/latest，比较 tag_name
- *    - 其他 URL（有 version_regex）→ 直接 GET 页面提取版本号，跳过 HEAD；
- *                   匹配失败则加入 regex-failed 列表
- *    - 其他 URL（无 version_regex）→ HEAD 请求：
- *                   无 ETag → 比较 Content-Length，变化则加入 no-cache 列表交 AI 筛查；
- *                   有 ETag + 变化 → 加入 changed 列表，AI 核查无更新时补充 version_regex；
- *                   有 ETag + 相同/304 → 未变化
- * 4. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
+ * 3. 阶段 A — ETag 匹配（首先）：
+ *      针对非 GitHub 且无 version_regex 的项目，发送 HEAD 请求：
+ *      有 ETag + 变化 → 加入 changed 列表；
+ *      有 ETag + 相同/304 → 未变化；
+ *      无 ETag → 加入 nocache 列表（直接交 AI 筛查，不再做 Content-Length 对比）
+ * 4. 阶段 B — GitHub 项目匹配：
+ *      调用 GitHub API /releases/latest，比较 tag_name；
+ *      变化 → 加入 changed 列表
+ * 5. 阶段 C — 正则匹配（最后）：
+ *      针对有 version_regex 的非 GitHub 项目，GET 页面提取版本号；
+ *      匹配失败 → 加入 regex-failed 列表；
+ *      版本变化 → 加入 changed 列表
+ * 6. 将确认有更新的项目名列表写入 /tmp/changed-projects.txt
  *    将需 AI 筛查的 no-cache 项目名列表写入 /tmp/nocache-projects.txt
- * 5. 将新的缓存数据写回文件（由 actions/cache 保存）
+ * 7. 将新的缓存数据写回文件（由 actions/cache 保存）
  *
  * 环境变量：
  *   SITE_URL      - API 根地址，如 https://zitons-logup-re.hf.space
@@ -448,132 +452,150 @@ async function main() {
     const regexFailedNames = [];
     const newCache = { ...cache };
 
-    // Process in batches
-    for (let i = 0; i < probeTargets.length; i += CONCURRENCY) {
-      const batch = probeTargets.slice(i, i + CONCURRENCY);
+    // Categorise projects into three detection phases (single pass, avoiding repeated URL parsing)
+    const etagProjects = [];
+    const githubProjects = [];
+    const regexProjects = [];
+    for (const p of probeTargets) {
+      const ghRepo = parseGitHubRepo(p.update_source_url);
+      if (ghRepo) {
+        githubProjects.push({ project: p, ghRepo });
+      } else if (p.version_regex) {
+        regexProjects.push(p);
+      } else {
+        etagProjects.push(p);
+      }
+    }
+
+    console.log(`[check-updates] Phase A: ${etagProjects.length} etag, Phase B: ${githubProjects.length} github, Phase C: ${regexProjects.length} regex`);
+
+    // ── Phase A: ETag matching (HEAD request, non-GitHub, no version_regex) ──
+    for (let i = 0; i < etagProjects.length; i += CONCURRENCY) {
+      const batch = etagProjects.slice(i, i + CONCURRENCY);
       await Promise.all(
         batch.map(async (p) => {
           const cached = cache[p.id] || {};
-          const ghRepo = parseGitHubRepo(p.update_source_url);
+          const isFirstCheck = cache[p.id] === undefined;
+          await logRssHubRadarMatch(p.name, p.update_source_url);
 
-          if (ghRepo) {
-            // ── GitHub: compare tag_name via API ──
-            const { tagName, changed, isFirst, error } = await githubCheck(
-              ghRepo.owner, ghRepo.repo, cached.tagName || null
-            );
+          const result = await headRequest(p.update_source_url, cached.etag, null);
 
-            if (error === 'no-releases') {
-              console.log(`[check-updates] no-releases: ${p.name} — skipped`);
-              return;
-            }
-            if (error) {
-              console.log(`[check-updates] error (${error}): ${p.name} — skipped`);
-              return;
-            }
+          if (result.unchanged === null) return; // network error
 
-            if (tagName) {
-              newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
-            }
-
-            if (isFirst) {
-              console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
-            } else if (changed) {
-              console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
-              changedNames.push(p.name);
-            } else {
-              console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
-            }
-
-          } else {
-            // ── Non-GitHub ──
-            const isFirstCheck = cache[p.id] === undefined;
-            await logRssHubRadarMatch(p.name, p.update_source_url);
-
-            if (p.version_regex) {
-              // ── Priority: version_regex → GET page and extract version (skip HEAD) ──
-              const { text, error } = await fetchText(p.update_source_url);
-              if (error) {
-                console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
-                return;
-              }
-              detectFeeds(p.name, p.update_source_url, text);
-              let version = null;
-              try {
-                const re = new RegExp(p.version_regex);
-                const match = re.exec(text);
-                if (match && match[1] === undefined) {
-                  console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
-                  regexFailedNames.push(p.name);
-                  return;
-                }
-                version = match ? match[1] : null;
-              } catch (e) {
-                console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
-                return;
-              }
-              if (!version) {
-                console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
-                regexFailedNames.push(p.name);
-                return;
-              }
-              newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
-              if (isFirstCheck || !cached.regexVersion) {
-                console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
-              } else if (version === cached.regexVersion) {
-                console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
-              } else {
-                console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
-                changedNames.push(p.name);
-              }
-              return;
-            }
-
-            // ── No version_regex: HEAD request + ETag ──
-            const result = await headRequest(p.update_source_url, cached.etag, null);
-
-            if (result.unchanged === null) return; // network error
-
-            if (!result.etag) {
-              // No ETag: Content-Length comparison, flag suspect for AI triage
-              newCache[p.id] = {
-                contentLength: result.contentLength,
-                url: p.update_source_url,
-                checkedAt: new Date().toISOString(),
-              };
-              const contentLengthUnchanged = result.contentLength && cached.contentLength &&
-                result.contentLength === cached.contentLength;
-              if (isFirstCheck || !cached.contentLength) {
-                console.log(`[check-updates] baseline (no-cache): ${p.name} — Content-Length: ${result.contentLength ?? 'absent'}`);
-              } else if (contentLengthUnchanged) {
-                console.log(`[check-updates] unchanged (no-cache): ${p.name} — Content-Length ${result.contentLength}`);
-              } else {
-                console.log(`[check-updates] suspect (no-cache): ${p.name} — Content-Length ${cached.contentLength} → ${result.contentLength ?? 'absent'}`);
-                noCacheNames.push(p.name);
-              }
-              return;
-            }
-
-            // Has ETag
-            newCache[p.id] = {
-              etag: result.etag,
-              url: p.update_source_url,
-              checkedAt: new Date().toISOString(),
-            };
-
+          if (!result.etag) {
+            // No ETag → nocache (no Content-Length fallback)
+            newCache[p.id] = { url: p.update_source_url, checkedAt: new Date().toISOString() };
             if (isFirstCheck) {
-              console.log(`[check-updates] baseline (${result.status}): ${p.name} — first check`);
-            } else if (result.unchanged) {
-              console.log(`[check-updates] unchanged (304): ${p.name}`);
+              console.log(`[check-updates] baseline (no-etag): ${p.name}`);
             } else {
-              const etagSame = result.etag && cached.etag && result.etag === cached.etag;
-              if (etagSame) {
-                console.log(`[check-updates] unchanged (${result.status}): ${p.name}`);
-              } else {
-                // ETag changed → flag for AI check; if no actual update, AI will add version_regex
-                console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
-                changedNames.push(p.name);
-              }
+              console.log(`[check-updates] no-etag: ${p.name} — added to nocache`);
+              noCacheNames.push(p.name);
             }
+            return;
+          }
+
+          // Has ETag
+          newCache[p.id] = {
+            etag: result.etag,
+            url: p.update_source_url,
+            checkedAt: new Date().toISOString(),
+          };
+
+          if (isFirstCheck) {
+            console.log(`[check-updates] baseline (etag): ${p.name} — first check`);
+          } else if (result.unchanged) {
+            console.log(`[check-updates] unchanged (304): ${p.name}`);
+          } else {
+            const etagSame = result.etag && cached.etag && result.etag === cached.etag;
+            if (etagSame) {
+              console.log(`[check-updates] unchanged (etag): ${p.name}`);
+            } else {
+              // ETag changed → flag for AI check; if no actual update, AI will add version_regex
+              console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
+              changedNames.push(p.name);
+            }
+          }
+        })
+      );
+    }
+
+    // ── Phase B: GitHub project matching (API, compare tag_name) ──
+    for (let i = 0; i < githubProjects.length; i += CONCURRENCY) {
+      const batch = githubProjects.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        batch.map(async ({ project: p, ghRepo }) => {
+          const cached = cache[p.id] || {};
+          const { tagName, changed, isFirst, error } = await githubCheck(
+            ghRepo.owner, ghRepo.repo, cached.tagName || null
+          );
+
+          if (error === 'no-releases') {
+            console.log(`[check-updates] no-releases: ${p.name} — skipped`);
+            return;
+          }
+          if (error) {
+            console.log(`[check-updates] error (${error}): ${p.name} — skipped`);
+            return;
+          }
+
+          if (tagName) {
+            newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
+          }
+
+          if (isFirst) {
+            console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
+          } else if (changed) {
+            console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
+            changedNames.push(p.name);
+          } else {
+            console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
+          }
+        })
+      );
+    }
+
+    // ── Phase C: Regex matching (GET page, extract version, non-GitHub with version_regex) ──
+    for (let i = 0; i < regexProjects.length; i += CONCURRENCY) {
+      const batch = regexProjects.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        batch.map(async (p) => {
+          const cached = cache[p.id] || {};
+          const isFirstCheck = cache[p.id] === undefined;
+          await logRssHubRadarMatch(p.name, p.update_source_url);
+
+          const { text, error } = await fetchText(p.update_source_url);
+          if (error) {
+            console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
+            return;
+          }
+          detectFeeds(p.name, p.update_source_url, text);
+          let version = null;
+          try {
+            const re = new RegExp(p.version_regex);
+            const match = re.exec(text);
+            if (match && match[1] === undefined) {
+              console.log(`[check-updates] regex-no-capture: ${p.name} — regex has no capture group, flagging for AI`);
+              regexFailedNames.push(p.name);
+              return;
+            }
+            version = match ? match[1] : null;
+          } catch (e) {
+            console.log(`[check-updates] regex-invalid: ${p.name} — ${e.message}`);
+            return;
+          }
+          if (!version) {
+            console.log(`[check-updates] regex-no-match: ${p.name} — no version found, flagging for AI`);
+            regexFailedNames.push(p.name);
+            return;
+          }
+          newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
+          if (isFirstCheck || !cached.regexVersion) {
+            console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
+          } else if (version === cached.regexVersion) {
+            console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
+          } else {
+            console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);
+            changedNames.push(p.name);
           }
         })
       );
