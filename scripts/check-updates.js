@@ -143,6 +143,44 @@ async function logRssHubRadarMatch(projectName, projectUrl) {
   }
 }
 
+function normalizeVersionForComparison(rawVersion) {
+  if (typeof rawVersion !== 'string') return null;
+
+  let value = rawVersion.trim();
+  if (!value) return null;
+
+  value = value.toLowerCase();
+  value = value.replace(/^version[:\s-]*/i, '');
+
+  const semverLikeMatch = value.match(/(?:^|[^a-z0-9])(?:[a-z0-9-]+[@-])?(v?\d+(?:\.\d+){1,3}(?:[-+._][a-z0-9.-]+)?)(?=$|[^a-z0-9])/i);
+  if (semverLikeMatch) {
+    return semverLikeMatch[1].replace(/^v/i, '');
+  }
+
+  const buildLikeMatch = value.match(/(?:^|[^a-z0-9])(v?b\d+)(?=$|[^a-z0-9])/i);
+  if (buildLikeMatch) {
+    return buildLikeMatch[1].replace(/^v/i, '');
+  }
+
+  const trailingVersionMatch = value.match(/(?:^|[^a-z0-9])v?(\d+(?:\.\d+){1,3})(?=$|[^a-z0-9])/i);
+  if (trailingVersionMatch) {
+    return trailingVersionMatch[1];
+  }
+
+  return value;
+}
+
+function areVersionsEquivalent(leftVersion, rightVersion) {
+  const leftNormalized = normalizeVersionForComparison(leftVersion);
+  const rightNormalized = normalizeVersionForComparison(rightVersion);
+
+  if (!leftNormalized || !rightNormalized) {
+    return leftVersion === rightVersion;
+  }
+
+  return leftNormalized === rightNormalized;
+}
+
 /**
  * GitHub URL → extract owner/repo
  * Matches:
@@ -194,7 +232,7 @@ async function githubTagsCheck(owner, repo, cachedTagName) {
     if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
 
     if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
-    const changed = tagName !== cachedTagName;
+    const changed = !areVersionsEquivalent(tagName, cachedTagName);
     return { tagName, changed, isFirst: false, error: null };
   } catch (e) {
     return { tagName: null, changed: false, isFirst: false, error: e.message };
@@ -226,7 +264,7 @@ async function githubCheck(owner, repo, cachedTagName) {
     if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
 
     if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
-    const changed = tagName !== cachedTagName;
+    const changed = !areVersionsEquivalent(tagName, cachedTagName);
     return { tagName, changed, isFirst: false, error: null };
   } catch (e) {
     return { tagName: null, changed: false, isFirst: false, error: e.message };
@@ -546,7 +584,7 @@ async function main() {
               changedNames.push(p.name);
             } else if (isFirst) {
               console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
-            } else if (dbVersion && tagName === dbVersion) {
+            } else if (dbVersion && areVersionsEquivalent(tagName, dbVersion)) {
               console.log(`[check-updates] unchanged (db): ${p.name} — ${tagName}`);
             } else if (!dbVersion && !cached.tagName) {
               console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
@@ -589,7 +627,7 @@ async function main() {
               newCache[p.id] = { regexVersion: version, url: p.update_source_url, checkedAt: new Date().toISOString() };
               if (isFirstCheck || !cached.regexVersion) {
                 console.log(`[check-updates] baseline (regex): ${p.name} — ${version}`);
-              } else if (version === cached.regexVersion) {
+              } else if (areVersionsEquivalent(version, cached.regexVersion)) {
                 console.log(`[check-updates] unchanged (regex): ${p.name} — ${version}`);
               } else {
                 console.log(`[check-updates] CHANGED (regex): ${p.name} — ${cached.regexVersion} → ${version}`);

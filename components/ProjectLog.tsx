@@ -242,11 +242,7 @@ const ProjectLog: React.FC<ProjectLogProps> = ({
                                 <ContentTranslator
                                     key={selectedVersion.id ?? selectedVersion.version}
                                     content={selectedVersion.content}
-                                    versionId={selectedVersion.id}
                                     cachedTranslation={selectedVersion.translation}
-                                    onTranslationSaved={(t) =>
-                                        setSelectedVersion({ ...selectedVersion, translation: t })
-                                    }
                                 />
                             </div>
 
