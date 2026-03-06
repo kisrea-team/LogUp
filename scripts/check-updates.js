@@ -4,12 +4,13 @@
  * 逻辑（按顺序执行三个阶段）：
  * 1. 从 API 拉取所有项目列表（含 update_source_url）
  * 2. 从缓存文件读取上次记录（由 actions/cache 恢复）
- * 3. 阶段 A — ETag 匹配（首先）：
- *      针对非 GitHub 且无 version_regex 的项目，发送 HEAD 请求：
- *      有 ETag + 变化 → 加入 changed 列表；
- *      有 ETag + 相同/304 → 未变化；
- *      无 ETag → 加入 nocache 列表（直接交 AI 筛查，不再做 Content-Length 对比）
- * 4. 阶段 B — GitHub 项目匹配：
+ * 3. 阶段 A — ETag 匹配（首先，含 GitHub 项目）：
+ *      针对所有无 version_regex 的项目（包括 GitHub 项目），发送 HEAD 请求：
+ *      - 非 GitHub：有 ETag + 变化 → 加入 changed 列表；有 ETag + 相同/304 → 未变化；
+ *                   无 ETag → 加入 nocache 列表（直接交 AI 筛查）
+ *      - GitHub 项目：无 ETag 或 ETag 变化 → 进入阶段 B（GitHub API 核验）；
+ *                     ETag 相同/304 → 标记为未变化，跳过阶段 B
+ * 4. 阶段 B — GitHub 项目匹配（仅阶段 A 未能确认未变化的 GitHub 项目）：
  *      调用 GitHub API /releases/latest，比较 tag_name；
  *      变化 → 加入 changed 列表
  * 5. 阶段 C — 正则匹配（最后）：
@@ -453,43 +454,56 @@ async function main() {
     const newCache = { ...cache };
 
     // Categorise projects into three detection phases (single pass, avoiding repeated URL parsing)
+    // Phase A: all projects without version_regex (GitHub + non-GitHub) → ETag HEAD check
+    // Phase B: GitHub projects not resolved by Phase A → GitHub API check
+    // Phase C: projects with version_regex → regex extraction
     const etagProjects = [];
-    const githubProjects = [];
     const regexProjects = [];
     for (const p of probeTargets) {
       const ghRepo = parseGitHubRepo(p.update_source_url);
-      if (ghRepo) {
-        githubProjects.push({ project: p, ghRepo });
-      } else if (p.version_regex) {
+      if (p.version_regex) {
         regexProjects.push(p);
       } else {
-        etagProjects.push(p);
+        etagProjects.push({ project: p, ghRepo });
       }
     }
+    // githubProjects is populated dynamically during Phase A (those not resolved by ETag)
+    const githubProjects = [];
 
-    console.log(`[check-updates] Phase A: ${etagProjects.length} etag, Phase B: ${githubProjects.length} github, Phase C: ${regexProjects.length} regex`);
+    console.log(`[check-updates] Phase A: ${etagProjects.length} etag (incl. GitHub), Phase C: ${regexProjects.length} regex`);
 
-    // ── Phase A: ETag matching (HEAD request, non-GitHub, no version_regex) ──
+    // ── Phase A: ETag matching (HEAD request, all non-regex projects including GitHub) ──
     for (let i = 0; i < etagProjects.length; i += CONCURRENCY) {
       const batch = etagProjects.slice(i, i + CONCURRENCY);
       await Promise.all(
-        batch.map(async (p) => {
+        batch.map(async ({ project: p, ghRepo }) => {
           const cached = cache[p.id] || {};
           const isFirstCheck = cache[p.id] === undefined;
-          await logRssHubRadarMatch(p.name, p.update_source_url);
+          if (!ghRepo) await logRssHubRadarMatch(p.name, p.update_source_url);
 
           const result = await headRequest(p.update_source_url, cached.etag, null);
 
-          if (result.unchanged === null) return; // network error
+          if (result.unchanged === null) {
+            // Network error: still queue GitHub projects for API fallback
+            if (ghRepo) githubProjects.push({ project: p, ghRepo });
+            return;
+          }
 
           if (!result.etag) {
-            // No ETag → nocache (no Content-Length fallback)
-            newCache[p.id] = { url: p.update_source_url, checkedAt: new Date().toISOString() };
-            if (isFirstCheck) {
-              console.log(`[check-updates] baseline (no-etag): ${p.name}`);
+            if (ghRepo) {
+              // GitHub with no ETag: fall through to Phase B for authoritative API check
+              newCache[p.id] = { url: p.update_source_url, checkedAt: new Date().toISOString() };
+              console.log(`[check-updates] no-etag (github): ${p.name} — queued for GitHub API check`);
+              githubProjects.push({ project: p, ghRepo });
             } else {
-              console.log(`[check-updates] no-etag: ${p.name} — added to nocache`);
-              noCacheNames.push(p.name);
+              // Non-GitHub with no ETag → nocache
+              newCache[p.id] = { url: p.update_source_url, checkedAt: new Date().toISOString() };
+              if (isFirstCheck) {
+                console.log(`[check-updates] baseline (no-etag): ${p.name}`);
+              } else {
+                console.log(`[check-updates] no-etag: ${p.name} — added to nocache`);
+                noCacheNames.push(p.name);
+              }
             }
             return;
           }
@@ -503,14 +517,23 @@ async function main() {
 
           if (isFirstCheck) {
             console.log(`[check-updates] baseline (etag): ${p.name} — first check`);
+            // Queue for Phase B to populate tagName baseline in cache; without it,
+            // cached.tagName would remain null and every future run would re-baseline.
+            if (ghRepo) githubProjects.push({ project: p, ghRepo });
           } else if (result.unchanged) {
             console.log(`[check-updates] unchanged (304): ${p.name}`);
+            // GitHub with 304 → ETag confirmed unchanged, skip Phase B
           } else {
             const etagSame = result.etag && cached.etag && result.etag === cached.etag;
             if (etagSame) {
               console.log(`[check-updates] unchanged (etag): ${p.name}`);
+              // GitHub with same ETag → skip Phase B
+            } else if (ghRepo) {
+              // GitHub ETag changed → queue for Phase B to get the exact release tag
+              console.log(`[check-updates] etag-changed (github): ${p.name} — queued for GitHub API check`);
+              githubProjects.push({ project: p, ghRepo });
             } else {
-              // ETag changed → flag for AI check; if no actual update, AI will add version_regex
+              // Non-GitHub ETag changed → flag for AI check; if no actual update, AI will add version_regex
               console.log(`[check-updates] CHANGED (etag): ${p.name} — ETag changed`);
               changedNames.push(p.name);
             }
@@ -519,7 +542,9 @@ async function main() {
       );
     }
 
-    // ── Phase B: GitHub project matching (API, compare tag_name) ──
+    console.log(`[check-updates] Phase B: ${githubProjects.length} github (after Phase A ETag filter)`);
+
+    // ── Phase B: GitHub project matching (API, only those not resolved by Phase A ETag check) ──
     for (let i = 0; i < githubProjects.length; i += CONCURRENCY) {
       const batch = githubProjects.slice(i, i + CONCURRENCY);
       await Promise.all(
