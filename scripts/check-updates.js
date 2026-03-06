@@ -145,17 +145,60 @@ async function logRssHubRadarMatch(projectName, projectUrl) {
 
 /**
  * GitHub URL → extract owner/repo
- * Matches github.com/{owner}/{repo} with any optional trailing path
+ * Matches:
+ * - github.com/{owner}/{repo} with any optional trailing path
+ * - api.github.com/repos/{owner}/{repo} with any optional trailing path
  */
 function parseGitHubRepo(url) {
   try {
     const u = new URL(url);
     if (u.hostname === 'github.com') {
       const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-      if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
+      if (parts.length >= 2) {
+        let sourceType = 'auto';
+        if (parts[2] === 'tags') sourceType = 'tags';
+        if (parts[2] === 'releases') sourceType = 'releases';
+        return { owner: parts[0], repo: parts[1], sourceType };
+      }
+    }
+    if (u.hostname === 'api.github.com') {
+      const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+      if (parts.length >= 4 && parts[0] === 'repos') {
+        let sourceType = 'auto';
+        if (parts[3] === 'tags') sourceType = 'tags';
+        if (parts[3] === 'releases') sourceType = 'releases';
+        return { owner: parts[1], repo: parts[2], sourceType };
+      }
     }
   } catch { }
   return null;
+}
+
+async function githubTagsCheck(owner, repo, cachedTagName) {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/tags?per_page=1`;
+  const headers = {
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+
+  try {
+    const { status, body } = await fetchJson(apiUrl, headers);
+    if (status !== 200) {
+      return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
+    }
+
+    const tagName = Array.isArray(body) && body[0] && typeof body[0].name === 'string'
+      ? body[0].name
+      : null;
+    if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
+
+    if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
+    const changed = tagName !== cachedTagName;
+    return { tagName, changed, isFirst: false, error: null };
+  } catch (e) {
+    return { tagName: null, changed: false, isFirst: false, error: e.message };
+  }
 }
 
 /**
@@ -188,6 +231,26 @@ async function githubCheck(owner, repo, cachedTagName) {
   } catch (e) {
     return { tagName: null, changed: false, isFirst: false, error: e.message };
   }
+}
+
+async function githubCheckBySource(owner, repo, sourceType, cachedTagName) {
+  if (sourceType === 'tags') {
+    return githubTagsCheck(owner, repo, cachedTagName);
+  }
+
+  if (sourceType === 'releases') {
+    const releaseResult = await githubCheck(owner, repo, cachedTagName);
+    if (releaseResult.error === 'no-releases' || releaseResult.error === 'no-tag') {
+      return githubTagsCheck(owner, repo, cachedTagName);
+    }
+    return releaseResult;
+  }
+
+  const releaseResult = await githubCheck(owner, repo, cachedTagName);
+  if (releaseResult.error === 'no-releases' || releaseResult.error === 'no-tag') {
+    return githubTagsCheck(owner, repo, cachedTagName);
+  }
+  return releaseResult;
 }
 
 async function getSharedBrowser() {
@@ -458,8 +521,8 @@ async function main() {
 
           if (ghRepo) {
             // ── GitHub: compare tag_name via API ──
-            const { tagName, changed, isFirst, error } = await githubCheck(
-              ghRepo.owner, ghRepo.repo, cached.tagName || null
+            const { tagName, changed, isFirst, error } = await githubCheckBySource(
+              ghRepo.owner, ghRepo.repo, ghRepo.sourceType, cached.tagName || null
             );
 
             if (error === 'no-releases') {
