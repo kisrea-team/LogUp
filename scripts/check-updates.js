@@ -520,9 +520,12 @@ async function main() {
           const ghRepo = parseGitHubRepo(p.update_source_url);
 
           if (ghRepo) {
+            const dbVersion = typeof p.latest_version === 'string' && p.latest_version.trim()
+              ? p.latest_version.trim()
+              : null;
             // ── GitHub: compare tag_name via API ──
             const { tagName, changed, isFirst, error } = await githubCheckBySource(
-              ghRepo.owner, ghRepo.repo, ghRepo.sourceType, cached.tagName || null
+              ghRepo.owner, ghRepo.repo, ghRepo.sourceType, dbVersion || cached.tagName || null
             );
 
             if (error === 'no-releases') {
@@ -538,11 +541,15 @@ async function main() {
               newCache[p.id] = { tagName, url: p.update_source_url, checkedAt: new Date().toISOString() };
             }
 
-            if (isFirst) {
-              console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
-            } else if (changed) {
-              console.log(`[check-updates] CHANGED: ${p.name} — ${cached.tagName} → ${tagName}`);
+            if (changed) {
+              console.log(`[check-updates] CHANGED: ${p.name} — ${(dbVersion || cached.tagName)} → ${tagName}`);
               changedNames.push(p.name);
+            } else if (isFirst) {
+              console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
+            } else if (dbVersion && tagName === dbVersion) {
+              console.log(`[check-updates] unchanged (db): ${p.name} — ${tagName}`);
+            } else if (!dbVersion && !cached.tagName) {
+              console.log(`[check-updates] baseline: ${p.name} — tag ${tagName}`);
             } else {
               console.log(`[check-updates] unchanged: ${p.name} — ${tagName}`);
             }
