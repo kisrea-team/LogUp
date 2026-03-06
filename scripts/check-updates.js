@@ -155,7 +155,7 @@ async function logRssHubRadarMatch(projectName, projectUrl) {
 function parseGitHubRepo(url) {
   try {
     const u = new URL(url);
-    if (u.hostname === 'github.com') {
+    if (u.hostname === 'github.com' || u.hostname.endsWith('.github.com')) {
       const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
       if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
     }
