@@ -43,7 +43,10 @@ let sharedBrowserPromise = null;
 function fetchJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const options = { headers: { 'User-Agent': 'logup-update-probe/1.0', ...headers } };
+    const options = {
+      headers: { 'User-Agent': 'logup-update-probe/1.0', ...headers },
+      timeout: REQUEST_TIMEOUT,
+    };
     const req = mod.get(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
@@ -285,6 +288,7 @@ async function fetchAllProjects() {
   const results = [];
   let page = 1;
   while (true) {
+    console.log(`[check-updates] Fetching projects page ${page}...`);
     const { body: data } = await fetchJson(`${SITE_URL}/api/projects?page=${page}&per_page=100`);
     const items = data.data || [];
     results.push(...items);
