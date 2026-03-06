@@ -19,7 +19,11 @@ pinned: false
 # LogUp
 
 软件版本更新追踪站点，收录各类软件项目的版本记录和更新日志，面向中文用户提供本地化内容。
-
+评测维度,GPT-5.4 (Current)  GPT-5.4（当前版本）,Opus 4.6  作品 4.6,差距分析
+基础能力 (Core Logic),6.0,5.5,GPT 在逻辑闭环和工具调用（MCP）上略显果断。
+工业化程度 (Industrialization),3.5,2.5,均处于初级阶段，难以自主处理大规模并行调度。
+反爬对抗能力 (Anti-Bot),3.0,2.0,对高级反爬（TLS/HLS/验证码）的理解依然停留在理论。
+稳定运营能力 (SRE/Ops),5.0,4.0,GPT 在异常重试和状态对齐上更稳健。
 ## 技术栈
 
 - **前端 + API**：Next.js 15 App Router，Tailwind CSS

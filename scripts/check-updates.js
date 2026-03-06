@@ -37,6 +37,16 @@ const REGEX_FAILED_FILE = process.env.REGEX_FAILED_FILE || '/tmp/regex-failed-pr
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
 const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
+const BROWSER_HEADERS = {
+  'User-Agent': BROWSER_USER_AGENT,
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+};
 
 let sharedBrowserPromise = null;
 
@@ -44,7 +54,7 @@ function fetchJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
     const options = {
-      headers: { 'User-Agent': 'logup-update-probe/1.0', ...headers },
+      headers: { 'User-Agent': BROWSER_USER_AGENT, ...headers },
       timeout: REQUEST_TIMEOUT,
     };
     const req = mod.get(url, options, (res) => {
@@ -208,7 +218,7 @@ const PLAIN_HTTP_DOMAINS = ['api.github.com', 'itunes.apple.com'];
 function fetchTextPlain(url) {
   return new Promise((resolve) => {
     const mod = url.startsWith('https') ? https : http;
-    const options = { headers: { 'User-Agent': 'logup-update-probe/1.0' }, timeout: REQUEST_TIMEOUT };
+    const options = { headers: { ...BROWSER_HEADERS }, timeout: REQUEST_TIMEOUT };
     const req = mod.get(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
@@ -251,7 +261,7 @@ async function fetchText(url) {
  */
 function headRequest(url, etag, lastModified) {
   return new Promise((resolve) => {
-    const headers = { 'User-Agent': 'logup-update-probe/1.0' };
+    const headers = { ...BROWSER_HEADERS };
     if (etag) headers['If-None-Match'] = etag;
     if (lastModified) headers['If-Modified-Since'] = lastModified;
 
@@ -282,6 +292,37 @@ function headRequest(url, etag, lastModified) {
       resolve({ status: 0, unchanged: null });
     }
   });
+}
+
+/**
+ * Scan <head> for RSS/Atom feed <link> tags and log any found.
+ * Does not affect cache or change detection — purely informational.
+ */
+function detectFeeds(projectName, pageUrl, html) {
+  try {
+    const headMatch = html.match(/<head[\s>]([\s\S]*?)<\/head>/i);
+    if (!headMatch) return;
+    const head = headMatch[1];
+    const linkRe = /<link\b[^>]*>/gi;
+    let m;
+    while ((m = linkRe.exec(head)) !== null) {
+      const tag = m[0];
+      const typeMatch = tag.match(/type\s*=\s*["']([^"']+)["']/i);
+      if (!typeMatch) continue;
+      const type = typeMatch[1].toLowerCase();
+      if (type !== 'application/rss+xml' && type !== 'application/atom+xml') continue;
+      const hrefMatch = tag.match(/href\s*=\s*["']([^"']+)["']/i);
+      if (!hrefMatch) continue;
+      let href = hrefMatch[1];
+      // Resolve relative URLs
+      if (href.startsWith('/')) {
+        try { href = new URL(href, pageUrl).href; } catch {}
+      }
+      const titleMatch = tag.match(/title\s*=\s*["']([^"']+)["']/i);
+      const title = titleMatch ? titleMatch[1] : '';
+      console.log(`[check-updates] feed-found: ${projectName} — ${type} ${title ? `"${title}" ` : ''}${href}`);
+    }
+  } catch { /* ignore parse errors */ }
 }
 
 async function fetchAllProjects() {
@@ -381,6 +422,7 @@ async function main() {
                 console.log(`[check-updates] regex-fetch-error: ${p.name} — ${error}`);
                 return;
               }
+              detectFeeds(p.name, p.update_source_url, text);
               let version = null;
               try {
                 const re = new RegExp(p.version_regex);
