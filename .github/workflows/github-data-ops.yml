@@ -96,11 +96,11 @@ jobs:
               }
             ],
             "Router": {
-              "default": "custom2,gpt-5.3-codex",
+              "default": "custom2,gpt-5.2-codex",
               "background": "custom,glm-5",
-              "think": "custom2,gpt-5.4",
-              "longContext": "custom2,gpt-5.4",
-              "webSearch": "custom2,gpt-5.4",
+              "think": "custom2,gpt-5.2-codex",
+              "longContext": "custom,glm-5",
+              "webSearch": "custom2,gpt-5.2-codex",
               "longContextThreshold": 10000
             }
 
