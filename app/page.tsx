@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
 import Pagination from '@/components/Pagination';
+import FilterType from '@/components/utils/FilterType';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -227,39 +228,17 @@ export default function Page() {
             {/* Filter bar */}
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
                 <div className="flex flex-wrap gap-2 items-center">
-                    {/* Search input */}
-                    <input
+                    {/* <input
                         type="text"
                         value={search}
                         onChange={handleSearchChange}
                         placeholder="搜索项目、作者..."
                         className="flex-1 min-w-[180px] max-w-xs px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-                    />
+                    /> */}
 
-                    {/* Type filter chips */}
                     {availableTypes.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 items-center">
-                            <button
-                                onClick={() => handleTypeChange('')}
-                                className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${filterType === ''
-                                        ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-500'
-                                    }`}
-                            >
-                                全部
-                            </button>
-                            {availableTypes.slice(0, 12).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => handleTypeChange(filterType === t ? '' : t)}
-                                    className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${filterType === t
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600'
-                                        }`}
-                                >
-                                    {t}
-                                </button>
-                            ))}
+                            <FilterType filterType={filterType} handleTypeChange={handleTypeChange} availableTypes={availableTypes} />
                         </div>
                     )}
 
