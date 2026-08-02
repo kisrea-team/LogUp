@@ -24,6 +24,7 @@ const datamain = [
     { id: 3, label: '广告', href: '/admin/ads' },
     { id: 4, label: '用户', href: '/admin/users' },
     { id: 5, label: '爬虫管理', href: '/admin/crawler' },
+    { id: 6, label: 'AI Provider', href: '/admin/ai' },
 ];
 
 export default function AdminSidebar() {

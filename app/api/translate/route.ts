@@ -2,12 +2,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { unauthorizedIfNotAdmin } from '@/lib/auth';
+import { listEnabledWithKeys } from '@/lib/ai-providers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = 'https://api.siliconflow.cn/v1';
-const MODEL = 'tencent/Hunyuan-MT-7B';
+// 兜底：未配置 ai_providers 时使用旧环境变量
+const LEGACY_BASE_URL = 'https://api.siliconflow.cn/v1';
+const LEGACY_MODEL = 'tencent/Hunyuan-MT-7B';
+
+interface ProviderEndpoint {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  name: string;
+}
+
+async function loadProviders(): Promise<ProviderEndpoint[]> {
+  const rows = await listEnabledWithKeys().catch(() => []);
+  const providers = rows
+    .filter((r) => r.baseUrl && r.apiKey && r.model)
+    .map((r) => ({ baseUrl: r.baseUrl, apiKey: r.apiKey, model: r.model, name: r.name }));
+  if (providers.length > 0) return providers;
+
+  // 兼容旧配置
+  const legacyKey = String(process.env.NVIDIA_API_KEY || '').trim();
+  if (legacyKey) {
+    return [{ baseUrl: LEGACY_BASE_URL, apiKey: legacyKey, model: LEGACY_MODEL, name: 'legacy' }];
+  }
+  return [];
+}
 
 export async function POST(request: NextRequest) {
     const denied = await unauthorizedIfNotAdmin(request);
@@ -23,15 +47,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 });
         }
 
-        const apiKey = String(process.env.NVIDIA_API_KEY || '').trim();
-        if (!apiKey) {
-            return NextResponse.json({ error: 'Missing NVIDIA_API_KEY' }, { status: 500 });
+        const providers = await loadProviders();
+        if (providers.length === 0) {
+            return NextResponse.json({ error: 'No AI provider configured' }, { status: 500 });
         }
-
-        const openai = new OpenAI({
-            apiKey,
-            baseURL: BASE_URL,
-        });
 
         const systemPrompt = mode === 'translation-only'
             ? [
@@ -64,57 +83,73 @@ export async function POST(request: NextRequest) {
             { role: 'user' as const, content: `Please translate the following Markdown content:\n\n${content}` },
         ];
 
-        if (stream) {
-            const completion = await openai.chat.completions.create({
-                model: MODEL,
-                messages,
-                temperature: 1,
-                top_p: 1,
-                max_tokens: 4096,
-                stream: true,
-            });
-
-            const sseStream = new ReadableStream<Uint8Array>({
-                start(controller) {
-                    const encoder = new TextEncoder();
-                    (async () => {
-                        try {
-                            for await (const chunk of completion as any) {
-                                controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-                            }
-                            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                            controller.close();
-                        } catch (e: any) {
-                            const message = e?.message ? String(e.message) : String(e);
-                            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`));
-                            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                            controller.close();
-                        }
-                    })();
-                },
-            });
-
-            return new Response(sseStream, {
-                status: 200,
-                headers: {
-                    'Content-Type': 'text/event-stream; charset=utf-8',
-                    'Cache-Control': 'no-cache, no-transform',
-                    Connection: 'keep-alive',
-                },
-            });
+        // 非流式：按优先级尝试每个 provider，失败自动降级到下一个
+        if (!stream) {
+            let lastError = 'no provider succeeded';
+            for (const provider of providers) {
+                try {
+                    const openai = new OpenAI({ apiKey: provider.apiKey, baseURL: provider.baseUrl });
+                    const data: any = await openai.chat.completions.create({
+                        model: provider.model,
+                        messages,
+                        temperature: 1,
+                        top_p: 1,
+                        max_tokens: 4096,
+                        stream: false,
+                    });
+                    const translatedContent = data?.choices?.[0]?.message?.content || '';
+                    if (translatedContent) {
+                        return NextResponse.json({ translatedContent });
+                    }
+                    lastError = 'empty response';
+                } catch (error: any) {
+                    lastError = error?.message ? String(error.message) : String(error);
+                    console.warn(`[translate] provider ${provider.name} failed, trying next: ${lastError}`);
+                }
+            }
+            return NextResponse.json({ error: `All providers failed: ${lastError}` }, { status: 502 });
         }
 
-        const data: any = await openai.chat.completions.create({
-            model: MODEL,
+        // 流式：取第一个可用 provider（流式无法中途降级）
+        const provider = providers[0];
+        const openai = new OpenAI({ apiKey: provider.apiKey, baseURL: provider.baseUrl });
+        const completion = await openai.chat.completions.create({
+            model: provider.model,
             messages,
             temperature: 1,
             top_p: 1,
             max_tokens: 4096,
-            stream: false,
+            stream: true,
         });
 
-        const translatedContent = data?.choices?.[0]?.message?.content || '';
-        return NextResponse.json({ translatedContent });
+        const sseStream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                const encoder = new TextEncoder();
+                (async () => {
+                    try {
+                        for await (const chunk of completion as any) {
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+                        }
+                        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                        controller.close();
+                    } catch (e: any) {
+                        const message = e?.message ? String(e.message) : String(e);
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`));
+                        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                        controller.close();
+                    }
+                })();
+            },
+        });
+
+        return new Response(sseStream, {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'Cache-Control': 'no-cache, no-transform',
+                Connection: 'keep-alive',
+            },
+        });
     } catch (error) {
         console.error('Translation API Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
