@@ -78,6 +78,35 @@ crawler.githubApi(path, { token? })                 → GitHub API（限流感�
 - 收到 `403` 时读取 `x-ratelimit-reset`，等待到重置时间再重试（上限 60s，超过则切换 token）。
 - `Retry-After` 头优先于本地估算。
 
+### 3.5 AI 侧真实浏览器能力（chrome-devtools MCP）
+
+给运营 LLM 子代理注入 **Chrome DevTools MCP**（Chrome 团队官方），提供"F12"级能力，用于确定性引擎搞不定的反爬页面：
+
+| 工具 | 能力 |
+|------|------|
+| `navigate_page` / `get_snapshot` / `take_screenshot` | 真实浏览器导航、DOM 快照、截图 |
+| `list_network_requests` / `get_network_request` | **查看网络请求**（F12 Network 面板），定位版本号接口 |
+| `list_console_messages` | 查看控制台（F12 Console），捕获 JS 报错 |
+| `evaluate_javascript` | 在页面上下文执行任意 JS（如读取 `window.__NEXT_DATA__`） |
+| `capture_performance_trace` | 性能追踪 |
+
+**接入方式**：workflow 的 `.mcp.json` 增加：
+
+```json
+"chrome-devtools": {
+  "command": "npx",
+  "args": ["-y", "chrome-devtools-mcp@latest", "--headless", "--no-usage-statistics",
+           "--executable-path=/path/to/chromium"]
+}
+```
+
+- CI 中复用 Playwright 安装的 Chromium（`--executable-path`），未找到时降级安装真实 Chrome。
+- 本地开发可自行加入 `.mcp.json`（默认 channel 自动找系统 Chrome）。
+- 可选 `--proxyServer` 对接代理池；`--slim` 只保留基础浏览器任务以省资源。
+- **安全提示**：该 MCP 具备完整浏览器 + 网络请求读取能力，仅应在可信的运营/开发环境启用。
+
+**使用场景（LLM 兜底）**：确定性引擎（§3.3）失败时——Cloudflare 挑战页、SPA 动态渲染、版本号藏于 XHR/接口响应、需要登录态才可见的下载页。
+
 ---
 
 ## 4. 控制平面（Control Plane）
@@ -102,17 +131,164 @@ crawler.githubApi(path, { token? })                 → GitHub API（限流感�
 
 ```
 GET    /api/ops/status            # 全局状态：调度、代理、AI Provider、最近报告
-POST   /api/ops/run               # 触发一次运营（body: { phase: 'all'|'github'|'trending'|'probe', repos? }）
-GET    /api/ops/history           # 运营历史
+POST   /api/ops/run               # 触发一次站内运营（body: { phase: 'all'|'github'|'trending'|'probe', repos? }）
+GET    /api/ops/history           # 运营历史（OpRun）
+# ── GitHub Actions 控制（后台派发流水线）──
+POST   /api/ops/gh-actions/trigger  # 派发 workflow_dispatch（body: { ref?, inputs? }）
+GET    /api/ops/gh-actions/status   # 最近一次 GH Actions 运行状态
+POST   /api/ops/gh-actions/cancel   # 取消运行
 ```
 
-### 4.4 运营历史存储
+### 4.4 GitHub Actions 控制（后台派发）
 
-新增 `OpRun` 表（见 §6），后台可查看任意历史运行明细。GH Actions 每轮结束后通过 `POST /api/ops/history`（带 x-admin-key）写入一行。
+后台持有带 `workflow` 权限的 PAT（`GH_DISPATCH_TOKEN`），通过 GitHub REST API 控制流水线：
+
+| 操作 | API |
+|------|-----|
+| 触发运营 | `POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches` |
+| 运行状态 | `GET /repos/{owner}/{repo}/actions/runs?event=workflow_dispatch` |
+| 取消运行 | `POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel` |
+
+- workflow 需声明 `workflow_dispatch:`（已具备）。
+- 后台「运营控制」页提供：**「派发 GH Actions」** 按钮 + 最近运行状态/时长/结论卡片。
+- `GH_DISPATCH_TOKEN` 建议单独申请最小权限 PAT（仅目标仓库 + `workflow`），不与其他 token 混用。
+
+### 4.5 运营历史存储
+
+新增 `OpRun` 表（见 §7），后台可查看任意历史运行明细。GH Actions 每轮结束后通过 `POST /api/ops/history`（带 x-admin-key）写入一行。
 
 ---
 
-## 5. AI Provider 配置管理
+## 5. 微任务系统（Micro-tasks）
+
+### 5.1 概念
+
+把运营拆成一系列**可独立执行的短任务**。每个任务 = 一个目标 + 一组参数 + 一种执行引擎 → 一个结构化结果。
+
+- **执行引擎**：
+  - **站内（确定性引擎）**：`scripts/crawler.js` 程序化执行，真·实时（SSE），可取消。
+  - **GH Actions（含 AI/DevTools）**：派发独立 `task-run.yml`，近实时（轮询），可取消；具备 chrome-devtools MCP、postgres MCP、claude-code 子代理能力。
+- **组合方式**：单任务、批量、链式编排（`probe → write-regex → update-project`）、定时。
+
+### 5.2 任务目录
+
+#### A. 探测与信息获取（默认只读）
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `probe` | 探测 URL 可访问性、响应头、ETag、是否 JS 渲染、反爬特征 | 确定性 | `url` | `status, headers, js_rendered, anti_bot` |
+| `get-version` | 抓取页面提取最新版本号 + 建议 version_regex | 确定性→AI | `url, [version_regex]` | `version, source, suggested_regex` |
+| `detect-feed` | 扫描页面 RSS/Atom feed | 确定性 | `url` | `feeds[]` |
+| `check-project` | 比对 DB 版本 vs 线上最新（只读） | 确定性 | `project` | `db_version, latest, has_update` |
+| `inspect-page` | chrome-devtools 打开页面，看网络请求/控制台/JS 状态 | AI+DevTools | `url` | `network_requests[], console[], snapshot` |
+
+#### B. 正则与 URL 维护
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `write-regex` | 为页面生成/修复 `version_regex`（含捕获组，可先抓 HTML 验证） | AI | `url` | `regex, matches[]` |
+| `find-url` | 为项目找最优 `update_source_url`（releases/RSS/JSON） | AI | `project` | `url, reason` |
+| `verify-url` | 验证 URL 可达且含版本信息 | 确定性 | `url` | `ok, version_found` |
+
+#### C. 单项目更新（写库，原子）
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `update-project` | 单项目更新到最新版本（抓日志→翻译→入库，原子） | 确定性→AI | `project` | `new_version, created` |
+| `add-version` | 为项目写入指定版本记录 | 确定性 | `project, version, [date], [content]` | `version_id` |
+| `backfill-versions` | 补全项目缺失的历史版本 | 确定性 | `project, [from]` | `added_count` |
+| `fix-project` | 修复损坏项目（正则失效/URL 错/数据过期） | AI | `project` | `action, fixed` |
+
+#### D. GitHub 专用
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `github-repo` | 抓取单个 GitHub 仓库信息 | 确定性 | `owner/repo` | `repo_info` |
+| `github-releases` | 抓取仓库 releases 列表 | 确定性 | `owner/repo, [limit]` | `releases[]` |
+| `github-trending` | 抓取热门仓库 | 确定性 | `[language, since, per_page]` | `repos[]` |
+
+#### E. AI 内容任务（需 LLM）
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `add-project` | 收录新项目（原子：项目+版本+≥3 中文链接） | AI | `name, url` | `project_id` |
+| `curate-links` | 找 ≥3 条中文社区链接 | AI | `project` | `links[]` |
+| `write-description` | 撰写/翻译 `summar` + `describe` | AI | `project` | `summar, describe` |
+| `translate-changelog` | 翻译更新日志为中文 | AI | `content` | `translation` |
+
+#### F. 运维任务
+
+| 任务 | 说明 | 引擎 | 输入 | 输出 |
+|------|------|------|------|------|
+| `check-projects` | 全量探测（跑 `check-updates.js`） | 确定性 | — | `changed[], nocache[]` |
+| `process-github` | GitHub 程序化更新全量 | 确定性 | — | `summary` |
+| `process-regex` | 正则程序化更新 | 确定性 | — | `summary` |
+| `report` | 生成运营报告 | 确定性→AI | `[since]` | `report` |
+| `cleanup-stale` | 找出停更/死链项目供审核 | 确定性→AI | — | `candidates[]` |
+
+> 任务类型是可扩展枚举，后台可查看全部类型、参数与示例。
+
+### 5.3 任务执行模型
+
+```json
+{
+  "id": "tk_8f3a...",
+  "type": "get-version",
+  "engine": "in-app",              // in-app | github-actions
+  "inputs": { "url": "https://..." },
+  "status": "queued",              // queued | running | success | failed | cancelled
+  "progress": 0.6,
+  "log": "…",                      // 分段日志（SSE 推送）
+  "result": { "version": "v2.4.1", "source": "version_regex", "suggested_regex": "/Version\\s+(\\d+\\.\\d+\\.\\d+)/" },
+  "triggered_by": "admin",         // admin | workflow | schedule
+  "created_at": "...",
+  "finished_at": "..."
+}
+```
+
+### 5.4 API
+
+```
+POST /api/ops/task                  # 派发微任务（body: type, inputs, engine?, chain?）
+GET  /api/ops/task/[id]             # 查询状态/结果（Accept: text/event-stream → SSE 实时）
+POST /api/ops/task/[id]/cancel      # 取消
+GET  /api/ops/tasks                 # 任务历史（分页）
+POST /api/ops/task/chain            # 链式编排：{ steps: [ {type, inputs}, ... ] }
+```
+
+### 5.5 GH Actions 微任务 workflow（`task-run.yml`）
+
+独立轻量 workflow，一次只跑一个任务：
+
+```yaml
+name: LogUp Micro Task
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        type: choice
+        options: [probe, get-version, write-regex, find-url, update-project, add-project, github-repo, inspect-page, report]
+        required: true
+      target:        # URL / owner/repo / 项目名
+        required: true
+      params:        # 可选 JSON 参数
+        type: string
+        default: "{}"
+      write_to_db:
+        type: boolean
+        default: false
+jobs:
+  run-task:
+    steps:
+      - checkout
+      - npm ci
+      - run: node scripts/run-task.js --task "${{ inputs.task }}" --target "${{ inputs.target }}" --params "${{ inputs.params }}" --write-to-db ${{ inputs.write_to_db }}
+      # 结果回传后台: POST /api/ops/task/[id]/result (x-admin-key)
+```
+
+---
+
+## 6. AI Provider 配置管理
 
 ### 5.1 数据模型
 
@@ -150,7 +326,7 @@ DELETE /api/admin/ai-providers/[id]     # 删除
 
 ---
 
-## 6. 数据模型变更
+## 7. 数据模型变更
 
 新增（Prisma）：
 
@@ -183,7 +359,7 @@ model OpRun {
 
 ---
 
-## 7. 运营工作流重构（确定性优先）
+## 8. 运营工作流重构（确定性优先）
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -208,11 +384,12 @@ model OpRun {
 
 ---
 
-## 8. 目录结构（目标态）
+## 9. 目录结构（目标态）
 
 ```
 ├── scripts/
 │   ├── crawler.js                # 工业抓取引擎（代理池/UA/TLS/重试/限速）
+│   ├── run-task.js               # 微任务执行器（task-run.yml 入口）
 │   ├── check-updates.js          # 探测（改用 crawler.js）
 │   ├── process-github-updates.js # GitHub 程序化更新
 │   ├── process-regex-updates.js  # 正则程序化更新（新增）
@@ -220,34 +397,48 @@ model OpRun {
 ├── lib/
 │   ├── crawler.ts                # TS 侧抓取封装（供后台任务用）
 │   ├── github.ts                 # GitHub 爬取 + 限流多 token
+│   ├── tasks.ts                  # 微任务注册表 + 执行调度
+│   ├── github-actions.ts         # GH Actions 派发/状态/取消
 │   ├── ai-providers.ts           # AI Provider 读写（加密）
 │   └── auth.ts
 ├── app/api/
-│   ├── ops/                      # 运营控制（status/run/history）
+│   ├── ops/
+│   │   ├── status/route.ts       # 全局状态
+│   │   ├── run/route.ts          # 站内运营触发
+│   │   ├── history/route.ts      # OpRun 历史
+│   │   ├── task/                 # 微任务（POST/GET/SSE/cancel/chain）
+│   │   └── gh-actions/           # GH Actions 派发/状态/取消
 │   └── admin/ai-providers/       # AI Provider 管理
 ├── app/admin/
-│   ├── ops/page.tsx              # 运营控制界面
+│   ├── ops/page.tsx              # 运营控制界面（含微任务控制台）
 │   └── ai/page.tsx               # AI Provider 界面
+├── .github/workflows/
+│   ├── github-data-ops.yml       # 全量运营流水线（兜底）
+│   └── task-run.yml              # 微任务 workflow（后台派发）
 └── prisma/schema.prisma
 ```
 
 ---
 
-## 9. 实施路线图
+## 10. 实施路线图
 
 | 阶段 | 内容 | 依赖 |
 |------|------|------|
 | **P0 文档** | 本文档定稿 | 无 |
 | **P1 抓取引擎** | `scripts/crawler.js`（代理/UA/TLS/重试/限速）+ `check-updates.js` 接入 | 无 |
-| **P2 数据模型** | Prisma 增加 `AiProvider`、`OpRun`，迁移 | 无 |
+| **P2 数据模型** | Prisma 增加 `AiProvider`、`OpRun`、`OpTask`，迁移 | 无 |
 | **P3 AI 配置** | `lib/ai-providers.ts`（AES 加密）+ `/api/admin/ai-providers` + `/admin/ai` 界面 + `/api/translate` 接入 | P2 |
-| **P4 控制平面** | `/api/ops/*` + `/admin/ops` 界面 + OpRun 记录 | P2、P3 |
-| **P5 工作流重构** | `process-regex-updates.js` + GH Actions 改兜底 + 报告去垃圾 + PROXY_URLS 注入 | P1 |
-| **P6 GitHub 限流** | `lib/github.ts` 多 token + x-ratelimit-reset | P1 |
+| **P4 控制平面** | `/api/ops/status\|run\|history` + `/admin/ops` 界面 + OpRun 记录 | P2、P3 |
+| **P5 微任务系统** | `lib/tasks.ts` 注册表 + `/api/ops/task/*`（含 SSE/取消/链式）+ `scripts/run-task.js` + `task-run.yml` + 后台微任务控制台 | P1、P4 |
+| **P6 GH Actions 控制** | `lib/github-actions.ts` 派发/状态/取消 + 后台按钮 | P5 |
+| **P7 工作流重构** | `process-regex-updates.js` + GH Actions 改兜底 + 报告去垃圾 + PROXY_URLS 注入 | P1 |
+| **P8 GitHub 限流** | `lib/github.ts` 多 token + x-ratelimit-reset | P1 |
+
+chrome-devtools MCP 已随 workflow 接入（见 §3.5）。
 
 ---
 
-## 10. 环境变量新增
+## 11. 环境变量新增
 
 ```
 # 代理池（可选，逗号分隔多个）
