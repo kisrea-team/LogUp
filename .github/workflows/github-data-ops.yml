@@ -2,7 +2,7 @@ name: GitHub Data Ops
 
 on:
   schedule:
-    - cron: "0 */3 * * *" # 每6小时运行一次
+    - cron: "0 */3 * * *" # 每 3 小时运行一次
   workflow_dispatch: # 允许手动触发
   push:
     branches:
@@ -127,30 +127,42 @@ jobs:
       - name: Install uv for MCP fetch server
         uses: astral-sh/setup-uv@v5
 
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Resolve Chrome binary path (for chrome-devtools MCP)
+        run: |
+          CHROME_BIN=$(ls ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)
+          if [ -z "$CHROME_BIN" ]; then
+            echo "::warning::未找到 Playwright Chromium，尝试安装真实 Chrome"
+            mkdir -p /opt/chrome && npx -y @puppeteer/browsers install chrome@stable --path /opt/chrome 2>/dev/null || true
+            CHROME_BIN=$(find /opt/chrome -name chrome -type f 2>/dev/null | head -1)
+          fi
+          echo "CHROME_BIN=${CHROME_BIN}"
+          echo "CHROME_BIN=${CHROME_BIN}" >> $GITHUB_ENV
+
       - name: Configure MCP servers
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          cat > .mcp.json << EOF
-          {
-            "mcpServers": {
-              "fetch": {
-                "command": "uvx",
-                "args": ["mcp-server-fetch"]
-              },
-              "postgres": {
-                "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"]
-              }
+          node -e '
+          const fs = require("fs");
+          const chromeArgs = ["-y", "chrome-devtools-mcp@latest", "--headless", "--no-usage-statistics"];
+          if (process.env.CHROME_BIN) chromeArgs.push("--executable-path=" + process.env.CHROME_BIN);
+          const mcp = {
+            mcpServers: {
+              fetch: { command: "uvx", args: ["mcp-server-fetch"] },
+              postgres: { command: "npx", args: ["-y", "@modelcontextprotocol/server-postgres", process.env.DATABASE_URL] },
+              "chrome-devtools": { command: "npx", args: chromeArgs }
             }
-          }
-          EOF
+          };
+          fs.writeFileSync(".mcp.json", JSON.stringify(mcp, null, 2));
+          console.log("chrome-devtools MCP args:", JSON.stringify(chromeArgs));
+          '
 
-      - name: Install Google Indexing dependencies
-        run: npm install googleapis
-
-      - name: Install Playwright
-        run: npm install playwright && npx playwright install chromium --with-deps
 
       - name: Restore ETag cache
         uses: actions/cache/restore@v4
