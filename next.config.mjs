@@ -34,7 +34,13 @@ const nextConfig = {
             },
         ],
     },
-    serverExternalPackages: [],
+    serverExternalPackages: [
+        'got-scraping',
+        'header-generator',
+        'browserslist',
+        'playwright',
+        'playwright-core',
+    ],
     output: 'standalone',
     async headers() {
         return [
