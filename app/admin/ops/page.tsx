@@ -26,6 +26,22 @@ interface OpsStatus {
   site_url?: string;
 }
 
+interface GhActionsStatus {
+  configured: boolean;
+  repo: string;
+  main_workflow?: { id: number; status: string; conclusion?: string | null; display_title?: string; updated_at?: string; html_url?: string } | null;
+  task_workflow?: { id: number; status: string; conclusion?: string | null; display_title?: string; updated_at?: string; html_url?: string } | null;
+  main_error?: string | null;
+  task_error?: string | null;
+}
+
+const RUN_BADGE: Record<string, string> = {
+  queued: 'bg-gray-100 text-gray-600',
+  in_progress: 'bg-blue-100 text-blue-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-orange-100 text-orange-700',
+};
+
 const STATUS_STYLE: Record<string, string> = {
   running: 'bg-blue-100 text-blue-700',
   success: 'bg-green-100 text-green-700',
@@ -47,7 +63,17 @@ export default function OpsControlPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [gh, setGh] = useState<GhActionsStatus | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchGhStatus = useCallback(async () => {
+    try {
+      const resp = await apiFetch('/ops/gh-actions');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      setGh(data);
+    } catch { /* ignore */ }
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -65,12 +91,16 @@ export default function OpsControlPage() {
 
   useEffect(() => {
     fetchStatus();
+    fetchGhStatus();
     // 每 3 秒轮询，实时反映运行进度
-    pollRef.current = setInterval(fetchStatus, 3000);
+    pollRef.current = setInterval(() => {
+      fetchStatus();
+      fetchGhStatus();
+    }, 3000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [fetchStatus]);
+  }, [fetchStatus, fetchGhStatus]);
 
   const triggerRun = async (phase: string) => {
     try {
@@ -92,6 +122,54 @@ export default function OpsControlPage() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const dispatchGhActions = async (workflow: 'github-data-ops.yml' | 'task-run.yml') => {
+    try {
+      setBusy(workflow);
+      setError('');
+      const resp = await apiFetch('/ops/gh-actions', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'dispatch', workflow }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setTimeout(fetchGhStatus, 1000);
+    } catch (e: any) {
+      setError(e?.message || '派发失败');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cancelGhRun = async (runId: number) => {
+    try {
+      setError('');
+      const resp = await apiFetch('/ops/gh-actions', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'cancel', run_id: runId }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setTimeout(fetchGhStatus, 1000);
+    } catch (e: any) {
+      setError(e?.message || '取消失败');
+    }
+  };
+
+  const renderRun = (run?: GhActionsStatus['main_workflow']) => {
+    if (!run) return <span className="text-gray-400">无记录</span>;
+    const badge = RUN_BADGE[run.status] || 'bg-gray-100';
+    const conclusion = run.conclusion ? ` · ${run.conclusion}` : '';
+    return (
+      <span className="flex items-center gap-2">
+        <span className={`px-2 py-0.5 text-xs rounded-full ${badge}`}>{run.status}{conclusion}</span>
+        <span className="text-xs text-gray-500">{run.display_title?.slice(0, 40) || `#${run.id}`}</span>
+        {run.status === 'in_progress' && (
+          <button onClick={() => cancelGhRun(run.id!)} className="text-xs text-red-500 hover:underline">取消</button>
+        )}
+      </span>
+    );
   };
 
   return (
@@ -157,6 +235,46 @@ export default function OpsControlPage() {
             >
               {busy === 'trending' ? '触发中...' : '触发 Trending 抓取'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* GitHub Actions 控制 */}
+      <div className="rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-2">GitHub Actions 控制</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          派发完整运营流水线（含 AI 长尾 / 新项目收录）或微任务到 GitHub 隔离环境执行。需要配置 GH_DISPATCH_TOKEN。
+        </p>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <button
+            onClick={() => dispatchGhActions('github-data-ops.yml')}
+            disabled={busy === 'github-data-ops.yml' || !gh?.configured}
+            className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-50 text-sm"
+          >
+            {busy === 'github-data-ops.yml' ? '派发中...' : '派发完整运营流水线'}
+          </button>
+          <button
+            onClick={() => dispatchGhActions('task-run.yml')}
+            disabled={busy === 'task-run.yml' || !gh?.configured}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 text-sm"
+          >
+            {busy === 'task-run.yml' ? '派发中...' : '派发微任务 (task-run)'}
+          </button>
+          {!gh?.configured && (
+            <span className="text-xs text-amber-600">GH_DISPATCH_TOKEN 未配置，无法派发</span>
+          )}
+          {gh?.configured && <span className="text-xs text-gray-500">仓库：{gh.repo}</span>}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="rounded bg-gray-50 p-3">
+            <div className="font-medium mb-1">完整流水线 (github-data-ops)</div>
+            {renderRun(gh?.main_workflow)}
+            {gh?.main_error && <div className="text-xs text-red-500 mt-1">{gh.main_error}</div>}
+          </div>
+          <div className="rounded bg-gray-50 p-3">
+            <div className="font-medium mb-1">微任务 (task-run)</div>
+            {renderRun(gh?.task_workflow)}
+            {gh?.task_error && <div className="text-xs text-red-500 mt-1">{gh.task_error}</div>}
           </div>
         </div>
       </div>
