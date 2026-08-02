@@ -1,29 +1,27 @@
-function getBackendBaseUrl() {
-  const fromEnv = process.env.BACKEND_NODE_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
-  const port = process.env.BACKEND_NODE_PORT || '8000';
-  return `http://127.0.0.1:${port}`;
-}
+import { NextRequest, NextResponse } from 'next/server';
+import { fetchGithubRepoInfo } from '@/lib/github';
 
-export async function POST(request: Request) {
+export const runtime = 'nodejs';
+
+// POST /api/scrape/github/repo - 抓取单个仓库的汇总信息（供 admin 表单自动填充）
+// Body: { repoUrl: string }
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const backendUrl = `${getBackendBaseUrl()}/scrape/github/repo`;
+    const repoUrl = body.repoUrl || body.repo || body.name;
+    if (!repoUrl) {
+      return NextResponse.json({ error: 'repoUrl is required' }, { status: 400 });
+    }
 
-    const resp = await fetch(backendUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const info = await fetchGithubRepoInfo(String(repoUrl));
+    if (!info) {
+      return NextResponse.json({ error: 'Invalid GitHub repo input' }, { status: 400 });
+    }
 
-    const text = await resp.text();
-    return new Response(text, {
-      status: resp.status,
-      headers: { 'Content-Type': resp.headers.get('content-type') || 'application/json; charset=utf-8' },
-    });
+    return NextResponse.json({ success: true, data: info });
   } catch (error) {
-    console.error('API error:', error);
-    return Response.json({ success: false, message: 'Internal server error' }, { status: 500 });
+    console.error('[scrape/github/repo] error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
-

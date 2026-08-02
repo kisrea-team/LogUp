@@ -1,26 +1,15 @@
-function getBackendBaseUrl() {
-  const fromEnv = process.env.BACKEND_NODE_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
-  const port = process.env.BACKEND_NODE_PORT || '8000';
-  return `http://127.0.0.1:${port}`;
-}
+import { NextResponse } from 'next/server';
+import { fixGithubIcons } from '@/lib/github';
 
+export const runtime = 'nodejs';
+
+// POST /api/scrape/github/fix-icons - 遍历所有项目，从 GitHub 补全图标
 export async function POST() {
   try {
-    const backendUrl = `${getBackendBaseUrl()}/scrape/github/fix-icons`;
-
-    const resp = await fetch(backendUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    const text = await resp.text();
-    return new Response(text, {
-      status: resp.status,
-      headers: { 'Content-Type': resp.headers.get('content-type') || 'application/json; charset=utf-8' },
-    });
+    const result = await fixGithubIcons();
+    return NextResponse.json({ success: true, ...result });
   } catch (error) {
-    console.error('API error:', error);
-    return Response.json({ success: false, message: 'Internal server error' }, { status: 500 });
+    console.error('[fix-icons] error:', error);
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
