@@ -47,3 +47,51 @@ model Version {
 
   @@map("versions")
 }
+
+// AI Provider 配置（后台可编辑的 AI 接口信息，/api/translate 等按优先级读取）
+model AiProvider {
+  id        Int      @id @default(autoincrement())
+  name      String
+  baseUrl   String   @map("base_url")
+  apiKey    String   @map("api_key") // AES 加密存储
+  model     String
+  enabled   Boolean  @default(true)
+  priority  Int      @default(100) // 数字小优先
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_providers")
+}
+
+// 运营运行记录（站内触发或 GH Actions 兜底，后台可查）
+model OpRun {
+  id          Int      @id @default(autoincrement())
+  triggeredBy String   @default("manual") @map("triggered_by") // manual | github-action
+  phase       String // all | github | trending | probe | task
+  status      String   @default("running") // running | success | failed | partial
+  summary     Json?
+  error       String?  @db.Text
+  startedAt   DateTime @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+
+  @@map("op_runs")
+}
+
+// 微任务（probe/get-version/update-project 等细粒度操作）
+model OpTask {
+  id          Int      @id @default(autoincrement())
+  taskId      String   @unique @map("task_id")
+  type        String // get-version | write-regex | update-project | add-project ...
+  engine      String   @default("in-app") @map("engine") // in-app | github-actions
+  inputs      Json     @default("{}")
+  status      String   @default("queued") // queued | running | success | failed | cancelled
+  progress    Float    @default(0)
+  log         String?  @db.Text
+  result      Json?
+  error       String?  @db.Text
+  triggeredBy String   @default("admin") @map("triggered_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  finishedAt  DateTime? @map("finished_at")
+
+  @@map("op_tasks")
+}
