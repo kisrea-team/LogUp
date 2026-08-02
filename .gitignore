@@ -13,8 +13,9 @@
 /.next/
 /out/
 
-# production
-/build
+# build artifacts
+/dist/
+/storage/
 
 # misc
 .DS_Store
@@ -32,6 +33,8 @@ yarn-error.log*
 # local env files
 .env
 .env*.local
+*.env
+!.env.example
 
 # vercel
 .vercel
@@ -45,4 +48,5 @@ next-env.d.ts
 # pycharm
 /.idea
 
-nul.analysis/
+# local analysis/scratch dirs
+.analysis/
