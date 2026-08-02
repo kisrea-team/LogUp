@@ -34,8 +34,8 @@ export default function AdminSidebar() {
         router.push(href);
     };
 
-    const handleLogout = () => {
-        clearAdminAuth();
+    const handleLogout = async () => {
+        await clearAdminAuth();
         router.push('/admin/login');
     };
 

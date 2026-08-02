@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
 // POST /api/versions - Create a new version, sync project.latest_version if newer
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
     const { project_id, version, update_time, content, download_url } = body;

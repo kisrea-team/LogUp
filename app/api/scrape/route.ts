@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scrapeGithubReleasesToDb } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,9 @@ export const runtime = 'nodejs';
 // 注：历史版本这里曾内置 VS Code RSS 特例爬虫（Crawlee），已移除。
 // VS Code 作为 GitHub 仓库 (microsoft/vscode) 由通用 GitHub 爬虫覆盖。
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
     const repos = Array.isArray(body.repos)

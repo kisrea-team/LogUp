@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchGithubRepoInfo } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
 // POST /api/scrape/github/repo - 抓取单个仓库的汇总信息（供 admin 表单自动填充）
 // Body: { repoUrl: string }
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
     const repoUrl = body.repoUrl || body.repo || body.name;

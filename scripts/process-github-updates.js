@@ -2,8 +2,14 @@ const fs = require('fs');
 
 const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').replace(/\/$/, '');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
 const REPORT_FILE = process.env.GITHUB_UPDATE_REPORT_FILE || '/tmp/github-update-report.json';
+
+// 给站点 API 请求注入鉴权头（写接口需要 x-admin-key）
+function withAdminAuth(headers = {}) {
+  return ADMIN_API_KEY ? { ...headers, 'x-admin-key': ADMIN_API_KEY } : headers;
+}
 
 function parseGitHubRepo(url) {
     try {
@@ -67,7 +73,10 @@ function areVersionsEquivalent(leftVersion, rightVersion) {
 }
 
 async function fetchJson(url, options = {}) {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+        ...options,
+        headers: withAdminAuth(options.headers || {}),
+    });
     const text = await response.text();
     let body = null;
     try {

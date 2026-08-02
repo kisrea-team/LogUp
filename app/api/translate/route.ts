@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,6 +10,9 @@ const BASE_URL = 'https://api.siliconflow.cn/v1';
 const MODEL = 'tencent/Hunyuan-MT-7B';
 
 export async function POST(request: NextRequest) {
+    const denied = await unauthorizedIfNotAdmin(request);
+    if (denied) return denied;
+
     try {
         const body = await request.json().catch(() => ({}));
         const content = body?.content;

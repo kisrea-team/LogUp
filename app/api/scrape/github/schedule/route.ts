@@ -4,6 +4,7 @@ import {
   runGithubScheduleOnce,
   updateGithubSchedule,
 } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -25,6 +26,9 @@ export async function GET() {
 //   interval_minutes?: number  — 0 表示不定时
 //   run_now: boolean
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
 

@@ -1,12 +1,10 @@
-/*
- * @Date: 2025-08-16
- * @LastEditors: vhko
- * @LastEditTime: 2026-01-21
- * @FilePath: /LogUp/next.config.mjs
- * Helllllloo!
+/**
+ * @type {import('next').NextConfig}
+ *
+ * 说明：
+ * - 前后端同源（Next.js route handlers 直连 Prisma / GitHub API），无需全局 CORS。
+ * - 全局 `Access-Control-Allow-Origin: *` 已移除（旧的分裂后端架构遗留）。
  */
-import path from 'path';
-/** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
         remotePatterns: [
@@ -41,19 +39,15 @@ const nextConfig = {
     async headers() {
         return [
             {
+                // 基础安全响应头（不含跨域许可）
                 source: '/:path*',
                 headers: [
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+                    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
                     {
-                        key: 'Access-Control-Allow-Origin',
-                        value: '*',
-                    },
-                    {
-                        key: 'Access-Control-Allow-Methods',
-                        value: 'GET, POST, PUT, DELETE, OPTIONS',
-                    },
-                    {
-                        key: 'Access-Control-Allow-Headers',
-                        value: 'Content-Type, Authorization',
+                        key: 'Permissions-Policy',
+                        value: 'camera=(), microphone=(), geolocation=()',
                     },
                 ],
             },

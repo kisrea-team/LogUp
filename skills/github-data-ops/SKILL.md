@@ -187,6 +187,8 @@ description: |
 
 详细 API 文档见 [references/api.md](references/api.md)。
 
+> 🔑 **鉴权**：站点 API 的**写请求**（POST/PUT/PATCH/DELETE，如创建/更新/删除项目、版本、触发爬虫、翻译）必须携带请求头 `x-admin-key: $ADMIN_API_KEY`。`$ADMIN_API_KEY` 已由运营环境注入。GET 只读请求无需鉴权。未携带该头会返回 `401 Unauthorized`。
+
 ### 快速参考
 
 | 操作 | 方法 | 路径 |

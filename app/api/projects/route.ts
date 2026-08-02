@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 function isDatabaseUnavailableError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -99,6 +100,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
     const {

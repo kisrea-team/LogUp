@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scrapeGithubReleasesToDb } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
 // POST /api/scrape/github - 抓取指定仓库的 releases 入库
 // Body: { repos: string[], include_prerelease?: boolean, limit_per_repo?: number }
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
     const repos = Array.isArray(body.repos)

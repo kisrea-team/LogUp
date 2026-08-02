@@ -68,3 +68,4 @@ skills:
 - links 至少 3 条非官方中文链接
 - 禁止构造或猜测 URL（DDGS 搜索结果除外）
 - 项目+版本必须原子化操作，禁止先建项目后补版本
+- 站点 API 写请求（POST/PUT/PATCH/DELETE）必须携带请求头 `x-admin-key: $ADMIN_API_KEY`（环境变量已注入）

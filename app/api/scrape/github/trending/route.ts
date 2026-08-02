@@ -4,6 +4,7 @@ import {
   updateTrendingSchedule,
   getTrendingScheduleStatus,
 } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,9 @@ export async function GET() {
 //   per_page: number          — how many trending repos to fetch
 //   limit_per_repo: number    — max releases per repo
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
 

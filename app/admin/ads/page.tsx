@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 // AdAnalytics 组件已被移除，相关功能已整合到页面中
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
-
-const API_BASE_URL = getApiBaseUrl();
+import { apiFetch } from '@/lib/api';
 
 interface AdPerformance {
     adId: string;
