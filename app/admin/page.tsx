@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import StatCard from '@/components/admin/StatCard';
 import AdminCard from '@/components/admin/AdminCard';
 import MotionList from '@/components/admin/MotionList';
+import { RenderIcon } from '@/components/utils/renderIcon';
 
 interface RecentProject {
   id: number;
@@ -91,7 +92,9 @@ export default function AdminPage() {
           <MotionList className="divide-y divide-gray-100">
             {(stats?.recent_projects || []).map((p) => (
               <div key={p.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors">
-                <span className="text-2xl shrink-0">{p.icon}</span>
+                <span className="shrink-0 grid place-items-center">
+                  <RenderIcon icon={p.icon} size={28} />
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{formatRelativeTime(p.latest_update_time)}</p>
@@ -110,7 +113,9 @@ export default function AdminPage() {
           <MotionList className="divide-y divide-gray-100">
             {(stats?.recent_versions || []).map((v) => (
               <div key={v.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors">
-                <span className="text-2xl shrink-0">{v.project.icon}</span>
+                <span className="shrink-0 grid place-items-center">
+                  <RenderIcon icon={v.project.icon} size={28} />
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{v.project.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{formatRelativeTime(v.update_time)}</p>
