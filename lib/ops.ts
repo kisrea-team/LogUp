@@ -70,6 +70,9 @@ export async function startRunAsync(opts: RunPhaseOptions): Promise<{ id: number
         const result = await runTrendingScheduleOnce();
         if (result?.success) {
           await finishOpRun(run.id, 'success', result.result);
+        } else if (result?.skipped) {
+          // 已有运行在跑 → 记 partial，不算失败
+          await finishOpRun(run.id, 'partial', null, `skipped: ${result.reason || 'running'}`);
         } else {
           await finishOpRun(run.id, 'failed', null, result?.error || 'trending run failed');
         }

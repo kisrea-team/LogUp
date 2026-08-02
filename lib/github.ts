@@ -73,21 +73,21 @@ export async function githubFetch(path: string, opts: { retries?: number } = {})
         currentToken = (currentToken + 1) % tokens.length; // 切换 token
         continue;
       }
-      if (retryAfter) {
+      // 无 token 可轮换：等待太久就直接失败，避免请求挂起
+      const resetWaitMs = reset ? Number(reset) * 1000 - Date.now() : NaN;
+      const maxWait = 30000; // 最多等 30s
+      if (retryAfter && Number(retryAfter) <= 30) {
         await sleep(Number(retryAfter) * 1000);
         continue;
       }
-      if (reset) {
-        const waitMs = Number(reset) * 1000 - Date.now();
-        if (waitMs > 0 && waitMs < 60000) {
-          await sleep(waitMs);
-          continue;
-        }
-      }
-      if (attempt < retries) {
-        await sleep(1000 * Math.pow(2, attempt));
+      if (Number.isFinite(resetWaitMs) && resetWaitMs > 0 && resetWaitMs <= maxWait) {
+        await sleep(resetWaitMs);
         continue;
       }
+      const hint = tokens.length === 0
+        ? '（未配置 GITHUB_TOKEN，匿名配额极低）'
+        : '';
+      return { status: resp.status, body: null, error: `GitHub API rate limit exceeded${hint} — 请在 .env 配置 GITHUB_TOKEN 或稍后再试` };
     }
     return { status: resp.status, body: null, error: `http ${resp.status}` };
   }
