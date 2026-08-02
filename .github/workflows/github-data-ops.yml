@@ -194,6 +194,7 @@ jobs:
         env:
           SITE_URL: https://zitons-logup-re.hf.space
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
 
       - name: "Phase 1: Update existing projects (sub-agent orchestration)"
         run: |
@@ -212,13 +213,14 @@ jobs:
              为每个结果各启动一个 project-handler 子代理（触发原因 no-url）
           4. 收到每个子代理结果后只需简单记录，全部完成后统一输出 JSON 数组汇总报告
 
-          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 访问  GITHUB_TOKEN 已注入（用于 GitHub API）" \
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 访问  GITHUB_TOKEN 已注入（用于 GitHub API）  ADMIN_API_KEY 已注入（站点 API 写请求携带 x-admin-key 头）" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-update.jsonl
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
           DDGS_SEARCH_API: ${{ vars.DDGS_SEARCH_API }}
 
       - name: "Phase 2: Add new projects (sub-agent orchestration)"
@@ -232,16 +234,17 @@ jobs:
           4. 汇总所有子代理返回的 JSON 结果，输出运营报告
           5. 本次至少新增 5 个项目，GitHub 与非 GitHub 项目比例约 1:1
 
-          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 直接访问  GITHUB_TOKEN 已注入环境变量（用于 GitHub API 鉴权以规避限流）" \
+          环境：API=https://zitons-logup-re.hf.space  DDGS_SEARCH_API=${{ vars.DDGS_SEARCH_API }}  数据库可通过 postgres MCP 直接访问  GITHUB_TOKEN 已注入环境变量（用于 GitHub API 鉴权以规避限流）  ADMIN_API_KEY 已注入（站点 API 写请求携带 x-admin-key 头）" \
             --dangerously-skip-permissions \
             --verbose \
             --output-format stream-json 2>&1 | tee /tmp/ops-add.jsonl
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
           DDGS_SEARCH_API: ${{ vars.DDGS_SEARCH_API }}
 
-      - name: Create operation report issue
+      - name: Create operation report issue (仅失败或实质变更时)
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -273,6 +276,22 @@ jobs:
           const githubFailures = Array.isArray(githubReport?.processed)
             ? githubReport.processed.filter((item) => item && item.action === 'failed')
             : [];
+
+          // 判定是否需要建 issue：有失败 或 有实质变更
+          const updateStr = String(update || '');
+          const addStr = String(add || '');
+          const hasFailure =
+            githubFailures.length > 0 ||
+            /失败|error|failed/i.test(updateStr + addStr);
+          const hasChange =
+            /(新增|更新|收录|created|updated|added)/i.test(updateStr + addStr);
+
+          if (!hasFailure && !hasChange) {
+            console.log('[report] 无失败且无实质变更，跳过创建 issue');
+            fs.writeFileSync('/tmp/skip-issue.flag', '1');
+            process.exit(0);
+          }
+
           const date = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
           let body = '## 运营报告\n\n**时间**：' + date + '\n\n';
           body += '### 存量更新\n\n' + (update || '未执行或无输出') + '\n\n';
@@ -283,10 +302,14 @@ jobs:
           body += '### 新项目收录\n\n' + (add || '未执行或无输出');
           fs.writeFileSync('/tmp/issue-body.md', body);
           JSEOF
-          gh issue create \
-            --title "运营报告 $(date -u '+%Y-%m-%d %H:%M UTC')" \
-            --body-file /tmp/issue-body.md \
-            --repo kisrea-team/LogUp
+          if [ -f /tmp/skip-issue.flag ]; then
+            echo "跳过创建 issue（无失败、无变更）"
+          else
+            gh issue create \
+              --title "运营报告 $(date -u '+%Y-%m-%d %H:%M UTC')" \
+              --body-file /tmp/issue-body.md \
+              --repo kisrea-team/LogUp
+          fi
 
       - name: Submit new URLs to Google Indexing API
         if: always()

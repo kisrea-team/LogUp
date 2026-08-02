@@ -22,6 +22,78 @@ function githubHeaders(): Record<string, string> {
   return headers;
 }
 
+// ── 限流感知 GitHub API 请求（多 token 轮换 + x-ratelimit-reset 等待）──
+function getGithubTokens(): string[] {
+  const tokens: string[] = [];
+  for (let i = 1; i <= 5; i += 1) {
+    const t = process.env[`GITHUB_TOKEN${i === 1 ? '' : `_${i}`}`];
+    if (t) tokens.push(t);
+  }
+  return tokens;
+}
+let githubTokenCursor = 0;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export interface GithubApiResult {
+  status: number;
+  body: unknown;
+  error?: string;
+}
+
+export async function githubFetch(path: string, opts: { retries?: number } = {}): Promise<GithubApiResult> {
+  const tokens = getGithubTokens();
+  const { retries = 3 } = opts;
+  const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
+  let lastError: string | undefined;
+  let currentToken = githubTokenCursor % Math.max(tokens.length, 1);
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const token = tokens[currentToken] || '';
+    const headers = { ...GITHUB_API_HEADERS };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const resp = await fetch(url, { headers }).catch((e: Error) => {
+      lastError = e.message;
+      return null;
+    });
+    if (!resp) {
+      if (attempt < retries) await sleep(1000 * Math.pow(2, attempt));
+      continue;
+    }
+    if (resp.ok) {
+      githubTokenCursor = (currentToken + 1) % Math.max(tokens.length, 1);
+      const body = resp.status === 204 ? null : await resp.json().catch(() => null);
+      return { status: resp.status, body };
+    }
+    if (resp.status === 403 || resp.status === 429) {
+      lastError = `rate-limited ${resp.status}`;
+      const retryAfter = resp.headers.get('retry-after');
+      const reset = resp.headers.get('x-ratelimit-reset');
+      if (tokens.length > 1) {
+        currentToken = (currentToken + 1) % tokens.length; // 切换 token
+        continue;
+      }
+      if (retryAfter) {
+        await sleep(Number(retryAfter) * 1000);
+        continue;
+      }
+      if (reset) {
+        const waitMs = Number(reset) * 1000 - Date.now();
+        if (waitMs > 0 && waitMs < 60000) {
+          await sleep(waitMs);
+          continue;
+        }
+      }
+      if (attempt < retries) {
+        await sleep(1000 * Math.pow(2, attempt));
+        continue;
+      }
+    }
+    return { status: resp.status, body: null, error: `http ${resp.status}` };
+  }
+  return { status: 0, body: null, error: lastError || 'github api failed' };
+}
+
 // 解析用户输入的 GitHub 仓库（URL / owner/repo 短格式 / 带引号包裹）
 export function parseGithubRepoInput(input: string): { owner: string; repo: string } | null {
   let trimmed = String(input || '').trim();
@@ -52,15 +124,14 @@ function toDateInputValue(value: string | number | Date): string {
 }
 
 export async function fetchGithubRepo(owner: string, repo: string): Promise<Record<string, unknown>> {
-  const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: githubHeaders(),
-    next: { revalidate: 60 },
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`GitHub API ${resp.status} for ${owner}/${repo}: ${text.slice(0, 300)}`);
+  const result = await githubFetch(`/repos/${owner}/${repo}`, { retries: 2 });
+  if (result.error || result.status === 0) {
+    throw new Error(`GitHub API failed for ${owner}/${repo}: ${result.error}`);
   }
-  return resp.json();
+  if (result.status >= 400) {
+    throw new Error(`GitHub API ${result.status} for ${owner}/${repo}`);
+  }
+  return result.body as Record<string, unknown>;
 }
 
 export interface GithubRelease {
@@ -87,15 +158,14 @@ export async function fetchGithubReleases(
 
   while (true) {
     if (page > maxPages) break;
-    const resp = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/releases?per_page=${perPage}&page=${page}`,
-      { headers: githubHeaders() }
-    );
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => '');
-      throw new Error(`GitHub API ${resp.status} for ${owner}/${repo}: ${text.slice(0, 300)}`);
+    const result = await githubFetch(`/repos/${owner}/${repo}/releases?per_page=${perPage}&page=${page}`, { retries: 2 });
+    if (result.error || result.status === 0) {
+      throw new Error(`GitHub API failed for ${owner}/${repo}: ${result.error}`);
     }
-    const batch = (await resp.json()) as GithubRelease[];
+    if (result.status >= 400) {
+      throw new Error(`GitHub API ${result.status} for ${owner}/${repo}`);
+    }
+    const batch = result.body as GithubRelease[];
     if (!Array.isArray(batch) || batch.length === 0) break;
 
     for (const r of batch) {
@@ -167,13 +237,10 @@ function extractFirstImageFromReadme(content: string): string | null {
 
 async function fetchReadmeIcon(owner: string, repo: string): Promise<string | null> {
   try {
-    const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-      headers: githubHeaders(),
-      next: { revalidate: 3600 },
-    });
-    if (!resp.ok) return null;
-    const data = (await resp.json()) as { content?: string };
-    if (!data.content) return null;
+    const result = await githubFetch(`/repos/${owner}/${repo}/readme`, { retries: 1 });
+    if (result.error || result.status >= 400) return null;
+    const data = result.body as { content?: string } | null;
+    if (!data?.content) return null;
     const decoded = Buffer.from(data.content, 'base64').toString('utf-8');
     return extractFirstImageFromReadme(decoded);
   } catch {
@@ -257,15 +324,14 @@ export async function fetchGithubTrendingRepos(opts: {
   let q = `stars:>100 pushed:>${dateStr}`;
   if (language) q += ` language:${language}`;
 
-  const resp = await fetch(
-    `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=${perPage}`,
-    { headers: githubHeaders() }
+  const result = await githubFetch(
+    `/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=${perPage}`,
+    { retries: 2 }
   );
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`GitHub Search API ${resp.status}: ${text.slice(0, 300)}`);
+  if (result.error || result.status >= 400) {
+    throw new Error(`GitHub Search API ${result.status || 'failed'}: ${result.error || ''}`);
   }
-  const data = (await resp.json()) as {
+  const data = result.body as {
     items?: Array<{
       full_name: string;
       owner?: { login?: string };
