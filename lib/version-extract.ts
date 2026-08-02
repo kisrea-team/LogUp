@@ -14,12 +14,15 @@ export interface VersionExtractResult {
 }
 
 const VERSION_PATTERNS: Array<{ re: RegExp; source: string }> = [
-  // 完整 semver：1.2.3 或 v1.2.3
-  { re: /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:[-+][0-9A-Za-z.-]+)?\b/g, source: 'semver' },
-  // 次版本：1.2
+  // 完整 semver：1.2.3 / v1.2.3；预发布仅接受 alpha/beta/rc/pre/patch，避免吞文件名(-windows-x64.msi)
+  {
+    re: /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc|pre|patch)[0-9.]*)?(?:[+][0-9A-Za-z.-]+)?\b/g,
+    source: 'semver',
+  },
+  // 次版本：1.2 或 v1.2（裸数字需带小数点，避免年份/计数误报）
   { re: /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\b/g, source: 'minor' },
-  // 主版本：v1 / 1.x
-  { re: /\bv?(0|[1-9]\d*)\b/g, source: 'major' },
+  // 主版本：仅接受带 v 前缀的（v1 / v25），裸数字不算版本
+  { re: /\bv(0|[1-9]\d*)\b/g, source: 'major' },
 ];
 
 // 提取 JSON-LD / __NEXT_DATA__ / __INITIAL_STATE__ 中的内联 JSON 文本
@@ -98,7 +101,7 @@ export function extractVersionFromHtml(
 
   // 3. 正文带关键词上下文
   const body = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ');
-  const keywordRe = /(?:version|v\.?\s|release|changelog|更新|版本)[^\n]{0,80}/gi;
+  const keywordRe = /(?:version|v\.?\s|release|changelog|download|下载|更新|版本)[^\n]{0,80}/gi;
   const kwMatches = [...body.matchAll(keywordRe)];
   for (const kw of kwMatches) {
     const found = findInScopedText(kw[0], 'body');
