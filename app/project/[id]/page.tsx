@@ -1,12 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import Loading from '@/components/Loading';
 import ProjectLog from '@/components/ProjectLog';
 import { RenderIcon } from '@/components/utils/renderIcon';
-
-// const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;

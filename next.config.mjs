@@ -36,19 +36,8 @@ const nextConfig = {
             },
         ],
     },
-    serverExternalPackages: [
-        'turndown',
-        '@crawlee/cheerio',
-        '@crawlee/http',
-        '@crawlee/basic',
-        'got-scraping',
-        'header-generator',
-        'browserslist',
-    ],
+    serverExternalPackages: [],
     output: 'standalone',
-    async rewrites() {
-        return [];
-    },
     async headers() {
         return [
             {

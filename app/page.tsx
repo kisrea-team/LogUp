@@ -3,14 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import Loading from '@/components/Loading';
 import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
 import Pagination from '@/components/Pagination';
 import FilterType from '@/components/utils/FilterType';
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
