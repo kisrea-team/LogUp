@@ -1,55 +1,27 @@
-// 从 HTML 文本中提取版本号（规则化，不依赖 LLM）
+// 从 HTML 文本中提取版本号（规则化，不依赖 LLM）v2
 //
-// 策略优先级：
-// 1. 传入的 version_regex（显式规则）
-// 2. <title>/meta/JSON-LD 等结构化位置中的版本号
-// 3. 正文中带上下文（version/release/更新 等关键词）的版本号
+// 核心原则：真实版本号会【反复出现】—— 标题、meta、下载链接、正文多处。
+// 垃圾版本（JS 资产、构建号）只出现一次、不在下载链接里。
 //
-// 关键：每次提取都返回【置信度】。低置信度结果必须升级到 AI 复核，
-// 而不是直接写入 —— 否则用户无法知道哪个版本是错的。
+// 评分 = 范围权重 + 精度权重 + 出现次数 + 是否在页面URL中 + 是否在下载链接中
+// 只有高置信才可免 AI 直接写入；中/低置信必须升级到 AI 复核。
 
 export type Confidence = 'high' | 'medium' | 'low';
 
 export interface VersionExtractResult {
   version: string | null;
-  source: string; // version_regex | title | meta | json-ld | body | none
+  source: string; // version_regex | title | json-ld | body | url | none
   confidence: Confidence;
-  needsAiCheck: boolean; // confidence === 'low'
+  needsAiCheck: boolean;
   suggestedRegex: string | null;
   matchedContext?: string;
+  candidates?: Array<{ version: string; score: number; inDownloadUrl: boolean; scope: string }>;
 }
 
-const VERSION_PATTERNS: Array<{ re: RegExp; source: string }> = [
-  // 完整 semver：1.2.3 / v1.2.3；预发布仅接受 alpha/beta/rc/pre/patch，避免吞文件名(-windows-x64.msi)
-  {
-    re: /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc|pre|patch)[0-9.]*)?(?:[+][0-9A-Za-z.-]+)?\b/g,
-    source: 'semver',
-  },
-  // 次版本：1.2 或 v1.2（裸数字需带小数点，避免年份/计数误报）
-  { re: /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\b/g, source: 'minor' },
-  // 主版本：仅接受带 v 前缀的（v1 / v25），裸数字不算版本
-  { re: /\bv(0|[1-9]\d*)\b/g, source: 'major' },
-];
-
-// 置信度：来源(scope) + 精度(pattern) 共同决定
-function confidenceFor(scope: string, pattern: string): Confidence {
-  if (scope === 'version_regex' || scope === 'json-ld') return 'high';
-  if (scope === 'title') return pattern === 'semver' ? 'high' : pattern === 'minor' ? 'medium' : 'low';
-  if (scope === 'body') return pattern === 'semver' ? 'medium' : 'low';
-  return 'low';
-}
-
-// 提取 JSON-LD / __NEXT_DATA__ / __INITIAL_STATE__ 中的内联 JSON 文本
-function extractStructuredText(html: string): string {
-  const parts: string[] = [];
-  const jsonLd = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
-  jsonLd.forEach((m) => parts.push(m.replace(/<[^>]+>/g, '')));
-  const nextData = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
-  if (nextData) parts.push(nextData[1]);
-  const initState = html.match(/<script[^>]*id=["']__INITIAL_STATE__["'][^>]*>([\s\S]*?)<\/script>/i);
-  if (initState) parts.push(initState[1]);
-  return parts.join('\n');
-}
+const SEMVER_RE =
+  /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc|pre|patch)[0-9.]*)?(?:[+][0-9A-Za-z.-]+)?\b/g;
+const MINOR_RE = /\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\b/g;
+const MAJOR_RE = /\bv(0|[1-9]\d*)\b/g;
 
 function normalizeVersion(raw: string): string {
   const t = raw.trim();
@@ -64,16 +36,35 @@ export function suggestRegex(version: string): string | null {
   return `v?(\\d+)`;
 }
 
-function findInScopedText(scopedText: string, scope: string): { version: string; scope: string; pattern: string } | null {
-  for (const pattern of VERSION_PATTERNS) {
-    const matches = [...scopedText.matchAll(pattern.re)];
-    for (const m of matches) {
-      const v = m[0];
-      if (pattern.source === 'major' && /^\d{4}$/.test(v)) continue;
-      return { version: normalizeVersion(v), scope, pattern: pattern.source };
-    }
-  }
-  return null;
+// 可疑版本：次要段/补丁段超长（如 3.884.99 的 884）、无 v 的大数字 —— 大概率是 JS/资产版本
+function isSuspicious(raw: string): boolean {
+  const nums = raw.replace(/^v/i, '').split('.').map((x) => parseInt(x, 10) || 0);
+  if (nums.length >= 2 && nums[1] >= 1000) return true;
+  if (nums.length >= 3 && nums[2] >= 10000) return true;
+  if (nums.length === 1 && !raw.startsWith('v') && nums[0] >= 100) return true;
+  return false;
+}
+
+// 页面 URL 是否像下载/资源链接（版本号常嵌其中）
+function isDownloadUrl(u: string): boolean {
+  return (
+    /\.(zip|dmg|exe|msi|tar\.gz|tar\.bz2|tgz|deb|rpm|apk|pkg|7z)(\?|#|$)/i.test(u) ||
+    /\/download(s)?\//i.test(u) ||
+    /\/releases?\//i.test(u) ||
+    /\/ftp\//i.test(u) ||
+    /\/dl\//i.test(u)
+  );
+}
+
+function extractStructuredText(html: string): string {
+  const parts: string[] = [];
+  const jsonLd = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  jsonLd.forEach((m) => parts.push(m.replace(/<[^>]+>/g, '')));
+  const nextData = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (nextData) parts.push(nextData[1]);
+  const initState = html.match(/<script[^>]*id=["']__INITIAL_STATE__["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (initState) parts.push(initState[1]);
+  return parts.join('\n');
 }
 
 export function extractVersionFromHtml(
@@ -81,80 +72,128 @@ export function extractVersionFromHtml(
   opts: { versionRegex?: string | null; url?: string } = {}
 ): VersionExtractResult {
   const none = (): VersionExtractResult => ({ version: null, source: 'none', confidence: 'low', needsAiCheck: true, suggestedRegex: null });
-
   if (!html) return none();
 
-  // 1. 显式正则
+  // 0. 显式正则：最高优先
   if (opts.versionRegex) {
     try {
       const re = new RegExp(opts.versionRegex);
       const match = re.exec(html);
       const raw = match ? (match[1] !== undefined ? match[1] : match[0]) : null;
       if (raw) {
-        const v = normalizeVersion(raw);
-        return { version: v, source: 'version_regex', confidence: 'high', needsAiCheck: false, suggestedRegex: opts.versionRegex, matchedContext: extractContext(html, match ? match.index : -1) };
+        return { version: normalizeVersion(raw), source: 'version_regex', confidence: 'high', needsAiCheck: false, suggestedRegex: opts.versionRegex };
       }
     } catch {
       // 正则无效，继续启发式
     }
   }
 
-  // 2. 结构化位置
+  // 1. 收集页面 URL（用于"是否出现在链接里" + 下载链接交叉验证）
+  const urls = [...html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)]
+    .map((m) => m[1])
+    .filter((u) => u.startsWith('http') || u.startsWith('/'));
+  const downloadUrls = urls.filter(isDownloadUrl);
+
+  // 2. 收集候选版本（含来源），剔除可疑值
+  const candidates: Array<{ version: string; pattern: 'semver' | 'minor' | 'major'; scope: string }> = [];
   const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
   const metas = [...html.matchAll(/<meta[^>]+(?:name|property)=["'](?:description|og:title|og:description)["'][^>]*content=["']([^"']*)["']/gi)].map((m) => m[1]).join(' ');
   const structured = extractStructuredText(html);
-
-  const scoped = [
-    { text: `${title}\n${metas}`, source: 'title' },
-    { text: structured, source: 'json-ld' },
-  ];
-  for (const s of scoped) {
-    const found = findInScopedText(s.text, s.source);
-    if (found) {
-      const v = found.version;
-      return {
-        version: v,
-        source: found.scope,
-        confidence: confidenceFor(found.scope, found.pattern),
-        needsAiCheck: confidenceFor(found.scope, found.pattern) === 'low',
-        suggestedRegex: suggestRegex(v),
-        matchedContext: extractContext(html, html.indexOf(v.replace(/^v/, ''))),
-      };
-    }
-  }
-
-  // 3. 正文带关键词上下文
   const body = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ');
   const keywordRe = /(?:version|v\.?\s|release|changelog|download|下载|更新|版本)[^\n]{0,80}/gi;
-  const kwMatches = [...body.matchAll(keywordRe)];
-  for (const kw of kwMatches) {
-    const found = findInScopedText(kw[0], 'body');
-    if (found) {
-      const v = found.version;
-      return {
-        version: v,
-        source: 'body',
-        confidence: confidenceFor('body', found.pattern),
-        needsAiCheck: confidenceFor('body', found.pattern) === 'low',
-        suggestedRegex: suggestRegex(v),
-        matchedContext: kw[0].trim(),
-      };
-    }
-  }
+  const keywordText = [...body.matchAll(keywordRe)].map((m) => m[0]).join('\n');
 
-  // 4. 全文兜底：仅接受完整 semver（来源不可控，一律标低置信需要复核）
-  for (const pattern of VERSION_PATTERNS) {
-    if (pattern.source !== 'semver') continue;
-    const m = html.match(pattern.re);
-    if (m) {
-      const v = m[0];
-      if (!/^\d{4}$/.test(v)) {
-        return { version: normalizeVersion(v), source: 'body', confidence: 'low', needsAiCheck: true, suggestedRegex: suggestRegex(v) };
+  const scopes: Array<{ text: string; scope: string }> = [
+    { text: `${title}\n${metas}`, scope: 'title' },
+    { text: structured, scope: 'json-ld' },
+    { text: keywordText, scope: 'body' },
+  ];
+  const patterns: Array<{ re: RegExp; name: 'semver' | 'minor' | 'major' }> = [
+    { re: SEMVER_RE, name: 'semver' },
+    { re: MINOR_RE, name: 'minor' },
+    { re: MAJOR_RE, name: 'major' },
+  ];
+  for (const s of scopes) {
+    for (const p of patterns) {
+      for (const m of s.text.matchAll(p.re)) {
+        const raw = m[0];
+        if (p.name === 'major' && /^\d{4}$/.test(raw)) continue;
+        if (isSuspicious(raw)) continue;
+        candidates.push({ version: normalizeVersion(raw), pattern: p.name, scope: s.scope });
       }
     }
   }
+  // URL 中嵌入的版本也作为候选（天然"出现在链接里"）
+  for (const u of urls) {
+    const m = u.match(/\bv?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\b/);
+    if (m && !isSuspicious(m[0])) candidates.push({ version: normalizeVersion(m[0]), pattern: 'semver', scope: 'url' });
+  }
 
-  return none();
+  if (candidates.length === 0) return none();
+
+  // 3. 评分：范围 + 精度 + 出现次数 + 链接/下载链接命中
+  const scopeWeight: Record<string, number> = { title: 3, 'json-ld': 3, body: 2, url: 2 };
+  const patternWeight: Record<string, number> = { semver: 2, minor: 1, major: 0 };
+  const scoreMap = new Map<string, { score: number; inDownloadUrl: boolean; scope: string; pattern: string }>();
+
+  for (const c of candidates) {
+    const bare = c.version.replace(/^v/i, '');
+    let e = scoreMap.get(c.version);
+    if (!e) {
+      e = { score: 0, inDownloadUrl: false, scope: c.scope, pattern: c.pattern };
+      scoreMap.set(c.version, e);
+    }
+    // 出现在任意页面 URL
+    if (urls.some((u) => u.includes(bare))) e.score += 2;
+    // 出现在下载链接（最强信号）
+    if (downloadUrls.some((u) => u.includes(bare))) {
+      e.inDownloadUrl = true;
+      e.score += 4;
+    }
+  }
+  // 基础分（范围 + 精度）+ 出现次数（真实版本会反复出现）
+  for (const [key, e] of scoreMap) {
+    e.score += scopeWeight[e.scope] || 0;
+    e.score += patternWeight[e.pattern] || 0;
+    const bare = key.replace(/^v/i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const count = (html.match(new RegExp(bare, 'g')) || []).length;
+    e.score += Math.min(count, 5); // 每出现一次 +1，封顶 +5
+  }
+
+  // 4. 选最高分（含下载链接加分后的综合评分，不做"取最大版本"——会误选 CDN/资产高版本）
+  let bestKey: string | null = null;
+  let bestScore = -1;
+  for (const [key, e] of scoreMap) {
+    if (e.score > bestScore) {
+      bestKey = key;
+      bestScore = e.score;
+    }
+  }
+  if (!bestKey) return none();
+  const bestEntry = scoreMap.get(bestKey)!;
+
+  // 5. 置信度
+  let confidence: Confidence;
+  const bestScore = bestEntry.score;
+  if (bestEntry.inDownloadUrl && bestScore >= 7) confidence = 'high';
+  else if (bestEntry.scope === 'title' && bestScore >= 7) confidence = 'high';
+  else if (bestEntry.scope === 'json-ld' && bestScore >= 6) confidence = 'high';
+  else if (bestScore >= 5) confidence = 'medium';
+  else confidence = 'low';
+
+  const matchedIndex = html.indexOf(bestKey.replace(/^v/i, ''));
+  return {
+    version: bestKey,
+    source: bestEntry.scope,
+    confidence,
+    needsAiCheck: confidence !== 'high',
+    suggestedRegex: suggestRegex(bestKey),
+    matchedContext: matchedIndex >= 0 ? extractContext(html, matchedIndex) : undefined,
+    candidates: [...scoreMap.entries()]
+      .map(([v, e]) => ({ version: v, score: e.score, inDownloadUrl: e.inDownloadUrl, scope: e.scope }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5),
+  };
 }
 
 function extractContext(html: string, index: number): string {
@@ -166,7 +205,6 @@ function extractContext(html: string, index: number): string {
 
 // ── 版本比较与交叉校验（无需 AI 的低成本防错）──
 
-// 把版本号拆成数字段做比较；处理 v 前缀、预发布、构建号
 export function compareVersions(a: string, b: string): number {
   const parse = (v: string): number[] => {
     const cleaned = String(v || '').replace(/^v/i, '').replace(/-.*$/, '').replace(/\+.*$/, '');
@@ -186,32 +224,18 @@ export function compareVersions(a: string, b: string): number {
 export interface CrossCheckResult {
   verdict: 'update' | 'equal' | 'downgrade' | 'incomparable';
   reason: string;
-  // 只有 verdict=update 才信任；downgrade/equal 几乎必错
   trustable: boolean;
 }
 
-// 用数据库当前版本做交叉校验：真实更新几乎总是版本变大
-export function crossCheckVersion(
-  extracted: string | null,
-  currentDbVersion: string | null | undefined
-): CrossCheckResult {
-  if (!extracted) {
-    return { verdict: 'incomparable', reason: '未提取到版本', trustable: false };
-  }
-  if (!currentDbVersion) {
-    return { verdict: 'incomparable', reason: '数据库无当前版本，无法交叉校验', trustable: true };
-  }
+export function crossCheckVersion(extracted: string | null, currentDbVersion: string | null | undefined): CrossCheckResult {
+  if (!extracted) return { verdict: 'incomparable', reason: '未提取到版本', trustable: false };
+  if (!currentDbVersion) return { verdict: 'incomparable', reason: '数据库无当前版本，无法交叉校验', trustable: true };
   const cmp = compareVersions(extracted, currentDbVersion);
-  if (cmp > 0) {
-    return { verdict: 'update', reason: `提取 ${extracted} > 库里 ${currentDbVersion}，符合更新方向`, trustable: true };
-  }
-  if (cmp === 0) {
-    return { verdict: 'equal', reason: `提取 ${extracted} == 库里 ${currentDbVersion}，无更新`, trustable: false };
-  }
+  if (cmp > 0) return { verdict: 'update', reason: `提取 ${extracted} > 库里 ${currentDbVersion}，符合更新方向`, trustable: true };
+  if (cmp === 0) return { verdict: 'equal', reason: `提取 ${extracted} == 库里 ${currentDbVersion}，无更新`, trustable: false };
   return { verdict: 'downgrade', reason: `提取 ${extracted} < 库里 ${currentDbVersion}，疑似提取错误`, trustable: false };
 }
 
-// 最终裁决：置信度 + 交叉校验共同决定是否可无 AI 直接写入
 export function shouldTrustExtraction(
   extract: VersionExtractResult,
   currentDbVersion: string | null | undefined
@@ -226,8 +250,5 @@ export function shouldTrustExtraction(
   if (extract.confidence === 'high' && !cross.trustable) {
     return { trust: false, reason: `高置信但交叉校验异常(${cross.reason})，需人工/AI 确认`, needsAiCheck: true };
   }
-  if (extract.confidence === 'medium') {
-    return { trust: false, reason: `中置信(${extract.source})，需确认（建议 AI 复核）`, needsAiCheck: true };
-  }
-  return { trust: false, reason: `低置信(${extract.source}) + ${cross.reason}，需 AI 复核`, needsAiCheck: true };
+  return { trust: false, reason: `${extract.confidence}置信(${extract.source}) + ${cross.reason}，需 AI 复核`, needsAiCheck: true };
 }
