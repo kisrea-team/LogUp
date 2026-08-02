@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import AdminCard from '@/components/admin/AdminCard';
+import MotionList from '@/components/admin/MotionList';
 
 interface AiProviderView {
   id: number;
@@ -174,9 +176,8 @@ export default function AiProvidersAdminPage() {
 
       {/* 新增/编辑表单 */}
       {showForm && (
-        <div className="rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4">{editing ? '编辑 Provider' : '新增 Provider'}</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <AdminCard title={editing ? '编辑 Provider' : '新增 Provider'} description="配置 AI 接口：用于翻译或 AI 爬取" className="mb-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">名称 *</label>
@@ -243,7 +244,7 @@ export default function AiProvidersAdminPage() {
               </Button>
             </div>
           </form>
-        </div>
+        </AdminCard>
       )}
 
       {/* 列表 */}
@@ -254,35 +255,35 @@ export default function AiProvidersAdminPage() {
           尚未配置 AI Provider。未配置时 /api/translate 回退到 NVIDIA_API_KEY 环境变量。
         </p>
       ) : (
-        <div className="rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <AdminCard title="Provider 列表" description="按优先级排序，scope 决定用途">
+          <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">名称</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">模型</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">接口地址</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">API Key</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">优先级</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">用途</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">状态</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">接口地址</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">优先级</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用途</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-white divide-y divide-gray-50">
               {providers.map((p) => (
-                <tr key={p.id} className={p.enabled ? '' : 'opacity-50'}>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{p.model}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500 max-w-[220px] truncate">{p.baseUrl}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{p.hasApiKey ? p.apiKeyMasked : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{p.priority}</td>
-                  <td className="px-4 py-3">
+                <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${p.enabled ? '' : 'opacity-50'}`}>
+                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{p.name}</td>
+                  <td className="px-6 py-3 text-sm text-gray-600">{p.model}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500 max-w-[220px] truncate">{p.baseUrl}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500">{p.hasApiKey ? p.apiKeyMasked : '—'}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500">{p.priority}</td>
+                  <td className="px-6 py-3">
                     <span className={`px-2 py-0.5 text-xs rounded-full ${p.scope === 'crawl' ? 'bg-purple-100 text-purple-700' : p.scope === 'both' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
                       {SCOPE_LABEL[p.scope] || p.scope}
                       {p.routerRole ? ` · ${p.routerRole}` : ''}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3">
                     <button
                       onClick={() => handleToggle(p)}
                       className={`px-2 py-1 text-xs rounded-full ${
@@ -292,7 +293,7 @@ export default function AiProvidersAdminPage() {
                       {p.enabled ? '启用' : '停用'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
+                  <td className="px-6 py-3 text-right space-x-2">
                     <button onClick={() => startEdit(p)} className="text-sm text-blue-600 hover:underline">编辑</button>
                     <button onClick={() => handleDelete(p)} className="text-sm text-red-500 hover:underline">删除</button>
                   </td>
@@ -300,7 +301,7 @@ export default function AiProvidersAdminPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminCard>
       )}
     </div>
   );

@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/utils';
+import AdminCard from '@/components/admin/AdminCard';
+import StatCard from '@/components/admin/StatCard';
 
 interface OpRun {
   id: number;
@@ -182,9 +184,8 @@ export default function OpsControlPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* 即时抓取 */}
-      <div className="rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">即时抓取</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <AdminCard title="即时抓取" description="在站内直接触发一次抓取，进度实时轮询">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* GitHub 指定仓库 */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-gray-700">GitHub 指定仓库抓取</h3>
@@ -237,15 +238,12 @@ export default function OpsControlPage() {
             </button>
           </div>
         </div>
-      </div>
+      </AdminCard>
 
       {/* GitHub Actions 控制 */}
-      <div className="rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-2">GitHub Actions 控制</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          派发完整运营流水线（含 AI 长尾 / 新项目收录）或微任务到 GitHub 隔离环境执行。需要配置 GH_DISPATCH_TOKEN。
-        </p>
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+      <AdminCard title="GitHub Actions 控制" description="派发完整运营流水线（含 AI 长尾 / 新项目收录）或微任务到 GitHub 隔离环境执行。需要配置 GH_DISPATCH_TOKEN。">
+        <div className="p-6 space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => dispatchGhActions('github-data-ops.yml')}
             disabled={busy === 'github-data-ops.yml' || !gh?.configured}
@@ -277,68 +275,52 @@ export default function OpsControlPage() {
             {gh?.task_error && <div className="text-xs text-red-500 mt-1">{gh.task_error}</div>}
           </div>
         </div>
-      </div>
+        </div>
+      </AdminCard>
 
       {/* 状态概览 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-lg shadow p-4">
-          <div className="text-sm text-gray-500">项目总数</div>
-          <div className="text-2xl font-bold">{status?.projects_count ?? '—'}</div>
-        </div>
-        <div className="rounded-lg shadow p-4">
-          <div className="text-sm text-gray-500">启用 AI Provider</div>
-          <div className="text-2xl font-bold">{status?.ai_providers_enabled ?? '—'}</div>
-        </div>
-        <div className="rounded-lg shadow p-4">
-          <div className="text-sm text-gray-500">代理池</div>
-          <div className="text-2xl font-bold">
-            {status?.proxy_configured ? `${status.proxy_count} 个` : '未配置'}
-          </div>
-        </div>
-        <div className="rounded-lg shadow p-4">
-          <div className="text-sm text-gray-500">GitHub 调度</div>
-          <div className="text-2xl font-bold">{status?.github_schedule?.enabled ? '已启用' : '未启用'}</div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="项目总数" value={status?.projects_count ?? '—'} delay={0} />
+        <StatCard label="启用 AI Provider" value={status?.ai_providers_enabled ?? '—'} delay={0.05} />
+        <StatCard label="代理池" value={status?.proxy_configured ? `${status.proxy_count} 个` : '未配置'} delay={0.1} />
+        <StatCard label="GitHub 调度" value={status?.github_schedule?.enabled ? '已启用' : '未启用'} delay={0.15} />
       </div>
 
       {/* 最近运行 */}
-      <div className="rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">最近运行</h2>
-        </div>
+      <AdminCard title="最近运行" description="后台触发的运营任务">
         {loading ? (
           <p className="p-8 text-center text-gray-500">加载中...</p>
         ) : (status?.recent_runs || []).length === 0 ? (
           <p className="p-8 text-center text-gray-500">暂无运行记录</p>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">ID</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">阶段</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">状态</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">触发</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">开始</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">耗时</th>
-                <th className="px-4 py-2 text-left text-xs text-gray-500">摘要/错误</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">阶段</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">触发</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开始</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">耗时</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">摘要/错误</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-white divide-y divide-gray-50">
               {(status?.recent_runs || []).map((run) => (
-                <tr key={run.id}>
-                  <td className="px-4 py-2 text-sm text-gray-500">#{run.id}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{PHASE_LABEL[run.phase] || run.phase}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_STYLE[run.status] || 'bg-gray-100'}`}>
+                <tr key={run.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-3 text-sm text-gray-500">#{run.id}</td>
+                  <td className="px-6 py-3 text-sm font-medium text-gray-800">{PHASE_LABEL[run.phase] || run.phase}</td>
+                  <td className="px-6 py-3">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_STYLE[run.status] || 'bg-gray-100 text-gray-600'}`}>
                       {run.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-sm text-gray-500">{run.triggeredBy}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500">{formatRelativeTime(run.startedAt)}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500">
+                  <td className="px-6 py-3 text-sm text-gray-500">{run.triggeredBy}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500">{formatRelativeTime(run.startedAt)}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500">
                     {run.finishedAt ? formatRelativeTime(run.finishedAt) : '运行中'}
                   </td>
-                  <td className="px-4 py-2 text-xs text-gray-500 max-w-[240px] truncate">
+                  <td className="px-6 py-3 text-xs text-gray-500 max-w-[240px] truncate">
                     {run.error || (run.summary ? JSON.stringify(run.summary).slice(0, 120) : '')}
                   </td>
                 </tr>
@@ -346,7 +328,7 @@ export default function OpsControlPage() {
             </tbody>
           </table>
         )}
-      </div>
+      </AdminCard>
     </div>
   );
 }

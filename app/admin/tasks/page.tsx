@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/utils';
+import AdminCard from '@/components/admin/AdminCard';
 
 interface TaskDef {
   type: string;
@@ -126,9 +127,9 @@ export default function TasksAdminPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* 派发表单 */}
-      <div className="rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">派发微任务</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <AdminCard title="派发微任务" description="细粒度运营操作，一次一个任务。站内任务实时执行；AI 任务派发 GitHub Actions">
+        <div className="p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">任务类型 *</label>
             <select
@@ -182,13 +183,11 @@ export default function TasksAdminPage() {
         >
           {busy ? '派发中...' : '派发任务'}
         </button>
-      </div>
+        </div>
+      </AdminCard>
 
       {/* 任务列表 */}
-      <div className="rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">任务历史</h2>
-        </div>
+      <AdminCard title="任务历史" description="最近派发的微任务，2.5 秒自动刷新">
         {loading ? (
           <p className="p-8 text-center text-gray-500">加载中...</p>
         ) : tasks.length === 0 ? (
@@ -233,7 +232,7 @@ export default function TasksAdminPage() {
             </table>
           </div>
         )}
-      </div>
+      </AdminCard>
     </div>
   );
 }
