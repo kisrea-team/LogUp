@@ -1,0 +1,11 @@
+[
+  { "name": "nodejs", "url": "https://nodejs.org/en/download/", "expected": "v24", "currentDbVersion": "v23" },
+  { "name": "python", "url": "https://www.python.org/downloads/", "expected": "v3.14", "currentDbVersion": "v3.13" },
+  { "name": "wordpress", "url": "https://wordpress.org/download/", "expected": "v7", "currentDbVersion": "v6.5" },
+  { "name": "golang", "url": "https://go.dev/dl/", "expected": "v1.26", "currentDbVersion": "v1.25" },
+  { "name": "nginx", "url": "https://nginx.org/en/download.html", "expected": "v1.29", "currentDbVersion": "v1.28" },
+  { "name": "blender", "url": "https://www.blender.org/download/", "expected": "v5", "currentDbVersion": "v4" },
+  { "name": "gimp", "url": "https://www.gimp.org/downloads/", "expected": "v3", "currentDbVersion": "v2" },
+  { "name": "7zip", "url": "https://www.7-zip.org/", "expected": "v25", "currentDbVersion": "v24" },
+  { "name": "redis", "url": "https://redis.io/", "expected": "", "currentDbVersion": "v7" }
+]
