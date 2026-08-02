@@ -44,6 +44,8 @@ export interface AiProviderView {
   model: string;
   enabled: boolean;
   priority: number;
+  scope: string;
+  routerRole: string | null;
   apiKeyMasked: string;
   hasApiKey: boolean;
   createdAt: Date;
@@ -58,6 +60,8 @@ function toView(p: AiProvider): AiProviderView {
     model: p.model,
     enabled: p.enabled,
     priority: p.priority,
+    scope: p.scope,
+    routerRole: p.routerRole,
     apiKeyMasked: maskKey(p.apiKey),
     hasApiKey: Boolean(p.apiKey),
     createdAt: p.createdAt,
@@ -82,15 +86,45 @@ export async function getEnabledProvider(): Promise<
   return { ...row, apiKey: decryptSecret(row.apiKey) };
 }
 
-// 获取全部启用 provider（解密后的完整 key，按优先级），供故障转移
-export async function listEnabledWithKeys(): Promise<
+// 获取启用且用于翻译的 provider（scope = translate|both），供 /api/translate 故障转移
+export async function listEnabledWithKeys(scope: 'translate' | 'crawl' | 'both' = 'both'): Promise<
   Array<Omit<AiProvider, 'apiKey'> & { apiKey: string }>
 > {
+  const where =
+    scope === 'both'
+      ? { enabled: true }
+      : { enabled: true, scope: { in: [scope, 'both'] } };
   const rows = await prisma.aiProvider.findMany({
-    where: { enabled: true },
+    where,
     orderBy: [{ priority: 'asc' }, { id: 'asc' }],
   });
   return rows.map((row) => ({ ...row, apiKey: decryptSecret(row.apiKey) }));
+}
+
+// 生成 claude-code-router 配置（由 scope=crawl 的 provider 构建），供 GH Actions 动态生成 config.json
+export async function getCrawlRouterConfig() {
+  const rows = await prisma.aiProvider.findMany({
+    where: { enabled: true, scope: { in: ['crawl', 'both'] } },
+    orderBy: [{ priority: 'asc' }, { id: 'asc' }],
+  });
+  const providers = rows.map((row) => ({
+    name: row.name,
+    api_base_url: row.baseUrl,
+    api_key: decryptSecret(row.apiKey),
+    models: [row.model],
+  }));
+  const router: Record<string, string> = {};
+  for (const row of rows) {
+    if (row.routerRole) {
+      router[row.routerRole] = `${row.name},${row.model}`;
+    }
+  }
+  return {
+    apiKey: rows[0] ? decryptSecret(rows[0].apiKey) : '',
+    providers,
+    router,
+    configured: providers.length > 0,
+  };
 }
 
 export interface AiProviderInput {
@@ -100,6 +134,14 @@ export interface AiProviderInput {
   model: string;
   enabled?: boolean;
   priority?: number;
+  scope?: string;
+  routerRole?: string | null;
+}
+
+const VALID_SCOPES = ['translate', 'crawl', 'both'];
+
+function normalizeScope(scope?: string): string {
+  return VALID_SCOPES.includes(scope as string) ? (scope as string) : 'translate';
 }
 
 export async function createProvider(input: AiProviderInput) {
@@ -111,6 +153,8 @@ export async function createProvider(input: AiProviderInput) {
       model: input.model.trim(),
       enabled: input.enabled ?? true,
       priority: input.priority ?? 100,
+      scope: normalizeScope(input.scope),
+      routerRole: input.routerRole || null,
     },
   });
   return toView(row);
@@ -128,6 +172,8 @@ export async function updateProvider(id: number, input: Partial<AiProviderInput>
       ...(input.model !== undefined ? { model: input.model.trim() } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.priority !== undefined ? { priority: input.priority } : {}),
+      ...(input.scope !== undefined ? { scope: normalizeScope(input.scope) } : {}),
+      ...(input.routerRole !== undefined ? { routerRole: input.routerRole || null } : {}),
     },
   });
   return toView(row);

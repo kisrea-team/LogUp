@@ -19,7 +19,7 @@ interface ProviderEndpoint {
 }
 
 async function loadProviders(): Promise<ProviderEndpoint[]> {
-  const rows = await listEnabledWithKeys().catch(() => []);
+  const rows = await listEnabledWithKeys('translate').catch(() => []);
   const providers = rows
     .filter((r) => r.baseUrl && r.apiKey && r.model)
     .map((r) => ({ baseUrl: r.baseUrl, apiKey: r.apiKey, model: r.model, name: r.name }));

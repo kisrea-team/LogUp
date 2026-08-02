@@ -11,6 +11,8 @@ interface AiProviderView {
   model: string;
   enabled: boolean;
   priority: number;
+  scope: string;
+  routerRole: string | null;
   apiKeyMasked: string;
   hasApiKey: boolean;
   createdAt: string;
@@ -24,6 +26,8 @@ interface ProviderForm {
   model: string;
   priority: number;
   enabled: boolean;
+  scope: string;
+  routerRole: string;
 }
 
 const EMPTY_FORM: ProviderForm = {
@@ -33,7 +37,17 @@ const EMPTY_FORM: ProviderForm = {
   model: '',
   priority: 100,
   enabled: true,
+  scope: 'translate',
+  routerRole: '',
 };
+
+const SCOPE_LABEL: Record<string, string> = {
+  translate: '翻译',
+  crawl: 'AI 爬取',
+  both: '翻译 + 爬取',
+};
+
+const ROUTER_ROLES = ['default', 'background', 'think', 'longContext', 'webSearch'];
 
 export default function AiProvidersAdminPage() {
   const [providers, setProviders] = useState<AiProviderView[]>([]);
@@ -79,6 +93,8 @@ export default function AiProvidersAdminPage() {
       model: p.model,
       priority: p.priority,
       enabled: p.enabled,
+      scope: p.scope,
+      routerRole: p.routerRole || '',
     });
     setShowForm(true);
   };
@@ -193,6 +209,25 @@ export default function AiProvidersAdminPage() {
                 <input className={inputCls} type="number" value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: Number(e.target.value) || 100 })} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">用途</label>
+                <select className={inputCls} value={form.scope}
+                  onChange={(e) => setForm({ ...form, scope: e.target.value })}>
+                  <option value="translate">翻译</option>
+                  <option value="crawl">AI 爬取</option>
+                  <option value="both">翻译 + 爬取</option>
+                </select>
+              </div>
+              {(form.scope === 'crawl' || form.scope === 'both') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">爬虫路由角色</label>
+                  <select className={inputCls} value={form.routerRole}
+                    onChange={(e) => setForm({ ...form, routerRole: e.target.value })}>
+                    <option value="">（不指定）</option>
+                    {ROUTER_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <input id="enabled" type="checkbox" checked={form.enabled}
@@ -228,6 +263,7 @@ export default function AiProvidersAdminPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">接口地址</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">API Key</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">优先级</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">用途</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">状态</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
               </tr>
@@ -240,6 +276,12 @@ export default function AiProvidersAdminPage() {
                   <td className="px-4 py-3 text-sm text-gray-500 max-w-[220px] truncate">{p.baseUrl}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{p.hasApiKey ? p.apiKeyMasked : '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{p.priority}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${p.scope === 'crawl' ? 'bg-purple-100 text-purple-700' : p.scope === 'both' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {SCOPE_LABEL[p.scope] || p.scope}
+                      {p.routerRole ? ` · ${p.routerRole}` : ''}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => handleToggle(p)}

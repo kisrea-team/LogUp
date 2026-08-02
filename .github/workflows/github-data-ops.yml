@@ -44,77 +44,83 @@ jobs:
         if: steps.npm-global-cache.outputs.cache-hit != 'true'
         run: npm install -g @anthropic-ai/claude-code @musistudio/claude-code-router
 
-      - name: Configure Claude Code Router
+      - name: Configure Claude Code Router (后台 AI Provider 动态配置)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
           GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
           GEMINI4_API_KEY: ${{ secrets.GEMINI4_API_KEY }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          SITE_URL: https://zitons-logup-re.hf.space
         run: |
           mkdir -p ~/.claude-code-router
-          cat > ~/.claude-code-router/config.json << EOF
-          {
-            "APIKEY": "${GEMINI_API_KEY}",
-            "NON_INTERACTIVE_MODE": true,
-            "Providers": [
-              {
-                "name": "custom",
-                "api_base_url": "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions",
-                "api_key": "${GEMINI_API_KEY}",
-                "models": ["glm-5"],
-                "transformer": {
-                  "use": [
-                     [
-                       "maxtoken",
-                       {
-                         "max_tokens": 25000
-                       }
-                     ]
-                  ]
+          node << 'JSEOF'
+          const fs = require('fs');
+          const path = require('path');
+          const out = path.join(process.env.HOME || '~', '.claude-code-router', 'config.json');
+          async function main() {
+            // 1. 尝试从站点后台拉取 scope=crawl 的 AI Provider 配置
+            if (process.env.ADMIN_API_KEY) {
+              try {
+                const resp = await fetch(process.env.SITE_URL + '/api/ops/crawl-config', {
+                  headers: { 'x-admin-key': process.env.ADMIN_API_KEY },
+                  signal: AbortSignal.timeout(15000),
+                });
+                if (resp.ok) {
+                  const data = await resp.json();
+                  if (data.success && data.configured && Array.isArray(data.providers) && data.providers.length > 0) {
+                    const providers = data.providers.map((p) => ({
+                      name: p.name,
+                      api_base_url: p.api_base_url,
+                      api_key: p.api_key,
+                      models: (p.models && p.models.length ? p.models : [p.model]),
+                    }));
+                    const first = providers[0];
+                    const router = { longContextThreshold: 10000, ...(data.router || {}) };
+                    if (!Object.keys(router).some((k) => k !== 'longContextThreshold')) {
+                      router.default = first.name + ',' + first.models[0];
+                    }
+                    fs.writeFileSync(out, JSON.stringify({ APIKEY: data.apiKey, NON_INTERACTIVE_MODE: true, Providers: providers, Router: router }, null, 2));
+                    console.log('[router] 已使用后台配置的 AI 爬取 Provider:', providers.map((p) => p.name).join(', '));
+                    return;
+                  }
                 }
-              },
-              {
-                "name": "custom2",
-                "api_base_url": "http://35.212.185.123:8317/v1/chat/completions",
-                "api_key": "${GEMINI2_API_KEY}",
-                "models": ["gpt-5.3-codex"]
-              },
-              {
-                "name": "gemini",  
-                "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
-                "api_key": "${GEMINI3_API_KEY}",
-                "models": ["gemini-2.5-flash-lite"],
-                "transformer": {
-                  "use": ["gemini"]
-                }
-              },
-              {
-                "name": "llama",
-                "api_base_url": "https://integrate.api.nvidia.com/v1/chat/completions",
-                "api_key": "${GEMINI4_API_KEY}",
-                "models": ["meta/llama-3.3-70b-instruct"]
+                console.warn('[router] 后台未配置爬虫 AI Provider，回退内置配置');
+              } catch (e) {
+                console.warn('[router] 拉取后台配置失败，回退内置配置:', e.message);
               }
-            ],
-            "Router": {
-              "default": "custom2,gpt-5.2-codex",
-              "background": "custom,glm-5",
-              "think": "custom2,gpt-5.2-codex",
-              "longContext": "custom,glm-5",
-              "webSearch": "custom2,gpt-5.2-codex",
-              "longContextThreshold": 10000
+            } else {
+              console.warn('[router] ADMIN_API_KEY 未配置，回退内置配置');
             }
 
-
+            // 2. 兜底：内置硬编码配置
+            const config = {
+              APIKEY: process.env.GEMINI_API_KEY,
+              NON_INTERACTIVE_MODE: true,
+              Providers: [
+                { name: "custom", api_base_url: "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions", api_key: process.env.GEMINI_API_KEY, models: ["glm-5"], transformer: { use: [["maxtoken", { max_tokens: 25000 }]] } },
+                { name: "custom2", api_base_url: "http://35.212.185.123:8317/v1/chat/completions", api_key: process.env.GEMINI2_API_KEY, models: ["gpt-5.3-codex"] },
+                { name: "gemini", api_base_url: "https://generativelanguage.googleapis.com/v1beta/models/", api_key: process.env.GEMINI3_API_KEY, models: ["gemini-2.5-flash-lite"], transformer: { use: ["gemini"] } },
+                { name: "llama", api_base_url: "https://integrate.api.nvidia.com/v1/chat/completions", api_key: process.env.GEMINI4_API_KEY, models: ["meta/llama-3.3-70b-instruct"] },
+              ],
+              Router: {
+                default: "custom2,gpt-5.2-codex",
+                background: "custom,glm-5",
+                think: "custom2,gpt-5.2-codex",
+                longContext: "custom,glm-5",
+                webSearch: "custom2,gpt-5.2-codex",
+                longContextThreshold: 10000,
+              },
+            };
+            fs.writeFileSync(out, JSON.stringify(config, null, 2));
+            console.log('[router] 已使用内置兜底配置');
           }
-          EOF
+          main().catch((e) => { console.error('[router] 生成配置失败:', e.message); process.exit(1); });
+          JSEOF
       - name: Debug - Print config
         run: |
           echo "=== config.json ==="
           cat ~/.claude-code-router/config.json
-          echo "=== GEMINI_API_KEY set? ==="
-          [ -n "$GEMINI_API_KEY" ] && echo "YES" || echo "NO (empty!)"
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Install skills and agents
         run: |
