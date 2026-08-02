@@ -24,9 +24,8 @@
  *   NOCACHE_FILE  - no-cache 输出文件路径，默认 /tmp/nocache-projects.txt
  */
 
-const https = require('https');
-const http = require('http');
 const fs = require('fs');
+const crawler = require('./crawler');
 
 const SITE_URL = (process.env.SITE_URL || 'https://zitons-logup-re.hf.space').replace(/\/$/, '');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
@@ -34,59 +33,23 @@ const ETAG_CACHE = process.env.ETAG_CACHE || '/tmp/etag-cache.json';
 const CHANGED_FILE = process.env.CHANGED_FILE || '/tmp/changed-projects.txt';
 const NOCACHE_FILE = process.env.NOCACHE_FILE || '/tmp/nocache-projects.txt';
 const REGEX_FAILED_FILE = process.env.REGEX_FAILED_FILE || '/tmp/regex-failed-projects.txt';
+// 正则检测到新版本的项目（含新版本号），供 process-regex-updates.js 程序化入库，避免 AI 重复抓页
+const REGEX_CHANGED_FILE = process.env.REGEX_CHANGED_FILE || '/tmp/regex-changed.json';
 const RSSHUB_RADAR_RULES_URL = process.env.RSSHUB_RADAR_RULES_URL || 'https://rsshub.js.org/build/radar-rules.js';
 const CONCURRENCY = 10;
 const REQUEST_TIMEOUT = 12000;
-const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
-const BROWSER_HEADERS = {
-  'User-Agent': BROWSER_USER_AGENT,
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-  'Sec-Fetch-Dest': 'document',
-  'Sec-Fetch-Mode': 'navigate',
-  'Sec-Fetch-Site': 'none',
-  'Sec-Fetch-User': '?1',
-  'Upgrade-Insecure-Requests': '1',
-};
 
-let sharedBrowserPromise = null;
 let rssHubRadarDomainsPromise = null;
 
-function fetchJson(url, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const mod = url.startsWith('https') ? https : http;
-    const options = {
-      headers: { 'User-Agent': BROWSER_USER_AGENT, ...headers },
-      timeout: REQUEST_TIMEOUT,
-    };
-    const req = mod.get(url, options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { reject(new Error(`JSON parse error for ${url}: ${e.message}`)); }
-      });
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout fetching ${url}`)); });
-  });
-}
-
-function fetchRemoteText(url, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const mod = url.startsWith('https') ? https : http;
-    const options = {
-      headers: { ...BROWSER_HEADERS, ...headers },
-      timeout: REQUEST_TIMEOUT,
-    };
-    const req = mod.get(url, options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => resolve({ status: res.statusCode, text: data }));
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout fetching ${url}`)); });
-  });
+// 站点自有 API（同源，无反爬）：简单 JSON GET，保留自定义头透传
+async function fetchJson(url, headers = {}) {
+  const resp = await fetch(url, { headers: { 'User-Agent': 'logup-check-updates/2', ...headers } });
+  const text = await resp.text();
+  try {
+    return { status: resp.status, body: text ? JSON.parse(text) : null };
+  } catch (e) {
+    throw new Error(`JSON parse error for ${url}: ${e.message}`);
+  }
 }
 
 function extractDomainsFromRadarRules(sourceText) {
@@ -110,8 +73,8 @@ function extractDomainsFromRadarRules(sourceText) {
 async function getRssHubRadarDomains() {
   if (!rssHubRadarDomainsPromise) {
     rssHubRadarDomainsPromise = (async () => {
-      const { status, text } = await fetchRemoteText(RSSHUB_RADAR_RULES_URL);
-      if (status !== 200) {
+      const { status, text } = await crawler.fetchPage(RSSHUB_RADAR_RULES_URL, { retries: 1 });
+      if (status !== 200 || !text) {
         throw new Error(`http-${status}`);
       }
       const domains = extractDomainsFromRadarRules(text);
@@ -213,18 +176,15 @@ function parseGitHubRepo(url) {
 }
 
 async function githubTagsCheck(owner, repo, cachedTagName) {
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/tags?per_page=1`;
-  const headers = {
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
-
-  try {
-    const { status, body } = await fetchJson(apiUrl, headers);
-    if (status !== 200) {
-      return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
-    }
+  const result = await crawler.githubApi(`/repos/${owner}/${repo}/tags?per_page=1`);
+  if (result.error) {
+    return { tagName: null, changed: false, isFirst: false, error: result.error };
+  }
+  const status = result.status;
+  const body = result.body;
+  if (status !== 200) {
+    return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
+  }
 
     const tagName = Array.isArray(body) && body[0] && typeof body[0].name === 'string'
       ? body[0].name
@@ -234,9 +194,6 @@ async function githubTagsCheck(owner, repo, cachedTagName) {
     if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
     const changed = !areVersionsEquivalent(tagName, cachedTagName);
     return { tagName, changed, isFirst: false, error: null };
-  } catch (e) {
-    return { tagName: null, changed: false, isFirst: false, error: e.message };
-  }
 }
 
 /**
@@ -244,31 +201,25 @@ async function githubTagsCheck(owner, repo, cachedTagName) {
  * Returns: { tagName, changed, isFirst, error }
  */
 async function githubCheck(owner, repo, cachedTagName) {
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
-  const headers = {
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
-
-  try {
-    const { status, body } = await fetchJson(apiUrl, headers);
-    if (status === 404) {
-      // No releases published — skip
-      return { tagName: null, changed: false, isFirst: false, error: 'no-releases' };
-    }
-    if (status !== 200) {
-      return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
-    }
-    const tagName = body.tag_name || null;
-    if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
-
-    if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
-    const changed = !areVersionsEquivalent(tagName, cachedTagName);
-    return { tagName, changed, isFirst: false, error: null };
-  } catch (e) {
-    return { tagName: null, changed: false, isFirst: false, error: e.message };
+  const result = await crawler.githubApi(`/repos/${owner}/${repo}/releases/latest`);
+  if (result.error) {
+    return { tagName: null, changed: false, isFirst: false, error: result.error };
   }
+  const status = result.status;
+  const body = result.body;
+  if (status === 404) {
+    // No releases published — skip
+    return { tagName: null, changed: false, isFirst: false, error: 'no-releases' };
+  }
+  if (status !== 200) {
+    return { tagName: null, changed: false, isFirst: false, error: `http-${status}` };
+  }
+  const tagName = body.tag_name || null;
+  if (!tagName) return { tagName: null, changed: false, isFirst: false, error: 'no-tag' };
+
+  if (!cachedTagName) return { tagName, changed: false, isFirst: true, error: null };
+  const changed = !areVersionsEquivalent(tagName, cachedTagName);
+  return { tagName, changed, isFirst: false, error: null };
 }
 
 async function githubCheckBySource(owner, repo, sourceType, cachedTagName) {
@@ -291,181 +242,25 @@ async function githubCheckBySource(owner, repo, sourceType, cachedTagName) {
   return releaseResult;
 }
 
-async function getSharedBrowser() {
-  if (!sharedBrowserPromise) {
-    const { chromium } = require('playwright');
-    sharedBrowserPromise = chromium.launch({
-      headless: true,
-      args: [
-        '--disable-blink-features=AutomationControlled',
-        '--disable-dev-shm-usage',
-        '--no-sandbox',
-      ],
-    });
-  }
-  return sharedBrowserPromise;
-}
-
-async function closeSharedBrowser() {
-  if (!sharedBrowserPromise) return;
-  try {
-    const browser = await sharedBrowserPromise;
-    await browser.close();
-  } catch {
-    // ignore close errors
-  } finally {
-    sharedBrowserPromise = null;
-  }
-}
-
-async function createStealthContext(browser) {
-  const context = await browser.newContext({
-    userAgent: BROWSER_USER_AGENT,
-    viewport: { width: 1366, height: 768 },
-    locale: 'zh-CN',
-    timezoneId: 'Asia/Shanghai',
-    colorScheme: 'light',
-    deviceScaleFactor: 1,
-    extraHTTPHeaders: {
-      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-      'Upgrade-Insecure-Requests': '1',
-    },
-  });
-
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined,
-    });
-
-    Object.defineProperty(navigator, 'languages', {
-      get: () => ['zh-CN', 'zh', 'en-US', 'en'],
-    });
-
-    Object.defineProperty(navigator, 'plugins', {
-      get: () => [
-        { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
-        { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
-        { name: 'Native Client', filename: 'internal-nacl-plugin' },
-      ],
-    });
-
-    Object.defineProperty(navigator, 'platform', {
-      get: () => 'Win32',
-    });
-
-    Object.defineProperty(window, 'chrome', {
-      get: () => ({
-        runtime: {},
-        app: { isInstalled: false },
-      }),
-    });
-
-    const originalQuery = window.navigator.permissions?.query;
-    if (originalQuery) {
-      window.navigator.permissions.query = (parameters) => (
-        parameters && parameters.name === 'notifications'
-          ? Promise.resolve({ state: Notification.permission })
-          : originalQuery(parameters)
-      );
-    }
-  });
-
-  await context.route('**/*', async (route) => {
-    const resourceType = route.request().resourceType();
-    if (resourceType === 'image' || resourceType === 'media' || resourceType === 'font') {
-      await route.abort();
-      return;
-    }
-    await route.continue();
-  });
-
-  return context;
-}
-
-// Domains that return plain text/JSON and don't need JS rendering — use curl-like GET instead of Playwright.
-const PLAIN_HTTP_DOMAINS = ['api.github.com', 'itunes.apple.com'];
+// 页面抓取统一由 ./crawler 提供（代理池 / UA 轮换 / TLS 指纹 / 重试 / 反爬降级）
 
 /**
- * Fetch URL using plain HTTP GET (no browser, suitable for API/JSON endpoints).
- * Returns: { text, error }
+ * Fetch a page. Returns { status, text, error }
+ * js=false 时若命中反爬自动降级到无头浏览器。
  */
-function fetchTextPlain(url) {
-  return new Promise((resolve) => {
-    const mod = url.startsWith('https') ? https : http;
-    const options = { headers: { ...BROWSER_HEADERS }, timeout: REQUEST_TIMEOUT };
-    const req = mod.get(url, options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => resolve({ text: data, error: null }));
-    });
-    req.on('error', (e) => resolve({ text: null, error: e.message }));
-    req.on('timeout', () => { req.destroy(); resolve({ text: null, error: 'Timeout' }); });
-  });
-}
-
-/**
- * Fetch URL using Playwright (fully rendered HTML, supports JS-rendered pages).
- * For api.github.com and itunes.apple.com, uses plain HTTP GET instead.
- * Returns: { text, error }
- */
-async function fetchText(url) {
-  try {
-    const hostname = new URL(url).hostname;
-    if (PLAIN_HTTP_DOMAINS.includes(hostname)) {
-      return await fetchTextPlain(url);
-    }
-  } catch { /* malformed URL — fall through to Playwright */ }
-  let context;
-  try {
-    const browser = await getSharedBrowser();
-    context = await createStealthContext(browser);
-    const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'networkidle', timeout: REQUEST_TIMEOUT });
-    const text = await page.content();
-    return { text, error: null };
-  } catch (e) {
-    return { text: null, error: e.message };
-  } finally {
-    if (context) await context.close();
+async function fetchText(url, { js = false } = {}) {
+  const result = await crawler.fetchPage(url, { js, retries: 2 });
+  if (result.error || result.status === 0) {
+    return { status: result.status, text: null, error: result.error || 'fetch failed' };
   }
+  return { status: result.status, text: result.text, error: null };
 }
 
 /**
  * Non-GitHub: HEAD request, compare ETag/Last-Modified/Content-Length
  */
 function headRequest(url, etag, lastModified) {
-  return new Promise((resolve) => {
-    const headers = { ...BROWSER_HEADERS };
-    if (etag) headers['If-None-Match'] = etag;
-    if (lastModified) headers['If-Modified-Since'] = lastModified;
-
-    try {
-      const parsedUrl = new URL(url);
-      const mod = parsedUrl.protocol === 'https:' ? https : http;
-      const options = {
-        hostname: parsedUrl.hostname,
-        path: parsedUrl.pathname + parsedUrl.search,
-        method: 'HEAD',
-        headers,
-        timeout: REQUEST_TIMEOUT,
-      };
-      const req = mod.request(options, (res) => {
-        res.resume();
-        resolve({
-          status: res.statusCode,
-          etag: res.headers['etag'] || null,
-          lastModified: res.headers['last-modified'] || null,
-          contentLength: res.headers['content-length'] || null,
-          unchanged: res.statusCode === 304,
-        });
-      });
-      req.on('error', () => resolve({ status: 0, unchanged: null }));
-      req.on('timeout', () => { req.destroy(); resolve({ status: 0, unchanged: null }); });
-      req.end();
-    } catch {
-      resolve({ status: 0, unchanged: null });
-    }
-  });
+  return crawler.headRequest(url, etag, lastModified);
 }
 
 /**
@@ -699,7 +494,7 @@ async function main() {
     fs.writeFileSync(REGEX_FAILED_FILE, regexFailedNames.join('\n'));
     console.log(`[check-updates] Done. ${changedNames.length} changed, ${noCacheNames.length} no-cache suspect, ${regexFailedNames.length} regex-failed (out of ${probeTargets.length} probed from ${projects.length} total)`);
   } finally {
-    await closeSharedBrowser();
+    await crawler.closeBrowser();
   }
 }
 
