@@ -28,10 +28,17 @@ export function signSessionCookie(payload: string): string {
 
 export function verifySessionCookie(value: string | null | undefined): boolean {
   if (!value) return false;
-  const dot = value.lastIndexOf('.');
-  if (dot <= 0 || dot >= value.length - 1) return false;
-  const payload = value.slice(0, dot);
-  const sig = value.slice(dot + 1);
+  // Next.js 设置 cookie 时会对值做 URL 编码(如 ':' → %3A),验签前先解码
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    decoded = value;
+  }
+  const dot = decoded.lastIndexOf('.');
+  if (dot <= 0 || dot >= decoded.length - 1) return false;
+  const payload = decoded.slice(0, dot);
+  const sig = decoded.slice(dot + 1);
   const expected = hmacSign(payload);
   try {
     const a = Buffer.from(sig);
