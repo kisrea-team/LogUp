@@ -184,6 +184,8 @@ async function runGetVersion(taskId: string, inputs: Record<string, unknown>) {
     via_browser: Boolean(result.viaBrowser),
     version: extraction.version,
     source: extraction.source,
+    confidence: extraction.confidence,
+    needs_ai_check: extraction.needsAiCheck,
     suggested_regex: extraction.suggestedRegex,
     matched_context: extraction.matchedContext || undefined,
   });
@@ -331,11 +333,21 @@ async function runUpdateProject(taskId: string, inputs: Record<string, unknown>)
     if (result.error) return finishTask(taskId, 'failed', 1, null, result.error);
     const extraction = extractVersionFromHtml(result.text, { versionRegex: project.version_regex });
     if (!extraction.version) return finishTask(taskId, 'failed', 1, null, 'no version extracted by regex');
+    // 交叉校验：提取版本必须大于库里当前版本才信任，否则可能是正则匹配错误
+    const { shouldTrustExtraction } = await import('@/lib/version-extract');
+    const verdict = shouldTrustExtraction(extraction, project.latest_version);
+    if (!verdict.trust) {
+      return finishTask(taskId, 'failed', 1, {
+        name: project.name,
+        extracted: extraction.version,
+        reason: verdict.reason,
+      }, verdict.reason);
+    }
     const updated = await p.project.update({
       where: { id: project.id },
       data: { latest_version: extraction.version, latest_update_time: new Date() },
     });
-    return finishTask(taskId, 'success', 1, { name: project.name, new_version: updated.latest_version });
+    return finishTask(taskId, 'success', 1, { name: project.name, new_version: updated.latest_version, confidence: extraction.confidence });
   }
 
   return finishTask(taskId, 'failed', 1, null, 'project has no GitHub URL and no version_regex; needs AI task (dispatch GH Actions)');
