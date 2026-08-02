@@ -174,11 +174,10 @@ export function extractVersionFromHtml(
 
   // 5. 置信度
   let confidence: Confidence;
-  const bestScore = bestEntry.score;
-  if (bestEntry.inDownloadUrl && bestScore >= 7) confidence = 'high';
-  else if (bestEntry.scope === 'title' && bestScore >= 7) confidence = 'high';
-  else if (bestEntry.scope === 'json-ld' && bestScore >= 6) confidence = 'high';
-  else if (bestScore >= 5) confidence = 'medium';
+  if (bestEntry.inDownloadUrl && bestEntry.score >= 7) confidence = 'high';
+  else if (bestEntry.scope === 'title' && bestEntry.score >= 7) confidence = 'high';
+  else if (bestEntry.scope === 'json-ld' && bestEntry.score >= 6) confidence = 'high';
+  else if (bestEntry.score >= 5) confidence = 'medium';
   else confidence = 'low';
 
   const matchedIndex = html.indexOf(bestKey.replace(/^v/i, ''));
