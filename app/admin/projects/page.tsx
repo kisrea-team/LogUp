@@ -777,6 +777,7 @@ export default function ProjectAdminPage() {
                     projects={projects}
                     handleDeleteProject={handleDeleteProject}
                     handleEditProject={handleEditProject}
+                    onVersionUpdated={fetchProjects}
                 />
 
                 {/* Pagination Controls */}

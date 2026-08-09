@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  dispatchWorkflow,
-  getLatestWorkflowRun,
-  cancelWorkflowRun,
-  isGhDispatchConfigured,
-  getRepoName,
-} from '@/lib/github-actions';
+import { getLatestWorkflowRun, isGhDispatchConfigured, getRepoName } from '@/lib/github-actions';
 import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -20,6 +14,7 @@ export async function GET(request: NextRequest) {
   const task = await getLatestWorkflowRun('task-run.yml');
   return NextResponse.json({
     success: true,
+    deprecated: true, // GitHub Actions 派发已废弃，仅保留状态查看
     configured: isGhDispatchConfigured(),
     repo: getRepoName(),
     main_workflow: main.run || null,
@@ -36,34 +31,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const denied = await unauthorizedIfNotAdmin(request);
   if (denied) return denied;
-  try {
-    const body = await request.json().catch(() => ({}));
-    const action = body.action || 'dispatch';
-
-    if (action === 'cancel') {
-      const runId = Number(body.run_id);
-      if (!Number.isFinite(runId)) return NextResponse.json({ error: 'run_id is required' }, { status: 400 });
-      const result = await cancelWorkflowRun(runId);
-      return NextResponse.json({ success: result.ok, ...result });
-    }
-
-    // dispatch
-    const workflow = body.workflow || 'github-data-ops.yml';
-    if (workflow !== 'github-data-ops.yml' && workflow !== 'task-run.yml') {
-      return NextResponse.json({ error: `Unsupported workflow: ${workflow}` }, { status: 400 });
-    }
-    const result = await dispatchWorkflow({
-      workflowFile: workflow,
-      ref: body.ref || 'dev',
-      inputs: body.inputs && typeof body.inputs === 'object' ? body.inputs : undefined,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: `Dispatch failed: ${result.error || result.status}` }, { status: 500 });
-    }
-    return NextResponse.json({ success: true, workflow, ref: body.ref || 'dev', status: result.status });
-  } catch (error) {
-    console.error('Error in POST /api/ops/gh-actions:', error);
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: `Failed: ${message}` }, { status: 500 });
-  }
+  // 已废弃：版本提取/微任务统一走 version-extractor（站内 in-app），GH Actions 派发不再使用
+  return NextResponse.json({ error: 'GitHub Actions 派发已废弃，请使用 version-extractor 站内执行', deprecated: true }, { status: 410 });
 }

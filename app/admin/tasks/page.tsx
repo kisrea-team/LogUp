@@ -94,7 +94,8 @@ export default function TasksAdminPage() {
     try {
       setBusy(true);
       setError('');
-      const resp = await apiFetch('/ops/task', { method: 'POST', body: JSON.stringify({ type, inputs }) });
+      // 只记录历史，不派发执行（执行统一走 version-extractor 特定入口：项目"获取最新版本"）
+      const resp = await apiFetch('/ops/task', { method: 'POST', body: JSON.stringify({ type, inputs, recordOnly: true }) });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
       setInputs({});
@@ -121,73 +122,21 @@ export default function TasksAdminPage() {
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">微任务控制台</h1>
-        <p className="text-sm text-gray-500 mt-1">细粒度运营操作：一次只做一个任务。站内任务实时执行；AI 任务派发 GitHub Actions。</p>
+        <p className="text-sm text-gray-500 mt-1">细粒度运营操作：只记录历史，不派发执行。执行统一走 version-extractor（项目"获取最新版本"）。</p>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* 派发表单 */}
-      <AdminCard title="派发微任务" description="细粒度运营操作，一次一个任务。站内任务实时执行；AI 任务派发 GitHub Actions">
-        <div className="p-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">任务类型 *</label>
-            <select
-              className={inputCls}
-              value={type}
-              onChange={(e) => { setType(e.target.value); setInputs({}); }}
-            >
-              <option value="">选择任务...</option>
-              {defs.map((d) => (
-                <option key={d.type} value={d.type}>{d.label}（{d.engine === 'in-app' ? '站内' : 'AI'}）</option>
-              ))}
-            </select>
-            {currentDef && (
-              <p className="text-xs text-gray-500 mt-1">{currentDef.description}</p>
-            )}
-          </div>
-        </div>
-
-        {currentDef && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {currentDef.inputs.map((field) => (
-              <div key={field.key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {field.label}{field.required ? ' *' : ''}
-                </label>
-                {field.type === 'boolean' ? (
-                  <input
-                    type="checkbox"
-                    checked={Boolean(inputs[field.key])}
-                    onChange={(e) => setInputs({ ...inputs, [field.key]: e.target.checked })}
-                  />
-                ) : (
-                  <input
-                    className={inputCls}
-                    type={field.type === 'number' ? 'number' : 'text'}
-                    value={String(inputs[field.key] ?? '')}
-                    placeholder={field.placeholder}
-                    required={field.required}
-                    onChange={(e) => setInputs({ ...inputs, [field.key]: field.type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value })}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          onClick={handleDispatch}
-          disabled={busy || !type}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-        >
-          {busy ? '派发中...' : '派发任务'}
-        </button>
+      {/* 派发微任务 —— 已废弃：执行统一走 version-extractor（项目"获取最新版本"），本页仅留任务历史 */}
+      <AdminCard title="派发微任务（已废弃）" description="任务执行已统一走 version-extractor 站内完成（项目'获取最新版本'）。本页仅保留任务历史记录。">
+        <div className="p-6 text-sm text-gray-500">
+          <p>手动派发微任务已废弃。</p>
+          <p className="mt-1">获取最新版本 / 更新项目请到「项目管理」页使用"获取最新版本"。本页下方为历史记录。</p>
         </div>
       </AdminCard>
 
       {/* 任务列表 */}
-      <AdminCard title="任务历史" description="最近派发的微任务，2.5 秒自动刷新">
+      <AdminCard title="任务历史" description="最近的任务记录，2.5 秒自动刷新">
         {loading ? (
           <p className="p-8 text-center text-gray-500">加载中...</p>
         ) : tasks.length === 0 ? (

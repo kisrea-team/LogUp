@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
       );
     }
     const inputs = (body.inputs && typeof body.inputs === 'object' ? body.inputs : {}) as Record<string, unknown>;
-    const { taskId } = await dispatchTask({ type, inputs, triggeredBy: 'admin' });
-    return NextResponse.json({ success: true, taskId, engine: def.engine });
+    const recordOnly = body.recordOnly === true;
+    const { taskId } = await dispatchTask({ type, inputs, triggeredBy: 'admin', recordOnly });
+    return NextResponse.json({ success: true, taskId, engine: def.engine, recordOnly });
   } catch (error) {
     console.error('Error dispatching task:', error);
     const message = error instanceof Error ? error.message : String(error);

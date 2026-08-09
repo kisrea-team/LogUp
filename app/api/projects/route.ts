@@ -79,11 +79,15 @@ export async function GET(request: NextRequest) {
         links: true,
         update_source_url: true,
         version_regex: true,
+        last_checked_at: true,
+        _count: { select: { versions: true } },
       },
     });
 
+    const data = projects.map((p) => ({ ...p, versionCount: p._count.versions }));
+
     return NextResponse.json({
-      data: projects,
+      data,
       total,
       page: finalPage,
       per_page: validPerPage,

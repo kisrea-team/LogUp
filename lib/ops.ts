@@ -6,6 +6,7 @@ import {
   getGithubScheduleStatus,
   getTrendingScheduleStatus,
 } from '@/lib/github';
+import { extractFromRemote, isExtractorConfigured } from '@/lib/extractor';
 
 export interface RunPhaseOptions {
   phase: 'github' | 'trending';
@@ -59,12 +60,32 @@ export async function startRunAsync(opts: RunPhaseOptions): Promise<{ id: number
           await finishOpRun(run.id, 'failed', null, 'repos is required');
           return;
         }
-        const result = await scrapeGithubReleasesToDb({
-          repos,
-          includePrerelease: opts.includePrerelease,
-          limitPerRepo: opts.limitPerRepo,
-        });
-        await finishOpRun(run.id, 'success', result);
+        // version-extractor 优先：每个 repo 提取最新版本（取代 logup 自写 scrapeGithubReleasesToDb）
+        if (await isExtractorConfigured()) {
+          const results: Array<{ repo: string; version: string | null; confidence: string; source: string }> = [];
+          for (const repo of repos) {
+            const ghUrl = /^https?:\/\//.test(repo)
+              ? repo
+              : `https://api.github.com/repos/${repo.replace(/^@/, '')}/releases/latest`;
+            const name = repo.split('/').pop()?.replace(/\.git$/, '') || repo;
+            try {
+              const remote = await extractFromRemote(ghUrl, { fields: ['version'], productName: name });
+              const v = remote.version;
+              results.push({ repo, version: v?.version || null, confidence: v?.confidence || 'low', source: v?.source || 'none' });
+            } catch {
+              results.push({ repo, version: null, confidence: 'low', source: 'error' });
+            }
+          }
+          await finishOpRun(run.id, 'success', results);
+        } else {
+          // extractor 未配置 → 回退本地 GitHub 抓取
+          const result = await scrapeGithubReleasesToDb({
+            repos,
+            includePrerelease: opts.includePrerelease,
+            limitPerRepo: opts.limitPerRepo,
+          });
+          await finishOpRun(run.id, 'success', result);
+        }
       } else if (opts.phase === 'trending') {
         // 用请求参数优先，否则沿用当前 trending 调度配置
         const result = await runTrendingScheduleOnce();

@@ -240,41 +240,11 @@ export default function OpsControlPage() {
         </div>
       </AdminCard>
 
-      {/* GitHub Actions 控制 */}
-      <AdminCard title="GitHub Actions 控制" description="派发完整运营流水线（含 AI 长尾 / 新项目收录）或微任务到 GitHub 隔离环境执行。需要配置 GH_DISPATCH_TOKEN。">
-        <div className="p-6 space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => dispatchGhActions('github-data-ops.yml')}
-            disabled={busy === 'github-data-ops.yml' || !gh?.configured}
-            className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-50 text-sm"
-          >
-            {busy === 'github-data-ops.yml' ? '派发中...' : '派发完整运营流水线'}
-          </button>
-          <button
-            onClick={() => dispatchGhActions('task-run.yml')}
-            disabled={busy === 'task-run.yml' || !gh?.configured}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 text-sm"
-          >
-            {busy === 'task-run.yml' ? '派发中...' : '派发微任务 (task-run)'}
-          </button>
-          {!gh?.configured && (
-            <span className="text-xs text-amber-600">GH_DISPATCH_TOKEN 未配置，无法派发</span>
-          )}
-          {gh?.configured && <span className="text-xs text-gray-500">仓库：{gh.repo}</span>}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="rounded bg-gray-50 p-3">
-            <div className="font-medium mb-1">完整流水线 (github-data-ops)</div>
-            {renderRun(gh?.main_workflow)}
-            {gh?.main_error && <div className="text-xs text-red-500 mt-1">{gh.main_error}</div>}
-          </div>
-          <div className="rounded bg-gray-50 p-3">
-            <div className="font-medium mb-1">微任务 (task-run)</div>
-            {renderRun(gh?.task_workflow)}
-            {gh?.task_error && <div className="text-xs text-red-500 mt-1">{gh.task_error}</div>}
-          </div>
-        </div>
+      {/* GitHub Actions 控制 —— 已废弃：版本提取/微任务统一走 version-extractor（站内 in-app） */}
+      <AdminCard title="GitHub Actions 控制（已废弃）" description="版本提取与微任务已统一走 version-extractor 站内执行，GitHub Actions 派发不再使用。">
+        <div className="p-6 text-sm text-gray-500">
+          <p>GitHub Actions 派发（github-data-ops / task-run）已废弃。</p>
+          <p className="mt-1">版本提取、更新项目、获取最新版本均通过 version-extractor API 在站内完成。</p>
         </div>
       </AdminCard>
 

@@ -112,7 +112,7 @@ async function main() {
     const extracted = e.version;
 
     // 判定
-    let verdict: 'PASS' | 'FAIL';
+    let verdict: string;
     if (c.expected === '') {
       verdict = extracted ? 'FAIL(误报)' : 'PASS';
       if (extracted) falsePositive += 1;

@@ -28,6 +28,8 @@ export interface ApiProject {
     tags?: string[];
     links?: ProjectLink[];
     versions: ApiVersion[];
+    versionCount?: number;
+    update_source_url?: string | null;
 }
 
 // 前端使用的类型（保持向后兼容）

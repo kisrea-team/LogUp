@@ -26,6 +26,7 @@ model Project {
   links               Json     @default("[]")
   update_source_url   String?
   version_regex       String?  @db.Text
+  last_checked_at     DateTime? @map("last_checked_at")
   versions            Version[]
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -96,4 +97,29 @@ model OpTask {
   finishedAt  DateTime? @map("finished_at")
 
   @@map("op_tasks")
+}
+
+// 应用设置（key-value）：如 version-extractor 地址等后台可配置项
+model AppSetting {
+  key       String   @id
+  value     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+// 人工版本审核：提取版本与库值交叉校验异常时，人工批准/拒绝的决策记录。
+// 批准 → 下次提取到同版本跳过校验直接采用；拒绝 → 记作负样本（供重训）。
+model VersionReview {
+  id         Int      @id @default(autoincrement())
+  projectId  Int?
+  url        String?
+  version    String
+  decision   String // approve | reject
+  context    String? @db.Text // 原始提取信息（reason / confidence 等）
+  reviewedBy String   @default("admin") @map("reviewed_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([url, version])
+  @@map("version_reviews")
 }

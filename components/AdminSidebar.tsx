@@ -21,13 +21,13 @@ import { Button } from '@/components/ui/button';
 const datamain = [
     { id: 0, label: '首页', href: '/admin' },
     { id: 1, label: '项目管理', href: '/admin/projects' },
-    { id: 2, label: '版本管理', href: '/admin/versions' },
-    { id: 3, label: '广告', href: '/admin/ads' },
-    { id: 4, label: '用户', href: '/admin/users' },
-    { id: 5, label: '爬虫管理', href: '/admin/crawler' },
-    { id: 6, label: '运营控制', href: '/admin/ops' },
-    { id: 7, label: '微任务', href: '/admin/tasks' },
-    { id: 8, label: 'AI Provider', href: '/admin/ai' },
+    { id: 2, label: '广告', href: '/admin/ads' },
+    { id: 3, label: '用户', href: '/admin/users' },
+    { id: 4, label: '爬虫管理', href: '/admin/crawler' },
+    { id: 5, label: '运营控制', href: '/admin/ops' },
+    { id: 6, label: '微任务', href: '/admin/tasks' },
+    { id: 7, label: 'AI Provider', href: '/admin/ai' },
+    { id: 8, label: '版本提取器', href: '/admin/extractor' },
 ];
 
 export default function AdminSidebar() {

@@ -3,7 +3,8 @@
 // 站内（确定性引擎）任务直接执行；需要 LLM/DevTools 的任务标记为需派发 GH Actions。
 // 任务执行写 OpTask 表，UI 轮询 /api/ops/task/[id] 查看进度/结果。
 import { prisma } from '@/lib/prisma';
-import { extractVersionFromHtml } from '@/lib/version-extract';
+import { extractVersionFromHtml, type VersionExtractResult } from '@/lib/version-extract';
+import { extractFromRemote, isExtractorConfigured, type RemoteVersion } from '@/lib/extractor';
 
 // ── 任务定义 ──
 export interface TaskDefinition {
@@ -83,9 +84,9 @@ export const TASK_REGISTRY: TaskDefinition[] = [
   // ── 需 AI / DevTools，标记为派发 GH Actions ──
   {
     type: 'write-regex',
-    label: '生成正则（AI）',
-    engine: 'ai',
-    description: '为反爬/JS 页面生成 version_regex，需 chrome-devtools MCP，派发 GH Actions',
+    label: '生成正则',
+    engine: 'in-app',
+    description: '为反爬/JS 页面生成 version_regex（优先云端提取器，未配置则本地启发式）',
     inputs: [{ key: 'url', label: '页面 URL', type: 'text', required: true }],
   },
   {
@@ -157,6 +158,7 @@ export async function executeTaskHandler(task: {
     if (type === 'github-releases') return await runGithubReleases(taskId, inputs);
     if (type === 'github-trending') return await runGithubTrending(taskId, inputs);
     if (type === 'update-project') return await runUpdateProject(taskId, inputs);
+    if (type === 'write-regex') return await runWriteRegex(taskId, inputs);
     await finishTask(taskId, 'failed', 0, null, `unsupported task type: ${type}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -164,9 +166,47 @@ export async function executeTaskHandler(task: {
   }
 }
 
+// 云端提取器结果 → 本地 VersionExtractResult 形状（供交叉校验等复用）
+function remoteToExtract(remote: RemoteVersion | null | undefined): VersionExtractResult {
+  if (!remote || !remote.version) {
+    return { version: null, source: 'none', confidence: 'low', needsAiCheck: true, suggestedRegex: null };
+  }
+  return {
+    version: remote.version,
+    source: remote.source,
+    confidence: remote.confidence,
+    needsAiCheck: Boolean(remote.needsAiCheck),
+    suggestedRegex: remote.suggestedRegex || null,
+    matchedContext: remote.matchedContext || undefined,
+  };
+}
+
 async function runGetVersion(taskId: string, inputs: Record<string, unknown>) {
   const url = String(inputs.url || '').trim();
   if (!url) return finishTask(taskId, 'failed', 0, null, 'url is required');
+
+  // 云端提取器优先：注册表 / GitHub API / L2 浏览器兜底，强于本地规则
+  if (await isExtractorConfigured()) {
+    await finishTask(taskId, 'running', 0.3, null);
+    try {
+      const remote = await extractFromRemote(url, { fields: ['version'], productName: inputs.productName ? String(inputs.productName) : undefined });
+      const v = remote.version;
+      return finishTask(taskId, 'success', 1, {
+        url,
+        via_extractor: true,
+        version: v?.version || null,
+        source: v?.source || 'none',
+        confidence: v?.confidence || 'low',
+        needs_ai_check: v ? Boolean(v.needsAiCheck) : true,
+        suggested_regex: v?.suggestedRegex || null,
+        matched_context: v?.matchedContext || undefined,
+      });
+    } catch (e) {
+      // 云端失败 → 回退本地抓取
+      console.warn(`[get-version] cloud extractor failed, fallback to local: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
   const crawler = await getCrawler();
   await finishTask(taskId, 'running', 0.3, null);
   const result = await crawler.fetchPage(url, { retries: 2 });
@@ -214,6 +254,26 @@ async function runProbe(taskId: string, inputs: Record<string, unknown>) {
 async function runVerifyUrl(taskId: string, inputs: Record<string, unknown>) {
   const url = String(inputs.url || '').trim();
   if (!url) return finishTask(taskId, 'failed', 0, null, 'url is required');
+
+  // 云端提取器优先：能返回版本即验证通过（无需本地抓取）
+  if (await isExtractorConfigured()) {
+    await finishTask(taskId, 'running', 0.3, null);
+    try {
+      const remote = await extractFromRemote(url, { fields: ['version'], productName: inputs.productName ? String(inputs.productName) : undefined });
+      const v = remote.version;
+      return finishTask(taskId, 'success', 1, {
+        url,
+        ok: true,
+        via_extractor: true,
+        version_found: Boolean(v?.version),
+        version: v?.version || null,
+        confidence: v?.confidence || 'low',
+      });
+    } catch (e) {
+      console.warn(`[verify-url] cloud extractor failed, fallback to local: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
   const crawler = await getCrawler();
   await finishTask(taskId, 'running', 0.3, null);
   const result = await crawler.fetchPage(url, { retries: 2 });
@@ -316,7 +376,9 @@ async function runUpdateProject(taskId: string, inputs: Record<string, unknown>)
   if (!project) return finishTask(taskId, 'failed', 1, null, `project not found: ${target}`);
 
   const sourceUrl = project.update_source_url || '';
-  if (/github\.com/.test(sourceUrl)) {
+  const extractorReady = await isExtractorConfigured();
+  // GitHub 且未配置提取器 → 本地 GitHub 抓取兜底；配置了 → 统一走 version-extractor（含 github/api.github.com）
+  if (/github\.com/.test(sourceUrl) && !extractorReady) {
     const { parseGithubRepoInput, scrapeGithubReleasesToDb } = await import('@/lib/github');
     const parsed = parseGithubRepoInput(sourceUrl);
     if (!parsed) return finishTask(taskId, 'failed', 1, null, 'cannot parse GitHub URL');
@@ -324,6 +386,70 @@ async function runUpdateProject(taskId: string, inputs: Record<string, unknown>)
     const summary = await scrapeGithubReleasesToDb({ repos: [`${parsed.owner}/${parsed.repo}`], limitPerRepo: 5 });
     const repoSummary = summary.repos[0] || {};
     return finishTask(taskId, 'success', 1, { name: project.name, summary: repoSummary });
+  }
+
+  // 云端提取器优先（注册表 / GitHub API / L2 浏览器兜底，不依赖 version_regex）
+  if (extractorReady) {
+    await finishTask(taskId, 'running', 0.4, null);
+    try {
+      const remote = await extractFromRemote(sourceUrl, { fields: ['version'], productName: project.name });
+      const extraction = remoteToExtract(remote.version);
+      if (!extraction.version) {
+        return finishTask(taskId, 'failed', 1, {
+          name: project.name,
+          reason: '云端提取器未提取到版本号',
+          confidence: extraction.confidence,
+        }, 'cloud extractor returned no version');
+      }
+      const { shouldTrustExtraction } = await import('@/lib/version-extract');
+      const verdict = shouldTrustExtraction(extraction, project.latest_version);
+      if (!verdict.trust) {
+        // 人工审核：批准过该版本 → 跳过交叉校验直接采用；拒绝过 → 明确失败
+        const { prisma: pr } = await import('@/lib/prisma');
+        const review = extraction.version
+          ? await pr.versionReview.findUnique({ where: { url_version: { url: sourceUrl, version: extraction.version } } }).catch(() => null)
+          : null;
+        if (review?.decision === 'approve') {
+          const updated = await p.project.update({
+            where: { id: project.id },
+            data: { latest_version: extraction.version, latest_update_time: new Date(), last_checked_at: new Date() },
+          });
+          return finishTask(taskId, 'success', 1, {
+            name: project.name,
+            new_version: updated.latest_version,
+            confidence: extraction.confidence,
+            source: extraction.source,
+            via_extractor: true,
+            via_review: true,
+          });
+        }
+        if (review?.decision === 'reject') {
+          return finishTask(taskId, 'failed', 1, {
+            name: project.name,
+            extracted: extraction.version,
+            reason: '该版本已被人工拒绝',
+          }, '该版本已被人工拒绝');
+        }
+        return finishTask(taskId, 'failed', 1, {
+          name: project.name,
+          extracted: extraction.version,
+          reason: verdict.reason,
+        }, verdict.reason);
+      }
+      const updated = await p.project.update({
+        where: { id: project.id },
+        data: { latest_version: extraction.version, latest_update_time: new Date(), last_checked_at: new Date() },
+      });
+      return finishTask(taskId, 'success', 1, {
+        name: project.name,
+        new_version: updated.latest_version,
+        confidence: extraction.confidence,
+        source: extraction.source,
+        via_extractor: true,
+      });
+    } catch (e) {
+      console.warn(`[update-project] cloud extractor failed: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   if (project.version_regex) {
@@ -345,20 +471,70 @@ async function runUpdateProject(taskId: string, inputs: Record<string, unknown>)
     }
     const updated = await p.project.update({
       where: { id: project.id },
-      data: { latest_version: extraction.version, latest_update_time: new Date() },
+      data: { latest_version: extraction.version, latest_update_time: new Date(), last_checked_at: new Date() },
     });
     return finishTask(taskId, 'success', 1, { name: project.name, new_version: updated.latest_version, confidence: extraction.confidence });
   }
 
-  return finishTask(taskId, 'failed', 1, null, 'project has no GitHub URL and no version_regex; needs AI task (dispatch GH Actions)');
+  return finishTask(taskId, 'failed', 1, null, 'project has no GitHub URL, no version_regex, and cloud extractor not configured');
+}
+
+async function runWriteRegex(taskId: string, inputs: Record<string, unknown>) {
+  const url = String(inputs.url || '').trim();
+  if (!url) return finishTask(taskId, 'failed', 0, null, 'url is required');
+
+  // 云端提取器优先：返回 suggested_regex
+  if (await isExtractorConfigured()) {
+    await finishTask(taskId, 'running', 0.3, null);
+    try {
+      const remote = await extractFromRemote(url, { fields: ['version'], productName: inputs.productName ? String(inputs.productName) : undefined });
+      const v = remote.version;
+      return finishTask(taskId, 'success', 1, {
+        url,
+        via_extractor: true,
+        version: v?.version || null,
+        regex: v?.suggestedRegex || null,
+        source: v?.source || 'none',
+        confidence: v?.confidence || 'low',
+        note: v?.suggestedRegex ? '云端提取器给出的建议正则' : '云端提取器未给出正则',
+      });
+    } catch (e) {
+      console.warn(`[write-regex] cloud extractor failed, fallback to local: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  // 本地兜底：抓取 + 启发式 + suggestRegex
+  const crawler = await getCrawler();
+  await finishTask(taskId, 'running', 0.3, null);
+  const result = await crawler.fetchPage(url, { retries: 2 });
+  if (result.error || result.status === 0) {
+    return finishTask(taskId, 'failed', 1, { status_code: result.status }, result.error || 'fetch failed');
+  }
+  const extraction = extractVersionFromHtml(result.text, { url });
+  if (!extraction.version) {
+    return finishTask(taskId, 'failed', 1, { url }, '未能提取到版本号，无法给出正则');
+  }
+  return finishTask(taskId, 'success', 1, {
+    url,
+    version: extraction.version,
+    regex: extraction.suggestedRegex,
+    source: extraction.source,
+    confidence: extraction.confidence,
+    matched_context: extraction.matchedContext || undefined,
+  });
 }
 
 // ── 派发（站内执行）──
-export async function dispatchTask(input: { type: string; inputs: Record<string, unknown>; triggeredBy?: string }): Promise<{ taskId: string }> {
+export async function dispatchTask(input: { type: string; inputs: Record<string, unknown>; triggeredBy?: string; recordOnly?: boolean }): Promise<{ taskId: string }> {
   const def = getTaskDefinition(input.type);
   if (!def) throw new Error(`Unknown task type: ${input.type}`);
 
   const row = await createTaskRow(input.type, def.engine, input.inputs || {}, input.triggeredBy || 'admin');
+  if (input.recordOnly) {
+    // 只记录历史，不派发/不执行（GH Actions 已废弃；执行统一走 version-extractor 特定入口）
+    await finishTask(row.taskId, 'recorded', 0, null, '仅记录，未派发');
+    return { taskId: row.taskId };
+  }
   if (def.engine === 'in-app') {
     void executeTaskHandler({ taskId: row.taskId, type: row.type, inputs: row.inputs as Record<string, unknown> });
   } else {

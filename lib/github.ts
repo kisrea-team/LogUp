@@ -102,7 +102,8 @@ export function parseGithubRepoInput(input: string): { owner: string; repo: stri
   trimmed = trimmed.replace(/^[<]+|[>]+$/g, '');
   // 常见尾部标点
   trimmed = trimmed.replace(/[),.;]+$/g, '');
-  const urlMatch = trimmed.match(/^https?:\/\/github\.com\/([^/]+)\/([^/#?]+)(?:[/?#].*)?$/i);
+  // github.com/owner/repo 与 api.github.com/repos/owner/repo（含 /releases、/tags 尾路径）
+  const urlMatch = trimmed.match(/^https?:\/\/(?:www\.|api\.)?github\.com\/(?:repos\/)?([^/]+)\/([^/#?]+)(?:[/?#].*)?$/i);
   if (urlMatch) return { owner: urlMatch[1], repo: urlMatch[2] };
   const shortMatch = trimmed.match(/^([^/]+)\/([^/#?]+)$/);
   if (shortMatch) return { owner: shortMatch[1], repo: shortMatch[2] };
