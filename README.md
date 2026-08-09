@@ -13,57 +13,54 @@ tags:
   - prisma
   - postgresql
   - docker
+  - version-extractor
 pinned: false
 ---
 
 # LogUp
 
-软件版本更新追踪站点，收录各类软件项目的版本记录和更新日志，面向中文用户提供本地化内容。以程序化更新为主、AI 运营兜底长尾。
+软件版本更新追踪站点，收录各类软件项目的版本记录和更新日志，面向中文用户提供本地化内容。**版本提取统一由 [version-extractor](https://github.com/kisrea-team/version-extractor) 爬虫引擎完成**（注册表 / GitHub API / LightGBM 排序 / LLM 兜底 / 浏览器渲染），本站在其之上做运营、展示与人工审核。
 
 ## 技术栈
 
 - **前端 + API**：Next.js 16 App Router（单进程），Tailwind CSS 4
 - **数据库**：PostgreSQL + Prisma ORM
 - **部署**：Docker，运行在 Hugging Face Spaces
-- **自动运营**：GitHub Actions 定时触发（兜底）+ 后台控制平面手动触发
-- **工业抓取引擎**：`scripts/crawler.js`（代理池 / UA 轮换 / TLS 指纹 / 重试退避 / 礼貌限速 / 反爬降级）
-- **GitHub 爬取**：`lib/github.ts` 直连 GitHub API（限流感知 + 多 token 轮换）
-- **规则化版本提取**：`lib/version-extract.ts`（正则 / title / JSON-LD / 正文关键词，不依赖 LLM）
-- **运营控制**：后台 `/admin/ops` 触发站内抓取、`/admin/tasks` 微任务、派发 GitHub Actions 流水线
-- **AI 配置可管理**：后台 `/admin/ai` 增删改 AI Provider（接口/Key/模型），`/api/translate` 按优先级故障转移
-- **chrome-devtools MCP**：给 AI 子代理提供 F12 级浏览器能力（反爬/JS 页面兜底）
-- **链接收录**：DDGS Search API 查找中文社区资料
-- **SEO**：新增 URL 自动提交 Google Indexing API
+- **版本提取引擎**：[version-extractor](https://github.com/kisrea-team/version-extractor) 外部服务（`EXTRACTOR_URL`），负责抓页 + 候选收集 + LGB/LambdaRank 排序 + LLM 兜底 + 浏览器渲染 + 决策审计
+- **版本更新**：后台按需"获取最新版本"（走 version-extractor）+ 全库 TTL 扫（`scripts/update-existing-projects.js`，只查超过 `CHECK_TTL_HOURS` 的项目）
+- **人工审核**：交叉校验异常的提取结果，后台批准/拒绝（`version_reviews` 表，负样本供重训）
+- **提取器配置可管理**：后台 `/admin/extractor` 配置 URL、测试提取、查看决策审计（`/audit`）
+- **AI Provider 配置可管理**：后台 `/admin/ai` 增删改 AI Provider（接口/Key/模型）
+- **AI 长尾**：version-extractor 低置信 / 无来源 URL 的项目，由外部 AI 兜底（找 URL / 复核）
+- **SEO**：新增 URL 提交 Google Indexing API
 
 ## 目录结构
 
 ```
 ├── app/
-│   ├── api/                    # Next.js route handlers
-│   │   ├── projects/ versions/ # 数据 CRUD
-│   │   ├── scrape/github/      # GitHub 爬取 / trending / schedule / fix-icons
-│   │   ├── ops/                # 运营控制：run/status/history/task/gh-actions
-│   │   ├── admin/              # admin/stats、admin/ai-providers
-│   │   └── auth/               # 登录/登出
-│   ├── admin/                  # 后台：仪表盘/项目/版本/爬虫/运营控制/微任务/AI Provider
-│   └── project/[id]/           # 项目详情页
+│   ├── api/
+│   │   ├── projects/ versions/       # 数据 CRUD
+│   │   ├── ops/                      # 运营控制：run/task/extractor-config/gh-actions(废弃)
+│   │   ├── admin/
+│   │   │   ├── extractor/            # version-extractor 配置/测试/审计代理
+│   │   │   └── version-review/       # 人工审核（批准/拒绝）
+│   │   └── auth/                     # 登录/登出
+│   ├── admin/                        # 后台：仪表盘/项目(含版本管理)/爬虫/运营控制/微任务/提取器/AI
+│   └── project/[id]/                 # 项目详情页
 ├── lib/
-│   ├── github.ts               # GitHub 爬取 + 限流多 token
-│   ├── version-extract.ts      # 规则化版本提取
-│   ├── tasks.ts                # 微任务注册表 + 执行引擎
-│   ├── ops.ts                  # OpRun 记录 + 运营执行
-│   ├── github-actions.ts       # GH Actions 派发/状态/取消
-│   ├── ai-providers.ts         # AI Provider 读写（AES 加密）
-│   └── auth.ts                 # 鉴权（会话 cookie + API key）
+│   ├── extractor.ts                  # version-extractor 客户端（DB 配置 URL + env 兜底）
+│   ├── extractor-config.ts           # 提取器地址配置（DB AppSetting）
+│   ├── tasks.ts                      # 微任务注册表 + 执行引擎（走 version-extractor）
+│   ├── ops.ts                        # OpRun 记录 + 即时抓取（version-extractor）
+│   ├── version-extract.ts            # 本地启发式兜底（提取器不可用时）
+│   ├── github.ts                     # GitHub API（限流多 token，兜底）
+│   ├── ai-providers.ts               # AI Provider 读写（AES 加密）
+│   └── auth.ts                       # 鉴权（会话 cookie + API key）
 ├── scripts/
-│   ├── crawler.js              # 工业抓取引擎
-│   ├── run-task.js             # 微任务执行器（GH Actions）
-│   ├── check-updates.js        # ETag 探测（工业引擎）
-│   ├── process-github-updates.js
+│   ├── update-existing-projects.js   # 全库 TTL 扫（version-extractor 批量更新）
 │   └── submit-to-indexing.js
 ├── .github/workflows/
-│   ├── github-data-ops.yml     # 全量运营流水线（兜底定时器）
-│   └── task-run.yml            # 微任务 workflow（后台派发）
+│   └── github-data-ops.yml           # 定时触发 version-extractor TTL 扫
 └── prisma/schema.prisma
 ```
 
@@ -75,7 +72,7 @@ npm install
 
 # 2. 配置环境变量
 cp .env.example .env.local
-# 编辑 .env.local，至少设置 DATABASE_URL（PostgreSQL）
+# 至少设置 DATABASE_URL（PostgreSQL）；EXTRACTOR_URL 可在后台"版本提取器"页配置（DB 优先，env 兜底）
 
 # 3. 启动（自动同步 Prisma schema 并运行 Next.js dev）
 npm run dev:all
@@ -99,27 +96,27 @@ npm run db:studio    # Prisma Studio 可视化数据库
 
 ## 部署
 
-支持 Docker 部署（单进程 Next.js standalone）：
+支持 Docker 部署（单进程 Next.js standalone），需连一个 version-extractor 服务：
 
 ```bash
 docker build -t logup .
-docker run -p 7860:7860 --env-file .env logup
+docker run -p 7860:7860 --env-file .env \
+  -e EXTRACTOR_URL=https://your-version-extractor.example.com \
+  logup
 ```
 
-部署后需执行一次迁移以创建新表（ai_providers / op_runs / op_tasks）：
+部署后需执行一次迁移以创建新表（app_settings / version_reviews / last_checked_at 等）：
 
 ```bash
-npx prisma migrate deploy   # 或 npx prisma db push
+npx prisma db push   # 或 npx prisma migrate deploy
 ```
 
-## 自动运营
+## 版本更新（version-extractor）
 
-运营可由**后台控制**（`/admin/ops`）或 **GitHub Actions 兜底**触发：
+版本提取统一由 version-extractor 完成，本站在其上做三层运营：
 
-1. **ETag 探测**：`check-updates.js` 用工业引擎并发探测各项目，标记有变化
-2. **GitHub 自动更新**：`process-github-updates.js` 程序化比对最新版本并入库
-3. **AI 长尾兜底**：非 GitHub / 正则失效 / 新项目，由 Claude Code 子代理（含 chrome-devtools MCP）处理
-4. **微任务**：`/admin/tasks` 按需派发 get-version / write-regex / update-project 等细粒度操作
-5. **SEO 提交**：新增 URL 提交 Google Indexing API
+1. **按需**：后台项目列表点"获取最新版本"→ 走 version-extractor 提取（带产品名触发 LLM 兜底）→ 高置信写库
+2. **批量**：`update-existing-projects.js` 全库 TTL 扫（`CHECK_TTL_HOURS=24`）只查过期项目，GitHub Actions 定时（每 3h）触发
+3. **人工审核**：交叉校验异常（提取 < 库值 / 低置信）弹窗批准/拒绝 → 批准下次直接采用、拒绝记负样本
 
-详细设计见 [docs/industrial-crawler-design.md](docs/industrial-crawler-design.md)。
+**AI 长尾**：version-extractor 低置信 / 无来源 URL 的项目写入 `needs-ai` 清单，由外部 AI 兜底（找官方 URL / 复核版本）。
