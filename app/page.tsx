@@ -305,6 +305,13 @@ export default function Page() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* 数据来源声明 */}
+            <footer className="border-t border-gray-200 bg-white mt-8">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-xs text-gray-500">
+                    版本数据均来自软件官网、官方更新日志或包注册表（Homebrew / winget / Flathub / GitHub / npm / PyPI 等）正规渠道。
+                </div>
+            </footer>
         </div>
     );
 }
