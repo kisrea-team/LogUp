@@ -120,3 +120,16 @@ npx prisma db push   # 或 npx prisma migrate deploy
 3. **人工审核**：交叉校验异常（提取 < 库值 / 低置信）弹窗批准/拒绝 → 批准下次直接采用、拒绝记负样本
 
 **AI 长尾**：version-extractor 低置信 / 无来源 URL 的项目写入 `needs-ai` 清单，由外部 AI 兜底（找官方 URL / 复核版本）。
+
+## 自我评价（version-extractor 引擎）
+
+| 评测维度 | 现状 | 说明 |
+| :--- | :---: | :--- |
+| **版本提取精度** | ~89%（80 例基准 71/80） | 注册表 / GitHub API 确定性优先 + LightGBM 过滤 + LambdaRank 页内排序 + LLM 兜底 |
+| **注册表覆盖** | brew(cask+formula) / winget / flathub + GitHub API | 自动发现：URL 直解优先 + brew 直查 + GitHub search；python/node/git 等 CLI 工具可命中 |
+| **LLM 兜底** | 低 margin 触发，实测 14 例咨询 10 对 | NVIDIA diffusiongemma + modelbest 回退，带产品名触发，并行 12 |
+| **人工审核** | 交叉校验异常可批准/拒绝 | `version_reviews` 表，拒绝记负样本供重训，批准下次直接采用 |
+| **决策可审计** | 每请求落库 | `/audit` 查页面/候选/rank/LLM/最终 完整决策链 |
+| **自动化** | 全库 TTL 扫 + 按需 | 每 3h 只查超过 `CHECK_TTL_HOURS` 的项目，版本没变也标记避免反复重查 |
+
+> 数据来自 80 例真值语料基准（`benchmark/cases.json`）。已知短板：依赖/组件版本（Chromium/Electron 等）数值较大时可能压过产品版本（windsurf 型），由人工审核 + 负样本训练持续收敛。
