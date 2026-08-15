@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-// AdAnalytics 组件已被移除，相关功能已整合到页面中
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
-
-const API_BASE_URL = getApiBaseUrl();
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
+import AdminCard from '@/components/admin/AdminCard';
+import StatCard from '@/components/admin/StatCard';
 
 interface AdPerformance {
     adId: string;
@@ -15,36 +14,40 @@ interface AdPerformance {
     revenue: number;
 }
 
+const TIME_RANGES = [
+    { value: '24h', label: '24 小时' },
+    { value: '7d', label: '7 天' },
+    { value: '30d', label: '30 天' },
+];
+
 export default function AdAdminPage() {
     const [adPerformance, setAdPerformance] = useState<AdPerformance[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
 
-    useEffect(() => {
-        fetchAdPerformance();
-    }, [selectedTimeRange]);
-
-    const fetchAdPerformance = async () => {
+    const fetchAdPerformance = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await apiFetch(`/api/analytics?timeRange=${selectedTimeRange}`);
-            const data = await response.json();
-
-            // Use the adPerformance data from the API response
-            if (data.adPerformance) {
-                setAdPerformance(data.adPerformance);
-            } else {
-                // Fallback to empty array if no data
+            setError('');
+            // 统计接口尚未接入，失败时显示空状态
+            const response = await apiFetch(`/analytics?timeRange=${selectedTimeRange}`);
+            if (!response.ok) {
                 setAdPerformance([]);
+                return;
             }
-        } catch (error) {
-            console.error('获取广告性能数据失败:', error);
-            // Fallback to empty array on error
+            const data = await response.json().catch(() => ({}));
+            setAdPerformance(Array.isArray(data?.adPerformance) ? data.adPerformance : []);
+        } catch (err) {
             setAdPerformance([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedTimeRange]);
+
+    useEffect(() => {
+        fetchAdPerformance();
+    }, [fetchAdPerformance]);
 
     const totalRevenue = adPerformance.reduce((sum, ad) => sum + ad.revenue, 0);
     const totalImpressions = adPerformance.reduce((sum, ad) => sum + ad.impressions, 0);
@@ -52,125 +55,91 @@ export default function AdAdminPage() {
     const averageCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
     return (
-        <div>
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">广告管理后台</h1>
-
-                    {/* 时间范围选择器 */}
-                    <div className="flex space-x-4 mb-6">
-                        {['24h', '7d', '30d'].map((range) => (
-                            <button
-                                key={range}
-                                onClick={() => setSelectedTimeRange(range)}
-                                className={`px-4 py-2 rounded-md ${
-                                    selectedTimeRange === range
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white text-gray-700 border border-gray-300'
-                                }`}
-                            >
-                                {range === '24h' ? '24小时' : range === '7d' ? '7天' : '30天'}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* 总览统计 */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="rounded-lg shadow p-6">
-                            <div className="text-sm font-medium text-gray-500">总收入</div>
-                            <div className="text-2xl font-bold text-green-600">
-                                ¥{totalRevenue.toFixed(2)}
-                            </div>
-                        </div>
-                        <div className="rounded-lg shadow p-6">
-                            <div className="text-sm font-medium text-gray-500">总展示</div>
-                            <div className="text-2xl font-bold text-blue-600">
-                                {totalImpressions.toLocaleString()}
-                            </div>
-                        </div>
-                        <div className=" rounded-lg shadow p-6">
-                            <div className="text-sm font-medium text-gray-500">总点击</div>
-                            <div className="text-2xl font-bold text-purple-600">
-                                {totalClicks.toLocaleString()}
-                            </div>
-                        </div>
-                        <div className="rounded-lg shadow p-6">
-                            <div className="text-sm font-medium text-gray-500">平均CTR</div>
-                            <div className="text-2xl font-bold text-orange-600">
-                                {averageCTR.toFixed(2)}%
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 广告性能表格 */}
-                <div className="rounded-lg shadow overflow-hidden mb-8">
-                    <div className="px-6 py-4 border border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900">广告位性能</h2>
-                    </div>
-
-                    {loading ? (
-                        <div className="p-8 text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-2 borderlue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">加载中...</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <div className="min-w-full divide-y divide-gray-200">
-                                <div className="">
-                                    <div>
-                                        <p>广告位ID</p>
-                                        <p>类型</p>
-                                        <p>展示次数</p>
-                                        <p>点击次数</p>
-                                        <p>点击率</p>
-                                        <p>收入</p>
-                                    </div>
-                                </div>
-                                <tbody className=" divide-y divide-gray-200">
-                                    {adPerformance.map((ad) => (
-                                        <div key={ad.adId} className="hover:bg-gray-50">
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {ad.adId}
-                                            </p>
-                                            <p className="px-6 py-4 ">
-                                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                                    {ad.adType}
-                                                </span>
-                                            </p>
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {ad.impressions.toLocaleString()}
-                                            </p>
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {ad.clicks.toLocaleString()}
-                                            </p>
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <span
-                                                    className={`font-medium ${
-                                                        ad.ctr >= 3
-                                                            ? 'text-green-600'
-                                                            : ad.ctr >= 2
-                                                              ? 'text-yellow-600'
-                                                              : 'text-red-600'
-                                                    }`}
-                                                >
-                                                    {ad.ctr.toFixed(2)}%
-                                                </span>
-                                            </p>
-                                            <p className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                                ¥{ad.revenue.toFixed(2)}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </tbody>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* 详细分析组件 */}
-                {/* AdAnalytics 组件已被移除，相关功能已整合到页面中 */}
+        <div className="space-y-6">
+            {/* 头部 */}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-900">广告管理</h1>
+                <p className="text-sm text-gray-500 mt-1">广告位与投放统计</p>
             </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            {/* 统计卡片 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard label="总收入" value={`¥${totalRevenue.toFixed(2)}`} sub={TIME_RANGES.find((r) => r.value === selectedTimeRange)?.label} delay={0} />
+                <StatCard label="总展示" value={totalImpressions.toLocaleString()} delay={0.05} />
+                <StatCard label="总点击" value={totalClicks.toLocaleString()} delay={0.1} />
+                <StatCard label="平均 CTR" value={`${averageCTR.toFixed(2)}%`} delay={0.15} />
+            </div>
+
+            {/* 时间范围 + 广告位性能 */}
+            <AdminCard
+                title="广告位性能"
+                description="按广告位查看展示 / 点击 / 收入"
+                className=""
+            >
+                <div className="px-6 pt-4 pb-2 flex items-center gap-2 border-b border-gray-100">
+                    {TIME_RANGES.map((range) => (
+                        <button
+                            key={range.value}
+                            onClick={() => setSelectedTimeRange(range.value)}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedTimeRange === range.value
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            {range.label}
+                        </button>
+                    ))}
+                </div>
+
+                {loading ? (
+                    <div className="p-12 text-center">
+                        <div className="inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-gray-400 text-sm mt-3">加载中...</p>
+                    </div>
+                ) : adPerformance.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <div className="text-4xl mb-3">📊</div>
+                        <p className="text-gray-500 font-medium">暂无广告统计</p>
+                        <p className="text-gray-400 text-sm mt-1">
+                            广告统计接口尚未接入。接入后这里将展示各广告位的展示、点击与收入数据。
+                        </p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">广告位 ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">展示</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">点击</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">收入</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-50">
+                                {adPerformance.map((ad) => (
+                                    <tr key={ad.adId} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-3 text-sm font-medium text-gray-900">{ad.adId}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-500">{ad.adType}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600 tabular-nums">{ad.impressions.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600 tabular-nums">{ad.clicks.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-sm tabular-nums">
+                                            <span className={`font-medium ${ad.ctr >= 3 ? 'text-green-600' : ad.ctr >= 2 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                {ad.ctr.toFixed(2)}%
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3 text-sm font-medium text-gray-900 text-right tabular-nums">¥{ad.revenue.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </AdminCard>
         </div>
     );
 }

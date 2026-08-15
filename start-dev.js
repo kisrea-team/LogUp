@@ -1,43 +1,62 @@
-
-const { spawn, spawnSync } = require('child_process');
-const path = require('path');
+/**
+ * 开发环境启动脚本
+ *
+ * 加载 .env / .env.local 后同步 Prisma schema，再启动 Next.js 开发服务器。
+ * 后端已合并进 Next.js route handlers，无需额外进程。
+ */
+const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
-// Ensure database URL is set via SSH tunnel if needed
-// require('./lib/ensure-ssh-tunnel'); // backend-repo/server.js does this internally
+// 手动加载 .env 文件（Prisma CLI 默认只读 .env；这里也补上 .env.local）
+function loadDotenvFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return;
+    const content = fs.readFileSync(filePath, 'utf8');
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) continue;
+      const idx = line.indexOf('=');
+      if (idx <= 0) continue;
+      const key = line.slice(0, idx).trim();
+      let value = line.slice(idx + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = value;
+    }
+  } catch (e) {
+    console.error('Failed to load env file:', e);
+  }
+}
+
+const repoRoot = __dirname;
+loadDotenvFile(path.join(repoRoot, '.env'));
+loadDotenvFile(path.join(repoRoot, '.env.local'));
 
 console.log('Starting development environment...');
 
-// Sync Prisma schema to database (creates missing columns like `slug`)
-console.log('Syncing database schema via prisma db push...');
-const pushResult = spawnSync(
-  'npx', ['prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'],
-  { stdio: 'inherit', shell: true, env: process.env }
-);
-if (pushResult.status !== 0) {
-  console.warn('Warning: prisma db push failed (status ' + pushResult.status + '), continuing anyway...');
+// 同步 Prisma schema 到数据库（创建缺失的表/列）
+if (process.env.DATABASE_URL) {
+  console.log('Syncing database schema via prisma db push...');
+  const pushResult = spawnSync(
+    'npx',
+    ['prisma', 'db', 'push', '--skip-generate'],
+    { stdio: 'inherit', shell: true, env: process.env }
+  );
+  if (pushResult.status !== 0) {
+    console.warn('Warning: prisma db push failed (status ' + pushResult.status + '), continuing anyway...');
+  }
+} else {
+  console.warn('Warning: DATABASE_URL 未设置，跳过 prisma db push（请检查 .env / .env.local）');
 }
 
-// Start Backend
-const backendPort = process.env.BACKEND_NODE_PORT || '8000';
-console.log(`Starting backend on port ${backendPort}...`);
-
-const backend = spawn('node', ['backend-repo/server.js'], {
-  env: { ...process.env, BACKEND_NODE_PORT: backendPort },
-  stdio: 'inherit',
-  shell: true
-});
-
-backend.on('error', (err) => {
-  console.error('Failed to start backend:', err);
-});
-
-// Start Frontend (Next.js dev)
+// Start Next.js dev server
 console.log('Starting Next.js frontend...');
 const frontend = spawn('npm', ['run', 'dev'], {
   env: { ...process.env },
   stdio: 'inherit',
-  shell: true
+  shell: true,
 });
 
 frontend.on('error', (err) => {
@@ -47,7 +66,6 @@ frontend.on('error', (err) => {
 // Handle exit
 process.on('SIGINT', () => {
   console.log('Stopping services...');
-  backend.kill();
   frontend.kill();
   process.exit();
 });

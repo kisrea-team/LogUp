@@ -44,6 +44,7 @@ ExampleProject
 - GitHub 项目调用 GitHub API 时请求头加 `Authorization: Bearer $GITHUB_TOKEN`
 - 更新 latest_version 和 latest_update_time
 - 通过 `POST /api/versions` 录入新版本
+- 站点 API 写请求（POST/PUT/PATCH/DELETE）必须携带请求头 `x-admin-key: $ADMIN_API_KEY`（环境变量已注入）
 
 ## 输出格式
 

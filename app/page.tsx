@@ -3,14 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiFetch, getApiBaseUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import Loading from '@/components/Loading';
 import Header from '@/components/Header';
 import ProjectList from '@/components/ProjectList';
 import Pagination from '@/components/Pagination';
 import FilterType from '@/components/utils/FilterType';
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface Version {
     id?: number;
@@ -266,7 +264,9 @@ export default function Page() {
                                 setSearch('');
                                 setFilterType('');
                                 setFilterTag('');
+                                setCurrentPage(1);
                                 fetchProjects(1, '', sortBy, '', '');
+                                syncUrl(1, '', sortBy, '', ''); // 同步清空 URL query，避免返回/刷新时筛选恢复
                             }}
                             className="ml-2 text-blue-500 hover:underline"
                         >
@@ -307,6 +307,23 @@ export default function Page() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* 数据来源声明 + 联系 */}
+            <footer className="border-t border-gray-200 bg-white mt-8">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-1.5 text-center text-xs text-gray-500">
+                    <p>版本数据均来自软件官网、官方更新日志或包注册表（Homebrew / winget / Flathub / GitHub / npm / PyPI 等）正规渠道。</p>
+                    <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                        <span>
+                            联系邮箱：
+                            <a href="mailto:zitons@outlook.com" className="text-blue-500 hover:underline break-all">zitons@outlook.com</a>
+                        </span>
+                        <span>
+                            GitHub：
+                            <a href="https://github.com/kisrea-team" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">kisrea-team</a>
+                        </span>
+                    </p>
+                </div>
+            </footer>
         </div>
     );
 }

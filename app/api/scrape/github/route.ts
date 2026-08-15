@@ -1,28 +1,36 @@
-function getBackendBaseUrl() {
-  const fromEnv = process.env.BACKEND_NODE_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
-  const port = process.env.BACKEND_NODE_PORT || '8000';
-  return `http://127.0.0.1:${port}`;
-}
+import { NextRequest, NextResponse } from 'next/server';
+import { scrapeGithubReleasesToDb } from '@/lib/github';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
-export async function POST(request: Request) {
+export const runtime = 'nodejs';
+
+// POST /api/scrape/github - 抓取指定仓库的 releases 入库
+// Body: { repos: string[], include_prerelease?: boolean, limit_per_repo?: number }
+export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
-    const backendUrl = `${getBackendBaseUrl()}/scrape/github`;
+    const repos = Array.isArray(body.repos)
+      ? body.repos.map((s: unknown) => String(s)).filter(Boolean)
+      : typeof body.repos === 'string'
+        ? body.repos.split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean)
+        : (process.env.GITHUB_REPOS || '').split(',').map((s: string) => s.trim()).filter(Boolean);
 
-    const resp = await fetch(backendUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    if (!repos.length) {
+      return NextResponse.json({ error: 'repos is required' }, { status: 400 });
+    }
 
-    const text = await resp.text();
-    return new Response(text, {
-      status: resp.status,
-      headers: { 'Content-Type': resp.headers.get('content-type') || 'application/json; charset=utf-8' },
-    });
+    const includePrerelease = Boolean(body.include_prerelease);
+    const limitPerRepo =
+      body.limit_per_repo === undefined ? undefined : Number(body.limit_per_repo);
+
+    const result = await scrapeGithubReleasesToDb({ repos, includePrerelease, limitPerRepo });
+    return NextResponse.json({ success: true, result });
   } catch (error) {
-    console.error('API error:', error);
-    return Response.json({ success: false, message: 'Internal server error' }, { status: 500 });
+    console.error('[scrape/github] error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

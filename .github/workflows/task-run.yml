@@ -1,0 +1,182 @@
+name: LogUp Micro Task
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: '站内 OpTask 的 taskId（优先使用，后台派发微任务后自动传入）'
+        type: string
+        required: false
+      task:
+        description: '任务类型（无 task_id 时使用）'
+        type: choice
+        options:
+          - write-regex
+          - inspect-page
+          - add-project
+          - get-version
+          - update-project
+          - report
+        required: false
+      target:
+        description: '目标（URL / owner/repo / 项目名）'
+        type: string
+        required: false
+      params:
+        description: '附加 JSON 参数'
+        type: string
+        required: false
+        default: '{}'
+      write_to_db:
+        description: '是否写库'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Resolve Chrome binary path (for chrome-devtools MCP)
+        run: |
+          CHROME_BIN=$(ls ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)
+          echo "CHROME_BIN=${CHROME_BIN}" >> $GITHUB_ENV
+
+      - name: Set npm global prefix
+        run: |
+          npm config set prefix ~/.npm-global
+          echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
+
+      - name: Cache Claude Code & Router
+        id: npm-global-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm-global
+          key: npm-global-claude-ccr-v1
+          restore-keys: npm-global-claude-ccr-
+
+      - name: Install Claude Code & Router
+        if: steps.npm-global-cache.outputs.cache-hit != 'true'
+        run: npm install -g @anthropic-ai/claude-code @musistudio/claude-code-router
+
+      - name: Configure Claude Code Router (后台 AI Provider 动态配置)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
+          GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
+          GEMINI4_API_KEY: ${{ secrets.GEMINI4_API_KEY }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          SITE_URL: https://zitons-logup-re.hf.space
+        run: |
+          mkdir -p ~/.claude-code-router
+          node << 'JSEOF'
+          const fs = require('fs');
+          const path = require('path');
+          const out = path.join(process.env.HOME || '~', '.claude-code-router', 'config.json');
+          async function main() {
+            if (process.env.ADMIN_API_KEY) {
+              try {
+                const resp = await fetch(process.env.SITE_URL + '/api/ops/crawl-config', {
+                  headers: { 'x-admin-key': process.env.ADMIN_API_KEY },
+                  signal: AbortSignal.timeout(15000),
+                });
+                if (resp.ok) {
+                  const data = await resp.json();
+                  if (data.success && data.configured && Array.isArray(data.providers) && data.providers.length > 0) {
+                    const providers = data.providers.map((p) => ({
+                      name: p.name, api_base_url: p.api_base_url, api_key: p.api_key,
+                      models: (p.models && p.models.length ? p.models : [p.model]),
+                    }));
+                    const first = providers[0];
+                    const router = { longContextThreshold: 10000, ...(data.router || {}) };
+                    if (!Object.keys(router).some((k) => k !== 'longContextThreshold')) router.default = first.name + ',' + first.models[0];
+                    fs.writeFileSync(out, JSON.stringify({ APIKEY: data.apiKey, NON_INTERACTIVE_MODE: true, Providers: providers, Router: router }, null, 2));
+                    console.log('[router] 已使用后台爬虫 AI Provider:', providers.map((p) => p.name).join(', '));
+                    return;
+                  }
+                }
+                console.warn('[router] 后台未配置爬虫 AI Provider，回退内置配置');
+              } catch (e) {
+                console.warn('[router] 拉取后台配置失败，回退内置配置:', e.message);
+              }
+            }
+            const config = {
+              APIKEY: process.env.GEMINI_API_KEY,
+              NON_INTERACTIVE_MODE: true,
+              Providers: [
+                { name: "custom", api_base_url: "https://maas-api.ai-yuanjing.com/openapi/compatible-mode/v1/chat/completions", api_key: process.env.GEMINI_API_KEY, models: ["glm-5"], transformer: { use: [["maxtoken", { max_tokens: 25000 }]] } },
+                { name: "custom2", api_base_url: "http://35.212.185.123:8317/v1/chat/completions", api_key: process.env.GEMINI2_API_KEY, models: ["gpt-5.3-codex"] },
+              ],
+              Router: { default: "custom2,gpt-5.2-codex", background: "custom,glm-5", think: "custom2,gpt-5.2-codex", longContext: "custom,glm-5", longContextThreshold: 10000 },
+            };
+            fs.writeFileSync(out, JSON.stringify(config, null, 2));
+            console.log('[router] 已使用内置兜底配置');
+          }
+          main().catch((e) => { console.error('[router] 生成配置失败:', e.message); process.exit(1); });
+          JSEOF
+
+      - name: Configure MCP servers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          node -e '
+          const fs = require("fs");
+          const chromeArgs = ["-y", "chrome-devtools-mcp@latest", "--headless", "--no-usage-statistics"];
+          if (process.env.CHROME_BIN) chromeArgs.push("--executable-path=" + process.env.CHROME_BIN);
+          const mcp = {
+            mcpServers: {
+              fetch: { command: "uvx", args: ["mcp-server-fetch"] },
+              postgres: { command: "npx", args: ["-y", "@modelcontextprotocol/server-postgres", process.env.DATABASE_URL] },
+              "chrome-devtools": { command: "npx", args: chromeArgs }
+            }
+          };
+          fs.writeFileSync(".mcp.json", JSON.stringify(mcp, null, 2));
+          '
+          mkdir -p ~/.claude/skills && cp -r skills/. ~/.claude/skills/
+
+      - name: Run micro task
+        run: |
+          if [ -n "${{ inputs.task_id }}" ]; then
+            node scripts/run-task.js --task "${{ inputs.task_id }}"
+          else
+            node scripts/run-task.js \
+              --type "${{ inputs.task }}" \
+              --target "${{ inputs.target }}" \
+              --params '${{ inputs.params }}' \
+              --write-to-db ${{ inputs.write_to_db }}
+          fi
+        env:
+          SITE_URL: https://zitons-logup-re.hf.space
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          DDGS_SEARCH_API: ${{ vars.DDGS_SEARCH_API }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

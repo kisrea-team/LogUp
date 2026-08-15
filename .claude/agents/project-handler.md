@@ -83,6 +83,7 @@ SELECT id, name, update_source_url, version_regex, latest_version, latest_update
 - 先 `PUT` 更新项目字段，再 `POST` 录入版本
 - 使用 mcp-server-fetch 抓取网页（非 curl）
 - GitHub API 调用必须携带 `Authorization: Bearer $GITHUB_TOKEN`
+- 站点 API 写请求（POST/PUT/PATCH/DELETE）必须携带请求头 `x-admin-key: $ADMIN_API_KEY`（环境变量已注入）
 - GitHub 项目（URL 含 github.com）不填充 version_regex
 - version_regex 必须含捕获组，捕获组 1 为版本号
 - API 根地址：`https://zitons-logup-re.hf.space`

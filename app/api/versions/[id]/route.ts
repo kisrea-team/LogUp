@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 function isDatabaseUnavailableError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -15,6 +16,9 @@ export async function PATCH(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const id = parseInt(params.id, 10);
     const body = await request.json();
@@ -47,6 +51,9 @@ export async function PUT(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const id = parseInt(params.id, 10);
     const body = await request.json();
@@ -121,6 +128,9 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const id = parseInt(params.id, 10);
 

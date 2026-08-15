@@ -187,6 +187,8 @@ description: |
 
 详细 API 文档见 [references/api.md](references/api.md)。
 
+> 🔑 **鉴权**：站点 API 的**写请求**（POST/PUT/PATCH/DELETE，如创建/更新/删除项目、版本、触发爬虫、翻译）必须携带请求头 `x-admin-key: $ADMIN_API_KEY`。`$ADMIN_API_KEY` 已由运营环境注入。GET 只读请求无需鉴权。未携带该头会返回 `401 Unauthorized`。
+
 ### 快速参考
 
 | 操作 | 方法 | 路径 |
@@ -326,6 +328,13 @@ AI 可自行通过以下方式爬取更新日志，无需依赖后端 API 抓取
 ## 网页抓取能力（mcp-server-fetch）
 
 运营环境已配置 `mcp-server-fetch` MCP 服务，可通过 MCP 工具直接抓取网页内容，用于查找项目信息和版本数据。
+
+> 🔧 **进阶：chrome-devtools MCP（F12 级能力）**：当 `mcp-server-fetch` 或普通抓取拿不到版本号时（JS 动态渲染、Cloudflare 挑战、版本号藏在接口响应/控制台里），改用 `mcp__chrome-devtools__*` 工具：
+> - `navigate_page` + `get_snapshot`：真实浏览器打开页面拿 DOM
+> - `list_network_requests`：查看页面发出的网络请求（F12 Network），定位版本号接口
+> - `list_console_messages`：看控制台输出
+> - `evaluate_javascript`：在页面里执行 JS（如读 `window.__INITIAL_STATE__`）
+> 用 chrome-devtools 抓页面时，记得 `take_screenshot` 确认页面正常，别盲目解析。
 
 ### 适用场景
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 function isDatabaseUnavailableError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -79,10 +80,13 @@ export async function PUT(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const id = parseInt(params.id, 10);
     const body = await request.json();
-    const { icon, name, latest_version, latest_update_time, describe, summar, author, type, tags, links, update_source_url, version_regex } = body;
+    const { icon, name, latest_version, latest_update_time, describe, summar, author, type, tags, links, update_source_url, version_regex, last_checked_at } = body;
 
     const project = await prisma.project.update({
       where: { id },
@@ -99,6 +103,7 @@ export async function PUT(
         ...(Array.isArray(links) ? { links } : {}),
         ...(update_source_url !== undefined ? { update_source_url: update_source_url || null } : {}),
         ...(version_regex !== undefined ? { version_regex: version_regex || null } : {}),
+        ...(last_checked_at !== undefined ? { last_checked_at: last_checked_at ? new Date(last_checked_at) : null } : {}),
       },
       select: {
         id: true,
@@ -148,6 +153,9 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const id = parseInt(params.id, 10);
 

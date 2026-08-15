@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { unauthorizedIfNotAdmin } from '@/lib/auth';
 
 function isDatabaseUnavailableError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -78,11 +79,15 @@ export async function GET(request: NextRequest) {
         links: true,
         update_source_url: true,
         version_regex: true,
+        last_checked_at: true,
+        _count: { select: { versions: true } },
       },
     });
 
+    const data = projects.map((p) => ({ ...p, versionCount: p._count.versions }));
+
     return NextResponse.json({
-      data: projects,
+      data,
       total,
       page: finalPage,
       per_page: validPerPage,
@@ -99,21 +104,84 @@ export async function GET(request: NextRequest) {
 
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
+  const denied = await unauthorizedIfNotAdmin(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json().catch(() => ({}));
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
-    const resp = await fetch(`${base}/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const {
+      icon,
+      name,
+      slug,
+      latest_version,
+      latest_update_time,
+      describe,
+      summar,
+      author,
+      type,
+      tags,
+      links,
+      update_source_url,
+    } = body;
+
+    if (!name || !icon) {
+      return NextResponse.json({ error: 'name and icon are required' }, { status: 400 });
+    }
+
+    // 自动生成 slug：小写 + 连字符，保留中文
+    let finalSlug = slug;
+    if (!finalSlug && name) {
+      finalSlug = String(name)
+        .toLowerCase()
+        .replace(/[^a-z0-9一-龥\s-]/g, '')
+        .replace(/\s+/g, '-');
+    }
+    if (!finalSlug) finalSlug = `p-${Date.now()}`;
+
+    const existing = await prisma.project.findUnique({ where: { slug: finalSlug }, select: { id: true } });
+    if (existing) {
+      return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
+    }
+
+    const project = await prisma.project.create({
+      data: {
+        icon,
+        name,
+        slug: finalSlug,
+        latest_version: latest_version || 'v1.0.0',
+        latest_update_time: latest_update_time ? new Date(latest_update_time) : new Date(),
+        describe: describe ?? null,
+        summar: summar ?? null,
+        author: author ?? null,
+        type: type ?? null,
+        tags: Array.isArray(tags) ? tags : [],
+        links: Array.isArray(links) ? links : [],
+        ...(update_source_url !== undefined ? { update_source_url: update_source_url || null } : {}),
+      },
+      select: {
+        id: true,
+        icon: true,
+        name: true,
+        slug: true,
+        latest_version: true,
+        latest_update_time: true,
+        describe: true,
+        summar: true,
+        author: true,
+        type: true,
+        tags: true,
+        links: true,
+        update_source_url: true,
+        version_regex: true,
+      },
     });
-    const text = await resp.text();
-    return new Response(text, {
-      status: resp.status,
-      headers: { 'Content-Type': resp.headers.get('content-type') || 'application/json; charset=utf-8' },
-    });
+
+    return NextResponse.json(project, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/projects:', error);
+    if (isDatabaseUnavailableError(error)) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
+    }
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }

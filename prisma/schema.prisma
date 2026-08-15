@@ -26,6 +26,7 @@ model Project {
   links               Json     @default("[]")
   update_source_url   String?
   version_regex       String?  @db.Text
+  last_checked_at     DateTime? @map("last_checked_at")
   versions            Version[]
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -46,4 +47,79 @@ model Version {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("versions")
+}
+
+// AI Provider 配置（后台可编辑的 AI 接口信息，/api/translate 等按优先级读取）
+model AiProvider {
+  id         Int      @id @default(autoincrement())
+  name       String
+  baseUrl    String   @map("base_url")
+  apiKey     String   @map("api_key") // AES 加密存储
+  model      String
+  enabled    Boolean  @default(true)
+  priority   Int      @default(100) // 数字小优先
+  scope      String   @default("translate") // translate | crawl | both
+  routerRole String?  @map("router_role") // crawl 用：default/background/think/longContext/webSearch
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_providers")
+}
+
+// 运营运行记录（站内触发或 GH Actions 兜底，后台可查）
+model OpRun {
+  id          Int      @id @default(autoincrement())
+  triggeredBy String   @default("manual") @map("triggered_by") // manual | github-action
+  phase       String // all | github | trending | probe | task
+  status      String   @default("running") // running | success | failed | partial
+  summary     Json?
+  error       String?  @db.Text
+  startedAt   DateTime @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+
+  @@map("op_runs")
+}
+
+// 微任务（probe/get-version/update-project 等细粒度操作）
+model OpTask {
+  id          Int      @id @default(autoincrement())
+  taskId      String   @unique @map("task_id")
+  type        String // get-version | write-regex | update-project | add-project ...
+  engine      String   @default("in-app") @map("engine") // in-app | github-actions
+  inputs      Json     @default("{}")
+  status      String   @default("queued") // queued | running | success | failed | cancelled
+  progress    Float    @default(0)
+  log         String?  @db.Text
+  result      Json?
+  error       String?  @db.Text
+  triggeredBy String   @default("admin") @map("triggered_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  finishedAt  DateTime? @map("finished_at")
+
+  @@map("op_tasks")
+}
+
+// 应用设置（key-value）：如 version-extractor 地址等后台可配置项
+model AppSetting {
+  key       String   @id
+  value     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+// 人工版本审核：提取版本与库值交叉校验异常时，人工批准/拒绝的决策记录。
+// 批准 → 下次提取到同版本跳过校验直接采用；拒绝 → 记作负样本（供重训）。
+model VersionReview {
+  id         Int      @id @default(autoincrement())
+  projectId  Int?
+  url        String?
+  version    String
+  decision   String // approve | reject
+  context    String? @db.Text // 原始提取信息（reason / confidence 等）
+  reviewedBy String   @default("admin") @map("reviewed_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([url, version])
+  @@map("version_reviews")
 }
